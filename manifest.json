@@ -1,0 +1,10 @@
+{
+  "name": "مدیریت اقساط و هزینه‌ها",
+  "short_name": "اقساط",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
+  "lang": "fa",
+  "dir": "rtl"
+}

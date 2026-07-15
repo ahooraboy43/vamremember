@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="اقساط">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./style.css">
+  <title>مدیریت اقساط و هزینه‌ها</title>
+</head>
+<body>
+  <main class="app">
+    <header class="app-header">
+      <div><h1 id="pageTitle">⏰ سررسید اقساط</h1><p id="today">در حال دریافت تاریخ…</p></div>
+      <button id="refresh" class="icon-button" type="button" aria-label="بروزرسانی">↻</button>
+    </header>
+
+    <section id="duePage" class="page active">
+      <section id="status" class="status">در حال اتصال به Supabase…</section>
+      <section id="cards" class="cards"></section>
+    </section>
+
+    <section id="allPage" class="page">
+      <div class="search-box"><input id="searchInput" type="search" placeholder="جستجو در اقساط و هزینه‌ها..." autocomplete="off"></div>
+      <div class="type-filters">
+        <button class="type-filter active" type="button" data-filter="all">همه</button>
+        <button class="type-filter" type="button" data-filter="installment">اقساط</button>
+        <button class="type-filter" type="button" data-filter="expense">هزینه‌ها</button>
+      </div>
+      <div class="status-filters">
+        <button class="status-filter active" type="button" data-status="all">همه وضعیت‌ها</button>
+        <button class="status-filter" type="button" data-status="paid">پرداخت‌شده این ماه</button>
+        <button class="status-filter" type="button" data-status="unpaid">پرداخت‌نشده این ماه</button>
+      </div>
+      <section id="allStatus" class="status">در حال دریافت اطلاعات…</section>
+      <section id="allCards" class="cards"></section>
+      <button id="loadMore" class="load-more" type="button">نمایش بیشتر</button>
+    </section>
+
+    <section id="reportPage" class="page">
+      <div class="report-grid">
+        <article class="report-card clickable" data-report="month"><span class="report-icon">💳</span><div class="report-label">اقساط این ماه</div><div id="reportMonthTotal" class="report-value">۰ ریال</div></article>
+        <article class="report-card paid clickable" data-report="paid"><span class="report-icon">✓</span><div class="report-label">اقساط پرداخت‌شده</div><div id="reportPaidTotal" class="report-value">۰ ریال</div></article>
+        <article class="report-card remaining clickable" data-report="remaining"><span class="report-icon">⏳</span><div class="report-label">اقساط باقی‌مانده</div><div id="reportRemainingTotal" class="report-value">۰ ریال</div></article>
+        <article class="report-card expenses clickable" data-report="expenses"><span class="report-icon">🧾</span><div class="report-label">هزینه‌های این ماه</div><div id="reportExpensesTotal" class="report-value">۰ ریال</div></article>
+        <article class="report-card total report-card-wide clickable" data-report="all"><span class="report-icon">📊</span><div class="report-label">جمع کل پرداختی</div><div id="reportAllTotal" class="report-value">۰ ریال</div></article>
+      </div>
+      <article class="chart-card">
+        <div class="section-title">وضعیت اقساط این ماه</div>
+        <div class="chart">
+          <div class="chart-row"><div class="chart-info"><span>پرداخت‌شده</span><span id="paidPercent">۰٪</span></div><div class="chart-track"><div id="paidBar" class="chart-bar paid-bar"></div></div></div>
+          <div class="chart-row"><div class="chart-info"><span>باقی‌مانده</span><span id="remainingPercent">۰٪</span></div><div class="chart-track"><div id="remainingBar" class="chart-bar remaining-bar"></div></div></div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <button
+  id="addExpenseButton"
+  class="insz"
+  type="button"
+  aria-label="ثبت مورد جدید"
+>
+  +
+</button>
+
+  <nav class="bottom-nav">
+    <button class="nav-button active" type="button" data-page="duePage" data-title="⏰ سررسید اقساط"><span>⏰</span><small>سررسیدها</small></button>
+    <button class="nav-button" type="button" data-page="allPage" data-title="📋 همه موارد"><span>📋</span><small>همه اقساط</small></button>
+    <button class="nav-button" type="button" data-page="reportPage" data-title="📊 گزارش ها"><span>📊</span><small> گزارش ها</small></button>
+  </nav>
+
+  <div id="reportDetailsModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-sheet report-details-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-header"><h2 id="reportDetailsTitle">جزئیات گزارش</h2><button id="closeReportDetails" class="close-modal" type="button">✕</button></div>
+      <div id="reportDetailsList" class="report-details-list"></div>
+    </div>
+  </div>
+
+  <div id="expenseModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-header"><h2 id="expenseModalTitle">ثبت مورد جدید</h2><button id="closeExpenseModal" class="close-modal" type="button">✕</button></div>
+      <form id="expenseForm">
+        <input id="editExpenseId" type="hidden">
+        <div class="field"><span>نوع مورد</span><div class="expense-type-selector"><button id="installmentTypeButton" class="expense-type-button active" type="button">💳 قسط</button><button id="expenseTypeButton" class="expense-type-button" type="button">🧾 هزینه</button></div><input id="expenseType" type="hidden" value="installment"></div>
+        <label class="field"><span id="expenseTitleLabel">عنوان قسط</span><input id="expenseTitle" type="text" required></label>
+        <label class="field"><span>مبلغ</span><input id="expenseAmount" type="number" min="0" required inputmode="numeric"></label>
+        <div id="installmentFields" class="field-grid"><label class="field"><span>روز سررسید</span><input id="expenseDueDay" type="number" min="1" max="31"></label><label class="field"><span>تعداد اقساط</span><input id="expenseInstallments" type="number" min="1"></label></div>
+        <label class="field"><span id="startMonthLabel">ماه شروع</span><select id="expenseStartMonth">
+          <option value="farvardin">فروردین</option><option value="ordibehesht">اردیبهشت</option><option value="khordad">خرداد</option><option value="tir">تیر</option><option value="mordad">مرداد</option><option value="shahrivar">شهریور</option><option value="mehr">مهر</option><option value="aban">آبان</option><option value="azar">آذر</option><option value="dey">دی</option><option value="bahman">بهمن</option><option value="esfand">اسفند</option>
+        </select></label>
+        <label class="field"><span>یادداشت</span><textarea id="expenseNote" placeholder="اختیاری"></textarea></label>
+        <section id="monthsEditor" class="months-editor hidden"><div class="section-title">وضعیت ماه‌ها</div><div id="monthFields"></div></section>
+        <button id="saveExpenseButton" class="primary-button" type="submit">ثبت مورد</button>
+      </form>
+    </div>
+  </div>
+  <script src="./app.js"></script>
+</body>
+</html>
