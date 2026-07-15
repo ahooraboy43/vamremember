@@ -62,9 +62,9 @@ $Config = @{
     CloseButtonText    = '✖ بستن'
     OpenExcelButtonText= '📗 باز کردن فایل اکسل'
 
-SupabaseUrl = "https://yfgyauzuzznlhradsrbo.supabase.co"
+    SupabaseUrl = "https://yfgyauzuzznlhradsrbo.supabase.co"
     SupabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmZ3lhdXp1enpubGhyYWRzcmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NDIxOTMsImV4cCI6MjA5OTQxODE5M30.Mshjl3p-fJtkTuRSKP_3DhNe9IW7D6jv1C9pD_bv39A"
-    
+    SupabaseTable = "expenses"
 
 }
 $SupabaseUrl = $Config.SupabaseUrl
@@ -99,7 +99,131 @@ $Clr = @{
 }
 #  ابزارهای کمکی (Helpers)
 # ============================================================
+function Sync-SupabaseToExcel {Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "در حال بروزرسانی اطلاعات از Supabase..." -ForegroundColor Cyan
+    Write-Host "لطفاً فایل Excel را باز نکنید." -ForegroundColor Yellow
+    Write-Host "========================================"
 
+    # بررسی باز بودن فایل اکسل
+    try {
+        $stream = [System.IO.File]::Open(
+            $Config.ExcelFile,
+            [System.IO.FileMode]::Open,
+            [System.IO.FileAccess]::ReadWrite,
+            [System.IO.FileShare]::None
+        )
+        $stream.Close()
+    }
+    catch {
+        [System.Windows.Forms.MessageBox]::Show(
+            "فایل اکسل باز است.`n`nلطفاً فایل وامها.xlsx را ببندید و دوباره برنامه را اجرا کنید.",
+            "امکان بروزرسانی وجود ندارد",
+            [System.Windows.Forms.MessageBoxButtons]::OK,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+        return
+    }
+
+    try {
+        $headers = @{
+            apikey        = $Config.SupabaseKey
+            Authorization = "Bearer $($Config.SupabaseKey)"
+        }
+
+        $uri = "$($Config.SupabaseUrl)/rest/v1/$($Config.SupabaseTable)?select=*&order=id.asc"
+
+        $rows = Invoke-RestMethod `
+            -Uri $uri `
+            -Method Get `
+            -Headers $headers
+
+        if (-not $rows) {
+            Write-Host "هیچ اطلاعاتی از Supabase دریافت نشد." -ForegroundColor Yellow
+            return
+        }
+
+        $package = Open-ExcelPackage -Path $Config.ExcelFile
+        $sheet   = $package.Workbook.Worksheets[$Config.SheetName]
+
+        if (-not $sheet) {
+            Close-ExcelPackage $package -NoSave
+            throw "شیت '$($Config.SheetName)' پیدا نشد."
+        }
+
+        $columnMap = @{
+            id                = 1
+            amount            = 2
+            title             = 3
+            due_day           = 4
+            installment_count = 5
+            farvardin         = 6
+            ordibehesht       = 7
+            khordad           = 8
+            tir               = 9
+            mordad            = 10
+            shahrivar         = 11
+            mehr              = 12
+            aban              = 13
+            azar              = 14
+            dey               = 15
+            bahman            = 16
+            esfand            = 17
+        }
+
+        $excelIdRows = @{}
+
+        for ($row = 3; $row -le $sheet.Dimension.End.Row; $row++) {
+            $id = $sheet.Cells[$row, 1].Value
+
+            if ($null -ne $id -and "$id".Trim() -ne "") {
+                $excelIdRows["$id"] = $row
+            }
+        }
+
+        foreach ($item in $rows) {
+
+            $id = "$($item.id)"
+
+            if ($excelIdRows.ContainsKey($id)) {
+                $excelRow = $excelIdRows[$id]
+            }
+            else {
+                $excelRow = $sheet.Dimension.End.Row + 1
+                $excelIdRows[$id] = $excelRow
+            }
+
+ foreach ($property in $columnMap.Keys) {
+
+    $column = $columnMap[$property]
+    $value  = $item.$property
+    $cell   = $sheet.Cells[$excelRow, $column]
+
+    if ("$value".Trim().ToUpper() -eq "CLOSE") {
+    $cell.Value = $null
+    $cell.StyleName = "Style 2"
+}
+else {
+    $cell.Value = $value
+}
+}
+}
+
+        Close-ExcelPackage $package
+
+       
+        Write-Host "اکسل با موفقیت از Supabase بروزرسانی شد." -ForegroundColor Green
+  [System.Windows.Forms.MessageBox]::Show(
+    "اطلاعات با موفقیت از Supabase دریافت شد و فایل Excel بروزرسانی شد.",
+    "بروزرسانی انجام شد",
+    [System.Windows.Forms.MessageBoxButtons]::OK,
+    [System.Windows.Forms.MessageBoxIcon]::Information
+)
+  }
+    catch {
+        Write-Host "خطا در بروزرسانی اکسل از Supabase:" -ForegroundColor Red
+        Write-Host $_.Exception.Message -ForegroundColor Red
+    }
+}
 # یکسان‌سازی حروف فارسی/عربی در متن.
 function ConvertTo-PersianChars {
     param([string]$text)
@@ -131,7 +255,7 @@ function Get-LoanList {
         [string]$ExcelFile,
         [string]$SheetName
     )
-
+    
     $data = Import-Excel $ExcelFile `
         -WorksheetName $SheetName `
         -StartRow $Config.ExcelStartRow
@@ -3404,7 +3528,7 @@ return $tray
 # ============================================================
 
 $screen = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
-
+Sync-SupabaseToExcel
 $global:RealExit = $false
 
 $soon = @(Get-DueSoon `
