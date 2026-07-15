@@ -30,15 +30,14 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sa
     border-radius: 50%;
     background: #fff;
     color: var(--primary);
-    margin-top: -54px;
-    margin-right: 20px;
+    margin-top: -40px;
     justify-self: center;
     display: flex;
     align-items: center;
     justify-content: center;
     border: none;
     border-bottom: 3px solid #a1a8b5;
-    box-shadow: 0 11px 36px rgb(217 209 210 / 42%);
+    box-shadow: 0 11px 15px rgb(217 209 210 / 42%);
     position: relative;
     z-index: 4;
     background: #d6d8dd;
