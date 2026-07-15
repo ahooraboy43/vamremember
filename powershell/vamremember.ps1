@@ -1,4 +1,4 @@
-#  VamRemember.ps1  —  یادآور اقساط وام
+﻿#  VamRemember.ps1  —  یادآور اقساط وام
 # ============================================================
 
 Add-Type -AssemblyName System.Windows.Forms
