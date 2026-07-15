@@ -11,17 +11,108 @@
   <link rel="stylesheet" href="./style.css">
   <title>مدیریت اقساط و هزینه‌ها</title>
 </head>
+
 <body>
   <main class="app">
     <header class="app-header">
-      <div><h1 id="pageTitle">⏰ zzzzzzzzسررسید اقساط</h1><p id="today">در حال دریافت تاریخ…</p></div>
+      <div><h1 id="pageTitle">⏰ سررسید اقساط</h1><p id="today">در حال دریافت تاریخ…</p></div>
       <button id="refresh" class="icon-button" type="button" aria-label="بروزرسانی">↻</button>
     </header>
 
-    <section id="duePage" class="page active">
-      <section id="status" class="status">در حال اتصال به Supabase…</section>
-      <section id="cards" class="cards"></section>
-    </section>
+<section id="duePage" class="page active">
+
+  <section id="status" class="status">
+    در حال اتصال به Supabase…
+  </section>
+
+  <section id="cards" class="cards"></section>
+
+</section>
+
+
+<section id="homePage" class="page">
+
+<div class="home-balance-card">
+
+    <div>
+        <small>وضعیت این ماه</small>
+        <h1 id="homeMonthTitle">تیر ۱۴۰۵</h1>
+    </div>
+
+
+    <div class="balance-row">
+
+        <div>
+            <span>💳 پرداخت شده</span>
+            <strong id="homePaid">۰</strong>
+        </div>
+
+
+        <div>
+            <span>🧾 هزینه‌ها</span>
+            <strong id="homeExpense">۰</strong>
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="home-status-grid">
+
+
+<div class="status-card danger">
+
+<span>🔴</span>
+
+<div>
+<h3>عقب افتاده</h3>
+<strong id="homeOverdue">۰</strong>
+</div>
+
+</div>
+
+
+
+<div class="status-card warning">
+
+<span>⏰</span>
+
+<div>
+<h3>نزدیک سررسید</h3>
+<strong id="homeSoon">۰</strong>
+</div>
+
+</div>
+
+
+</div>
+
+
+
+<div class="home-section">
+
+<div class="section-title">
+آخرین اقساط
+</div>
+
+<div id="homeRecent"></div>
+
+</div>
+
+
+<div class="home-section">
+
+<div class="section-title">
+وضعیت مالی
+</div>
+
+<div id="homeSummary"></div>
+
+</div>
+
+
+</section>
 
     <section id="allPage" class="page">
       <div class="search-box"><input id="searchInput" type="search" placeholder="جستجو در اقساط و هزینه‌ها..." autocomplete="off"></div>
@@ -68,10 +159,30 @@
 </button>
 
   <nav class="bottom-nav">
-    <button class="nav-button active" type="button" data-page="duePage" data-title="⏰ سررسید اقساط"><span>⏰</span><small>سررسیدها</small></button>
-    <button class="nav-button" type="button" data-page="allPage" data-title="📋 همه موارد"><span>📋</span><small>همه اقساط</small></button>
-    <button class="nav-button" type="button" data-page="reportPage" data-title="📊 گزارش ها"><span>📊</span><small> گزارش ها</small></button>
-  </nav>
+
+<button class="nav-button nav-item" data-page="duePage" data-title="⏰ سررسیدها">
+<span>⏰</span>
+<small>سررسیدها</small>
+</button>
+
+
+<button class="home-button nav-button " data-page="homePage" data-title="🏠 داشبورد">
+<span>🏠</span>
+</button>
+
+
+<button class="nav-button nav-item" data-page="allPage" data-title="📋 همه اقساط">
+<span>📋</span>
+<small>اقساط</small>
+</button>
+
+
+<button class="nav-button nav-item" data-page="reportPage" data-title="📊 گزارش‌ها">
+<span>📊</span>
+<small>گزارش</small>
+</button>
+
+</nav>
 
   <div id="reportDetailsModal" class="modal">
     <div class="modal-backdrop"></div>
