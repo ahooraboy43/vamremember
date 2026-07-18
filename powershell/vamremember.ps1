@@ -99,12 +99,7 @@ $Clr = @{
 }
 #  ابزارهای کمکی (Helpers)
 # ============================================================
-function Sync-SupabaseToExcel {Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "در حال بروزرسانی اطلاعات از Supabase..." -ForegroundColor Cyan
-    Write-Host "لطفاً فایل Excel را باز نکنید." -ForegroundColor Yellow
-    Write-Host "========================================"
-
-    # بررسی باز بودن فایل اکسل
+function Sync-SupabaseToExcel {
     try {
         $stream = [System.IO.File]::Open(
             $Config.ExcelFile,
@@ -123,28 +118,21 @@ function Sync-SupabaseToExcel {Write-Host "=====================================
         )
         return
     }
-
     try {
         $headers = @{
             apikey        = $Config.SupabaseKey
             Authorization = "Bearer $($Config.SupabaseKey)"
         }
-
         $uri = "$($Config.SupabaseUrl)/rest/v1/$($Config.SupabaseTable)?select=*&order=id.asc"
-
         $rows = Invoke-RestMethod `
             -Uri $uri `
             -Method Get `
             -Headers $headers
-
         if (-not $rows) {
-            Write-Host "هیچ اطلاعاتی از Supabase دریافت نشد." -ForegroundColor Yellow
             return
         }
-
         $package = Open-ExcelPackage -Path $Config.ExcelFile
         $sheet   = $package.Workbook.Worksheets[$Config.SheetName]
-
         if (-not $sheet) {
             Close-ExcelPackage $package -NoSave
             throw "شیت '$($Config.SheetName)' پیدا نشد."
@@ -169,61 +157,99 @@ function Sync-SupabaseToExcel {Write-Host "=====================================
             bahman            = 16
             esfand            = 17
         }
-
         $excelIdRows = @{}
-
         for ($row = 3; $row -le $sheet.Dimension.End.Row; $row++) {
-            $id = $sheet.Cells[$row, 1].Value
+            $id = $sheet.Cells[$row,1].Value
 
             if ($null -ne $id -and "$id".Trim() -ne "") {
                 $excelIdRows["$id"] = $row
             }
         }
-
-        foreach ($item in $rows) {
-
+$excelIdRows.Keys | Sort-Object | ForEach-Object { Write-Host $_ }
+$lastExpenseRow = [int]$excelIdRows["10007"]
+                foreach ($item in $rows) {
             $id = "$($item.id)"
 
             if ($excelIdRows.ContainsKey($id)) {
                 $excelRow = $excelIdRows[$id]
             }
             else {
-                $excelRow = $sheet.Dimension.End.Row + 1
+                if ([int]$item.id -lt 10000) {
+                    $sheet.InsertRow(14,1)
+                    $excelRow = 14
+                    $sheet.Row($excelRow).Height = $sheet.Row($excelRow + 1).Height
+                    $fromRow = $excelRow + 1
+
+                    for ($c = 1; $c -le 5; $c++) {
+                        $sheet.Cells[$excelRow,$c].StyleID = $sheet.Cells[$fromRow,$c].StyleID
+                    }
+
+                    foreach($key in @($excelIdRows.Keys)){
+                        if($excelIdRows[$key] -ge 14){
+                            $excelIdRows[$key]++
+                        }
+                    }
+
+                    if ($lastExpenseRow -ge 14) {
+                        $lastExpenseRow++
+                    }
+                }
+                else {
+                    Write-Host "هزینه جدید" -ForegroundColor Blue
+
+                    $copyRow = $lastExpenseRow
+                    $excelRow = $copyRow + 1
+
+                    $sheet.InsertRow($excelRow,1)
+                    $sheet.Row($excelRow).Height = $sheet.Row($copyRow).Height
+
+                    for ($c = 1; $c -le 5; $c++) {
+                        $sheet.Cells[$excelRow,$c].StyleID = $sheet.Cells[$copyRow,$c].StyleID
+                    }
+
+                    $lastExpenseRow++
+
+                    foreach($key in @($excelIdRows.Keys)){
+                        if($excelIdRows[$key] -ge $excelRow){
+                            $excelIdRows[$key]++
+                        }
+                    }
+                }
+
                 $excelIdRows[$id] = $excelRow
             }
 
- foreach ($property in $columnMap.Keys) {
+            foreach ($property in $columnMap.Keys) {
+                $column = $columnMap[$property]
+                $value  = $item.$property
+                $cell   = $sheet.Cells[$excelRow,$column]
 
-    $column = $columnMap[$property]
-    $value  = $item.$property
-    $cell   = $sheet.Cells[$excelRow, $column]
-
-    if ("$value".Trim().ToUpper() -eq "CLOSE") {
-    $cell.Value = $null
-    $cell.StyleName = "Style 2"
-}
-else {
-    $cell.Value = $value
-}
-}
-}
+                if ("$value".Trim().ToUpper() -eq "CLOSE") {
+                    $cell.Value = $null
+                    $cell.StyleName = "Style 2"
+                }
+                else {
+                    $cell.Value = $value
+                }
+            }
+        }
 
         Close-ExcelPackage $package
-
-       
-        Write-Host "اکسل با موفقیت از Supabase بروزرسانی شد." -ForegroundColor Green
-  [System.Windows.Forms.MessageBox]::Show(
-    "اطلاعات با موفقیت از Supabase دریافت شد و فایل Excel بروزرسانی شد.",
-    "بروزرسانی انجام شد",
-    [System.Windows.Forms.MessageBoxButtons]::OK,
-    [System.Windows.Forms.MessageBoxIcon]::Information
-)
-  }
+    }
     catch {
-        Write-Host "خطا در بروزرسانی اکسل از Supabase:" -ForegroundColor Red
-        Write-Host $_.Exception.Message -ForegroundColor Red
+        if ($package) {
+            Close-ExcelPackage $package -NoSave
+        }
+
+        [System.Windows.Forms.MessageBox]::Show(
+            "خطا در بروزرسانی اکسل:`n`n$($_.Exception.Message)",
+            "خطا",
+            [System.Windows.Forms.MessageBoxButtons]::OK,
+            [System.Windows.Forms.MessageBoxIcon]::Error
+        )
     }
 }
+ # پایان function
 # یکسان‌سازی حروف فارسی/عربی در متن.
 function ConvertTo-PersianChars {
     param([string]$text)
