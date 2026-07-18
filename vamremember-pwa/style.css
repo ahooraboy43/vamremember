@@ -219,5 +219,54 @@ height: 35px;
 .home-section .section-title{
   margin-bottom:12px;
 }
-@media(max-width:420px){.app{padding-left:12px;padding-right:12px}h1{font-size:20px}.compact-head{grid-template-columns:minmax(0,1fr) auto}.compact-side{grid-column:2}.id-badge{grid-row:1;grid-column:2}.compact-amount{font-size:17px}.report-value{font-size:14px}
-.status-filters{grid-template-columns:1fr}.compact-foot{align-items:flex-start;flex-direction:column}.badge-row{width:100%}}
+.tag-btn.active,
+.bank-tag.active,
+.from-bank.active,
+.to-bank.active{
+border-color: var(--primary-light);
+    color: #7dd3fc;
+}
+.expense-type-selector{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+    margin-top:10px;
+}
+
+.expense-type-selector button{
+    border:1px solid var(--border);
+    background:var(--surface-2);
+    color:var(--text);
+    border-radius:14px;
+    padding:12px 6px;
+    font-size:13px;
+    cursor:pointer;
+    transition:.2s;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+}
+
+.expense-type-selector button:hover{
+    transform:translateY(-2px);
+}
+
+.expense-type-selector button.active{
+  border-color: var(--primary-light);
+    color: #7dd3fc;
+    box-shadow:0 4px 12px rgba(0,0,0,.25);
+}
+@media(max-width:480px){
+
+    .expense-type-selector{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .expense-type-selector button{
+        padding:14px 8px;
+        font-size:14px;
+    }
+
+}

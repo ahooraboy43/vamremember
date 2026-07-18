@@ -1,6 +1,7 @@
 const SUPABASE_URL = "https://yfgyauzuzznlhradsrbo.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmZ3lhdXp1enpubGhyYWRzcmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NDIxOTMsImV4cCI6MjA5OTQxODE5M30.Mshjl3p-fJtkTuRSKP_3DhNe9IW7D6jv1C9pD_bv39A";
 const TABLE_NAME="expenses";
+const TRANSACTION_TABLE = "transactions";
 const MONTHS=[{key:"farvardin",name:"فروردین"},{key:"ordibehesht",name:"اردیبهشت"},{key:"khordad",name:"خرداد"},{key:"tir",name:"تیر"},{key:"mordad",name:"مرداد"},{key:"shahrivar",name:"شهریور"},{key:"mehr",name:"مهر"},{key:"aban",name:"آبان"},{key:"azar",name:"آذر"},{key:"dey",name:"دی"},{key:"bahman",name:"بهمن"},{key:"esfand",name:"اسفند"}];
 const PAGE_SIZE=10;
 let allExpenses=[],visibleCount=PAGE_SIZE,activeFilter="all",activeStatusFilter="all",currentMonthKey=null,currentMonthIndex=0;
@@ -13,15 +14,72 @@ const expenseModal=$("expenseModal"),closeExpenseModalButton=$("closeExpenseModa
 const editExpenseId=$("editExpenseId"),expenseType=$("expenseType"),installmentTypeButton=$("installmentTypeButton"),expenseTypeButton=$("expenseTypeButton");
 const expenseTitleLabel=$("expenseTitleLabel"),expenseTitle=$("expenseTitle"),expenseAmount=$("expenseAmount"),expenseDueDay=$("expenseDueDay"),expenseInstallments=$("expenseInstallments"),installmentFields=$("installmentFields"),startMonthLabel=$("startMonthLabel"),expenseStartMonth=$("expenseStartMonth"),expenseNote=$("expenseNote"),monthsEditor=$("monthsEditor"),monthFields=$("monthFields"),saveExpenseButton=$("saveExpenseButton");
 const reportMonthTotal=$("reportMonthTotal"),reportPaidTotal=$("reportPaidTotal"),reportRemainingTotal=$("reportRemainingTotal"),reportExpensesTotal=$("reportExpensesTotal"),reportAllTotal=$("reportAllTotal"),paidPercent=$("paidPercent"),remainingPercent=$("remainingPercent"),paidBar=$("paidBar"),remainingBar=$("remainingBar");
+const transferTypeButton = $("transferTypeButton");
+const transferFrom = $("transferFrom");
+const transferTo = $("transferTo");
+const expenseFields = $("expenseFields");
+const transferFields = $("transferFields");
+const incomeTypeButton = $("incomeTypeButton");
 const reportDetailsModal=$("reportDetailsModal"),reportDetailsTitle=$("reportDetailsTitle"),reportDetailsList=$("reportDetailsList"),closeReportDetails=$("closeReportDetails");
+async function addTransaction(data){
+    console.log("SENDING TRANSACTION:", data);
 
+    return await supabaseRequest(
+        TRANSACTION_TABLE,
+        {
+            method:"POST",
+            headers:{
+                Prefer:"return=representation"
+            },
+            body:JSON.stringify(data)
+        }
+    );
+}
+async function getTransactions(){
+    return await supabaseRequest(
+        `${TRANSACTION_TABLE}?select=*&order=id.desc`,
+        {
+            method:"GET"
+        }
+    );
+}
+function setupActiveButtons(selector){
+
+    document.querySelectorAll(selector).forEach(btn=>{
+
+        btn.addEventListener("click",()=>{
+
+            btn.parentElement
+                .querySelectorAll(selector)
+                .forEach(b=>b.classList.remove("active"));
+
+            btn.classList.add("active");
+
+        });
+
+    });
+
+}
 function getHeaders(){return{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`,"Content-Type":"application/json"}}
 async function supabaseRequest(path,options={}){const response=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,headers:{...getHeaders(),...(options.headers||{})}});const text=await response.text();if(!response.ok)throw new Error(text||`HTTP ${response.status}`);return text?JSON.parse(text):null}
 function toEnglishDigits(value){return String(value).replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d))}
 function getPersianDateParts(){const parts=new Intl.DateTimeFormat("fa-IR-u-ca-persian",{year:"numeric",month:"numeric",day:"numeric"}).formatToParts(new Date()),v={};for(const p of parts)if(["year","month","day"].includes(p.type))v[p.type]=Number(toEnglishDigits(p.value));return v}
 function updatePersianDate(){todayElement.textContent=new Intl.DateTimeFormat("fa-IR-u-ca-persian",{weekday:"long",year:"numeric",month:"long",day:"numeric"}).format(new Date());const p=getPersianDateParts();currentMonthIndex=p.month-1;currentMonthKey=MONTHS[currentMonthIndex].key}
-function isExpense(i){return Number(i.id)>=10000}
-function isInstallment(i){return !isExpense(i)}
+function isInstallment(i){
+    return i.type==="installment" || Number(i.id)<10000;
+}
+
+
+function isExpense(i){
+    const id=Number(i.id);
+    return i.type==="expense" || (id>=10000 && id<20000);
+}
+
+
+function isIncome(i){
+    const id=Number(i.id);
+    return i.type==="income" || (id>=20000 && id<30000);
+}
 function isNullValue(v){return v===null||v===undefined||v===""}
 function isClosedValue(v){return String(v||"").trim().toUpperCase()==="CLOSE"}
 function isPaidValue(v){return !isNullValue(v)&&!isClosedValue(v)}
@@ -29,27 +87,234 @@ function formatMoney(v){return Number(v||0).toLocaleString("fa-IR")+" ریال"}
 function escapeHtml(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
 function getCurrentPersianDay(){return getPersianDateParts().day}
 function parseMoney(v){if(isNullValue(v)||isClosedValue(v))return null;const n=Number(String(v).replace(/[,\s٬]/g,""));return Number.isFinite(n)?n:null}
-function getRemainingInstallments(item){if(!isInstallment(item))return 0;let n=0;for(const m of MONTHS)if(isNullValue(item[m.key]))n++;return n}
+function getRemainingInstallments(item){
+    if (!isInstallment(item)) return 0;
+
+    return Number(item.installment_count || 0);
+}
+
 function getPaidCount(item){let n=0;for(const m of MONTHS)if(isPaidValue(item[m.key]))n++;return n}
 function getLatestExpenseAmount(item){for(let i=currentMonthIndex;i>=0;i--){const n=parseMoney(item[MONTHS[i].key]);if(n!==null)return n}for(let i=MONTHS.length-1;i>currentMonthIndex;i--){const n=parseMoney(item[MONTHS[i].key]);if(n!==null)return n}return Number(item.amount||0)}
 function getExpenseTotal(item){let total=0;for(const m of MONTHS){const n=parseMoney(item[m.key]);if(n!==null)total+=n}return total}
 function extractPaymentDate(v){if(!isPaidValue(v))return "";const s=String(v);const matches=s.match(/[۰-۹0-9]{4}[\/\-][۰-۹0-9]{1,2}[\/\-][۰-۹0-9]{1,2}/g);return matches?.at(-1)||s}
 function currentStatus(item){const v=item[currentMonthKey];if(isClosedValue(v))return"بسته";return isPaidValue(v)?"پرداخت‌شده":"پرداخت‌نشده"}
 
-async function loadData(){refreshButton.disabled=true;statusBox.textContent="در حال دریافت اطلاعات…";allStatus.textContent="در حال دریافت اطلاعات…";try{const data=await supabaseRequest(`${TABLE_NAME}?select=*&order=id.asc`);
-allExpenses=Array.isArray(data)?data:[];
-renderDueCards();
-renderAllCards();
-renderDueCards();
-renderReports();
-visibleCount=PAGE_SIZE;renderAllCards();renderReports();statusBox.textContent=`${allExpenses.length.toLocaleString("fa-IR")} مورد دریافت شد`;allStatus.textContent=`${allExpenses.length.toLocaleString("fa-IR")} مورد موجود است`}catch(e){console.error(e);statusBox.textContent=`خطا در دریافت اطلاعات: ${e.message}`;allStatus.textContent=`خطا در دریافت اطلاعات: ${e.message}`}finally{refreshButton.disabled=false}}
+async function loadData(){
 
+    refreshButton.disabled=true;
+
+    statusBox.textContent="در حال دریافت اطلاعات…";
+    allStatus.textContent="در حال دریافت اطلاعات…";
+
+    try{
+
+        const data = await supabaseRequest(
+            `${TABLE_NAME}?select=*&order=id.asc`
+        );
+
+        allExpenses = Array.isArray(data) ? data : [];
+
+        visibleCount = PAGE_SIZE;
+
+        renderDueCards();
+        renderAllCards();
+        renderReports();
+        renderHome();
+
+
+        statusBox.textContent =
+        `${allExpenses.length.toLocaleString("fa-IR")} مورد دریافت شد`;
+
+        allStatus.textContent =
+        `${allExpenses.length.toLocaleString("fa-IR")} مورد موجود است`;
+
+    }
+    catch(e){
+
+        console.error(e);
+
+        statusBox.textContent =
+        `خطا در دریافت اطلاعات: ${e.message}`;
+
+        allStatus.textContent =
+        `خطا در دریافت اطلاعات: ${e.message}`;
+
+    }
+    finally{
+
+        refreshButton.disabled=false;
+
+    }
+}
 function getDueItems(){const today=getCurrentPersianDay();return allExpenses.filter(isInstallment).filter(i=>isNullValue(i[currentMonthKey])&&Number.isFinite(Number(i.due_day))&&Number(i.due_day)>0).map(i=>({...i,daysRemaining:Number(i.due_day)-today})).filter(i=>i.daysRemaining<=7).sort((a,b)=>a.daysRemaining-b.daysRemaining)}
 function renderDueCards(){const items=getDueItems();cards.innerHTML="";if(!items.length){cards.innerHTML='<div class="empty">قسط سررسیدشده یا نزدیک به سررسید وجود ندارد</div>';return}items.forEach(i=>cards.appendChild(createDueCard(i)))}
-function createDueCard(item){const card=document.createElement("article");card.className="card "+(item.daysRemaining<0?"overdue":"soon");const dayText=item.daysRemaining<0?`${Math.abs(item.daysRemaining).toLocaleString("fa-IR")} روز گذشته`:item.daysRemaining===0?"امروز":`${item.daysRemaining.toLocaleString("fa-IR")} روز مانده`;card.innerHTML=`<div class="card-main"><div class="top"><div class="name">${escapeHtml(item.title)}</div><div class="days">${dayText}</div></div><div class="amount">${formatMoney(item.amount)}</div><div class="meta">سررسید: روز ${Number(item.due_day).toLocaleString("fa-IR")}ام</div><div class="installment-badge">${getRemainingInstallments(item).toLocaleString("fa-IR")} قسط باقی مانده</div></div>${createPaymentPanelHtml()}`;card.querySelector(".card-main").addEventListener("click",()=>{document.querySelectorAll("#cards .card.open").forEach(c=>{if(c!==card)c.classList.remove("open")});card.classList.toggle("open")});setupPaymentPanel(card,item);return card}
-function createPaymentPanelHtml(){return`<div class="payment-panel"><div class="payment-title">ثبت پرداخت</div><textarea class="payment-note" placeholder="توضیح پرداخت..."></textarea><div class="quick-tags"><button type="button" class="tag-btn" data-tag="بانک ملی">بانک ملی</button><button type="button" class="tag-btn" data-tag="بانک رفاه">بانک رفاه</button><button type="button" class="tag-btn" data-tag="ویپاد">ویپاد</button><button type="button" class="tag-btn" data-tag="بلو بانک">بلو بانک</button><button type="button" class="tag-btn" data-tag="پرداخت شد">پرداخت شد</button><button type="button" class="tag-btn" data-tag="واریز بانکی">واریز بانکی</button><button type="button" class="tag-btn" data-tag="پرداخت اینترنتی">پرداخت اینترنتی</button></div><label class="date-option"><input type="checkbox" class="add-date" checked>افزودن تاریخ پرداخت</label><label class="confirm-option"><input type="checkbox" class="confirm-payment">پرداخت این قسط را تأیید می‌کنم</label><div class="payment-actions"><button type="button" class="cancel-payment">انصراف</button><button type="button" class="save-payment">ثبت پرداخت</button></div></div>`}
-function setupPaymentPanel(card,item){const note=card.querySelector(".payment-note"),confirm=card.querySelector(".confirm-payment"),addDate=card.querySelector(".add-date"),save=card.querySelector(".save-payment");card.querySelectorAll(".tag-btn").forEach(b=>b.addEventListener("click",()=>{note.value=note.value.trim()?`${note.value.trim()} - ${b.dataset.tag}`:b.dataset.tag}));card.querySelector(".cancel-payment").addEventListener("click",()=>card.classList.remove("open"));save.addEventListener("click",async()=>{if(!confirm.checked){alert("ابتدا تأیید پرداخت را فعال کنید.");return}let text=note.value.trim();if(addDate.checked){const d=new Intl.DateTimeFormat("fa-IR-u-ca-persian").format(new Date());text=text?`${text} - ${d}`:d}if(!text)text="پرداخت شد";save.disabled=true;save.textContent="در حال ثبت…";try{await supabaseRequest(`${TABLE_NAME}?id=eq.${item.id}`,{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify({[currentMonthKey]:text})});await loadData()}catch(e){alert(`خطا در ثبت پرداخت:\n${e.message}`)}finally{save.disabled=false;save.textContent="ثبت پرداخت"}})}
+function setupPaymentPanel(card,item){
 
+    const save = card.querySelector(".save-payment");
+    const cancel = card.querySelector(".cancel-payment");
+    const confirm = card.querySelector(".confirm-payment");
+    const noteBox = card.querySelector(".payment-note");
+    const addDate = card.querySelector(".add-date");
+
+
+setupButtonGroup(card, ".bank-tag", btn => {
+
+    let text = noteBox.value;
+
+    [
+        "بانک ملی",
+        "بانک رفاه",
+        "ویپاد",
+        "بلو بانک",
+        "بانک ملت"
+    ].forEach(bank => {
+        text = text.replace(bank, "");
+    });
+
+    text = text
+        .replace(/^\s*-\s*/, "")
+        .trim();
+
+    noteBox.value =
+        btn.dataset.bank +
+        (text ? " - " + text : "");
+
+});
+
+}
+function setupButtonGroup(parent, selector, callback){
+
+    parent.querySelectorAll(selector).forEach(btn=>{
+
+        btn.addEventListener("click",()=>{
+
+            parent.querySelectorAll(selector)
+                .forEach(b=>b.classList.remove("active"));
+
+            btn.classList.add("active");
+
+            if(callback){
+                callback(btn);
+            }
+
+        });
+
+    });
+
+}
+function createDueCard(item){const card=document.createElement("article");card.className="card "+(item.daysRemaining<0?"overdue":"soon");const dayText=item.daysRemaining<0?`${Math.abs(item.daysRemaining).toLocaleString("fa-IR")} روز گذشته`:item.daysRemaining===0?"امروز":`${item.daysRemaining.toLocaleString("fa-IR")} روز مانده`;card.innerHTML=`<div class="card-main"><div class="top"><div class="name">${escapeHtml(item.title)}</div><div class="days">${dayText}</div></div><div class="amount">${formatMoney(item.amount)}</div><div class="meta">سررسید: روز ${Number(item.due_day).toLocaleString("fa-IR")}ام</div><div class="installment-badge">${getRemainingInstallments(item).toLocaleString("fa-IR")} قسط باقی مانده</div></div>${createPaymentPanelHtml()}`;card.querySelector(".card-main").addEventListener("click",()=>{document.querySelectorAll("#cards .card.open").forEach(c=>{if(c!==card)c.classList.remove("open")});card.classList.toggle("open")});setupPaymentPanel(card,item);return card}
+function extractBank(text){
+
+    const banks=[
+        "بانک ملی",
+        "بانک رفاه",
+        "ویپاد",
+        "بلو بانک",
+        "بانک ملت"
+    ];
+
+
+    return banks.find(
+        b=>String(text).includes(b)
+    ) || null;
+
+}
+function createPaymentPanelHtml(){
+  
+return`
+<div class="payment-panel">
+
+<div class="payment-title">ثبت پرداخت</div>
+
+
+<textarea class="payment-note" placeholder="توضیح پرداخت..."></textarea>
+
+<div class="quick-tags">
+<button type="button" class="tag-btn bank-tag" data-bank="بانک ملی">بانک ملی</button>
+<button type="button" class="tag-btn bank-tag" data-bank="بانک رفاه">بانک رفاه</button>
+<button type="button" class="tag-btn bank-tag" data-bank="ویپاد">ویپاد</button>
+<button type="button" class="tag-btn bank-tag" data-bank="بلو بانک">بلو بانک</button>
+
+<button type="button" class="tag-btn" data-tag="پرداخت شد">پرداخت شد</button>
+<button type="button" class="tag-btn" data-tag="واریز بانکی">واریز بانکی</button>
+<button type="button" class="tag-btn" data-tag="پرداخت اینترنتی">پرداخت اینترنتی</button>
+</div>
+
+
+<label class="date-option">
+<input type="checkbox" class="add-date" checked>
+افزودن تاریخ پرداخت
+</label>
+
+
+<label class="confirm-option">
+<input type="checkbox" class="confirm-payment">
+پرداخت این قسط را تأیید می‌کنم
+</label>
+
+
+<div class="payment-actions">
+<button type="button" class="cancel-payment">انصراف</button>
+<button type="button" class="save-payment">ثبت پرداخت</button>
+</div>
+
+
+</div>
+`;
+}
+async function registerPaymentTransaction(item, note, account){
+
+    const data = {
+        expense_id: Number(item.id),
+        title: item.title,
+        amount: Number(item.amount || 0),
+        type: "payment",
+        account: account || null,
+        from_account:null,
+        to_account:null,
+        transaction_date:new Date().toISOString(),
+        note:note || null
+    };
+
+
+    return await addTransaction(data);
+}
+function setupTransferButtons(){
+
+    document.querySelectorAll(".from-bank")
+    .forEach(btn=>{
+
+        btn.addEventListener("click",()=>{
+
+            document.querySelectorAll(".from-bank")
+            .forEach(b=>b.classList.remove("active"));
+
+            btn.classList.add("active");
+
+            transferFrom.value=btn.dataset.bank;
+
+        });
+
+    });
+
+
+    document.querySelectorAll(".to-bank")
+    .forEach(btn=>{
+
+        btn.addEventListener("click",()=>{
+
+            document.querySelectorAll(".to-bank")
+            .forEach(b=>b.classList.remove("active"));
+
+            btn.classList.add("active");
+
+            transferTo.value=btn.dataset.bank;
+
+        });
+
+    });
+
+}
 function getFilteredItems() {
   const s = searchInput.value.trim().toLowerCase();
 
@@ -61,6 +326,9 @@ function getFilteredItems() {
 
     if (activeFilter === "expense" && !isExpense(i)) {
       return false;
+    }
+    if (activeFilter === "income" && !isIncome(i)) {
+    return false;
     }
 
     if(activeStatusFilter==="paid" && !isPaidValue(i[currentMonthKey])){
@@ -86,21 +354,119 @@ function getFilteredItems() {
   });
 }function renderAllCards(){const filtered=getFilteredItems(),items=filtered.slice(0,visibleCount);allCards.innerHTML="";if(!items.length){allCards.innerHTML='<div class="empty">موردی پیدا نشد</div>';loadMoreButton.classList.add("hidden");allStatus.textContent="۰ مورد نمایش داده می‌شود";return}items.forEach(i=>allCards.appendChild(createAllItemCard(i)));loadMoreButton.classList.toggle("hidden",visibleCount>=filtered.length);allStatus.textContent=`${filtered.length.toLocaleString("fa-IR")} مورد نمایش داده می‌شود`}
 function createAllItemCard(item){
-  const expense=isExpense(item),card=document.createElement("article"),v=item[currentMonthKey];
+ const expense=isExpense(item);
+const income=isIncome(item);
+const card=document.createElement("article");
+const v=item[currentMonthKey];
   card.className=`card compact-card ${expense?"expense-card":""} ${!expense&&isPaidValue(v)?"paid-card":""}`;
   const mainAmount=expense?getLatestExpenseAmount(item):Number(item.amount||0);
   const secondary=expense?`جمع کل: ${formatMoney(getExpenseTotal(item))}`:`${getRemainingInstallments(item).toLocaleString("fa-IR")} مانده`;
   const counter=expense?`${getPaidCount(item).toLocaleString("fa-IR")} پرداخت`:`${getRemainingInstallments(item).toLocaleString("fa-IR")} قسط باقی‌مانده`;
   card.innerHTML=`<div class="card-main compact-main">
     <div class="compact-head"><div class="compact-amount-wrap"><div class="amount compact-amount">${formatMoney(mainAmount)}</div></div><div class="compact-side">${counter}</div><div class="id-badge">ID ${Number(item.id).toLocaleString("fa-IR")}</div></div>
-    <div class="compact-foot"><div class="compact-title">${escapeHtml(item.title)}</div><div class="badge-row"><span class="${expense?"expense-badge":"installment-badge"}">${expense?"🧾 هزینه":"💳 قسط"}</span><span class="status-badge">${currentStatus(item)}</span></div></div>
+    <div class="compact-foot"><div class="compact-title">${escapeHtml(item.title)}</div><div class="badge-row">
+    <span class="${
+expense
+?"expense-badge"
+:income
+?"income-badge"
+:"installment-badge"
+}">
+${
+expense
+?"🧾 هزینه"
+:income
+?"💰 درآمد"
+:"💳 قسط"
+}
+</span>
+    <span class="status-badge">${currentStatus(item)}</span></div></div>
     <div class="all-card-actions"><button type="button" class="edit-expense">ویرایش</button></div>
   </div>`;
   card.querySelector(".edit-expense").addEventListener("click",e=>{e.stopPropagation();openEditModal(item)});return card
 }
 function getExpenseAmount(item){return getLatestExpenseAmount(item)}
 
-function setExpenseType(type){expenseType.value=type;installmentTypeButton.classList.toggle("active",type==="installment");expenseTypeButton.classList.toggle("active",type==="expense");installmentFields.classList.toggle("hidden",type!=="installment");expenseTitleLabel.textContent=type==="installment"?"عنوان قسط":"عنوان هزینه";startMonthLabel.textContent=type==="installment"?"ماه شروع":"ماه هزینه";expenseDueDay.required=type==="installment";expenseInstallments.required=type==="installment";saveExpenseButton.textContent=editExpenseId.value?"ذخیره تغییرات":type==="installment"?"ثبت قسط":"ثبت هزینه"}
+function setExpenseType(type){
+
+    expenseType.value = type;
+
+    installmentTypeButton.classList.toggle(
+        "active",
+        type === "installment"
+    );
+
+    expenseTypeButton.classList.toggle(
+        "active",
+        type === "expense"
+    );
+    incomeTypeButton.classList.toggle(
+    "active",
+    type === "income"
+);
+
+    transferTypeButton.classList.toggle(
+        "active",
+        type === "transfer"
+    );
+
+    installmentFields.classList.toggle(
+        "hidden",
+        type !== "installment"
+    );
+
+    expenseFields.classList.toggle(
+    "hidden",
+    !(type==="expense" || type==="income")
+);
+
+    transferFields.classList.toggle(
+        "hidden",
+        type !== "transfer"
+    );
+
+    if(type==="installment"){
+        expenseTitleLabel.textContent="عنوان قسط";
+        startMonthLabel.textContent="ماه شروع";
+    }
+
+    if(type==="expense"){
+        expenseTitleLabel.textContent="عنوان هزینه";
+        startMonthLabel.textContent="ماه هزینه";
+    }
+
+    if(type==="transfer"){
+        expenseTitleLabel.textContent="شرح انتقال";
+        startMonthLabel.textContent="تاریخ انتقال";
+    }
+    if(type==="income"){
+    expenseTitleLabel.textContent="عنوان درآمد";
+    startMonthLabel.textContent="ماه درآمد";
+}
+
+    expenseDueDay.required =
+        type==="installment";
+
+    expenseInstallments.required =
+        type==="installment";
+
+    if(editExpenseId.value){
+        saveExpenseButton.textContent="ذخیره تغییرات";
+    }
+    else if(type==="installment"){
+        saveExpenseButton.textContent="ثبت قسط";
+    }
+    else if(type==="expense"){
+    saveExpenseButton.textContent="ثبت هزینه";
+}
+else if(type==="income"){
+    saveExpenseButton.textContent="ثبت درآمد";
+}
+else{
+    saveExpenseButton.textContent="ثبت انتقال";
+}
+
+}
 function openModal(){expenseModal.classList.add("open");document.body.style.overflow="hidden"}
 function closeModal(){expenseModal.classList.remove("open");document.body.style.overflow=""}
 function resetExpenseForm(){expenseForm.reset();editExpenseId.value="";monthsEditor.classList.add("hidden");monthFields.innerHTML="";expenseStartMonth.value=currentMonthKey;expenseModalTitle.textContent="ثبت مورد جدید";setExpenseType("installment")}
@@ -112,7 +478,12 @@ function openEditModal(item){
   expenseTitle.value=item.title||"";
   expenseNote.value=item.note||"";
 
-  const type=isExpense(item)?"expense":"installment";
+ const type =
+    isExpense(item)
+    ?"expense"
+    :isIncome(item)
+    ?"income"
+    :"installment";
 
   setExpenseType(type);
 
@@ -127,10 +498,12 @@ function openEditModal(item){
 
   expenseStartMonth.value=findStartMonth(item);
 
-  expenseModalTitle.textContent=
-      type==="installment"
-      ?"ویرایش قسط"
-      :"ویرایش هزینه";
+  expenseModalTitle.textContent =
+    type==="installment"
+    ?"ویرایش قسط"
+    :type==="expense"
+    ?"ویرایش هزینه"
+    :"ویرایش درآمد";
 
   buildMonthEditor(item);
   monthsEditor.classList.remove("hidden");
@@ -141,9 +514,209 @@ function openEditModal(item){
 }
 function findStartMonth(item){for(const m of MONTHS)if(!isClosedValue(item[m.key]))return m.key;return currentMonthKey}
 function buildMonthEditor(item){monthFields.innerHTML="";for(const m of MONTHS){const w=document.createElement("div");w.className="month-field";w.innerHTML=`<label>${m.name}</label><input type="text" data-month="${m.key}" value="${escapeHtml(item[m.key]??"")}" placeholder="NULL / CLOSE / مقدار پرداخت">`;monthFields.appendChild(w)}}
-function getNextId(type){const ids=allExpenses.filter(type==="expense"?isExpense:isInstallment).map(i=>Number(i.id)).filter(Number.isFinite);return ids.length?Math.max(...ids)+1:type==="expense"?10000:1}
-async function saveExpense(e){e.preventDefault();const type=expenseType.value,editingId=editExpenseId.value?Number(editExpenseId.value):null,title=expenseTitle.value.trim(),amount=Number(expenseAmount.value);if(!title){alert("عنوان را وارد کنید.");return}if(!Number.isFinite(amount)||amount<0){alert("مبلغ معتبر نیست.");return}if(type==="installment"){const d=Number(expenseDueDay.value),c=Number(expenseInstallments.value);if(!Number.isFinite(d)||d<1||d>31){alert("روز سررسید معتبر نیست.");return}if(!Number.isFinite(c)||c<1){alert("تعداد اقساط معتبر نیست.");return}}saveExpenseButton.disabled=true;saveExpenseButton.textContent="در حال ذخیره…";try{let body=editingId?buildEditBody(type):buildNewBody(type);if(!editingId)body.id=getNextId(type);await supabaseRequest(editingId?`${TABLE_NAME}?id=eq.${editingId}`:TABLE_NAME,{method:editingId?"PATCH":"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(body)});closeModal();await loadData()}catch(err){alert(`خطا در ذخیره:\n${err.message}`)}finally{saveExpenseButton.disabled=false;setExpenseType(expenseType.value)}}
-function buildNewBody(type){const idx=MONTHS.findIndex(m=>m.key===expenseStartMonth.value),body={title:expenseTitle.value.trim(),note:expenseNote.value.trim()||null};if(type==="installment"){body.amount=Number(expenseAmount.value);body.due_day=Number(expenseDueDay.value);body.installment_count=Number(expenseInstallments.value);MONTHS.forEach((m,i)=>body[m.key]=i<idx?"CLOSE":null)}else{body.amount=null;body.due_day=null;body.installment_count=null;MONTHS.forEach((m,i)=>body[m.key]=i<idx?"CLOSE":i===idx?Number(expenseAmount.value):null)}return body}
+function getNextId(type){
+
+    let min,max;
+
+    switch(type){
+
+        case "installment":
+            min=1;
+            max=9999;
+            break;
+
+        case "expense":
+            min=10000;
+            max=19999;
+            break;
+
+        case "income":
+            min=20000;
+            max=29999;
+            break;
+
+        default:
+            return null;
+    }
+
+
+    const ids = allExpenses
+        .map(x=>Number(x.id))
+        .filter(id=>id>=min && id<=max);
+
+
+    return ids.length
+        ? Math.max(...ids)+1
+        : min;
+}
+async function saveExpense(e){
+
+    e.preventDefault();
+
+    const type = expenseType.value;
+
+    // انتقال وجه
+    if(type==="transfer"){
+
+        if(!transferFrom.value || !transferTo.value){
+            alert("حساب مبدا و مقصد را انتخاب کنید.");
+            return;
+        }
+
+        if(transferFrom.value===transferTo.value){
+            alert("مبدا و مقصد نمی‌توانند یکسان باشند.");
+            return;
+        }
+
+        const amount = Number(expenseAmount.value);
+
+        if(!Number.isFinite(amount) || amount<=0){
+            alert("مبلغ معتبر نیست.");
+            return;
+        }
+
+        saveExpenseButton.disabled=true;
+
+        try{
+
+            await addTransaction({
+                expense_id:null,
+                title:expenseTitle.value.trim() || "انتقال وجه",
+                amount:amount,
+                type:"transfer",
+                account:null,
+                from_account:transferFrom.value,
+                to_account:transferTo.value,
+                transaction_date:new Date().toISOString(),
+                note:expenseNote.value.trim() || null
+            });
+
+            closeModal();
+
+            alert("انتقال ثبت شد.");
+
+        }catch(err){
+
+            alert(err.message);
+
+        }finally{
+
+            saveExpenseButton.disabled=false;
+
+        }
+
+        return;
+    }
+
+
+    const editingId =
+        editExpenseId.value
+        ? Number(editExpenseId.value)
+        : null;
+
+    const title =
+        expenseTitle.value.trim();
+
+    const amount =
+        Number(expenseAmount.value);
+
+    if(!title){
+        alert("عنوان را وارد کنید.");
+        return;
+    }
+
+    if(!Number.isFinite(amount) || amount<0){
+        alert("مبلغ معتبر نیست.");
+        return;
+    }
+
+    if(type==="installment"){
+
+        const d=Number(expenseDueDay.value);
+        const c=Number(expenseInstallments.value);
+
+        if(!Number.isFinite(d)||d<1||d>31){
+            alert("روز سررسید معتبر نیست.");
+            return;
+        }
+
+        if(!Number.isFinite(c)||c<1){
+            alert("تعداد اقساط معتبر نیست.");
+            return;
+        }
+
+    }
+
+    saveExpenseButton.disabled=true;
+    saveExpenseButton.textContent="در حال ذخیره...";
+
+    try{
+
+        let body =
+            editingId
+            ? buildEditBody(type)
+            : buildNewBody(type);
+
+        if(!editingId){
+            body.id=getNextId(type);
+        }
+
+        await supabaseRequest(
+            editingId
+            ? `${TABLE_NAME}?id=eq.${editingId}`
+            : TABLE_NAME,
+            {
+                method:editingId?"PATCH":"POST",
+                headers:{
+                    Prefer:"return=representation"
+                },
+                body:JSON.stringify(body)
+            }
+        );
+
+        closeModal();
+
+        await loadData();
+
+    }catch(err){
+
+        alert("خطا:\n"+err.message);
+
+    }finally{
+
+        saveExpenseButton.disabled=false;
+
+        setExpenseType(expenseType.value);
+
+    }
+
+}
+function buildNewBody(type){
+  const idx=MONTHS.findIndex(m=>m.key===expenseStartMonth.value);
+
+const body={
+    type:type,
+    title:expenseTitle.value.trim(),
+    note:expenseNote.value.trim()||null
+};
+  if(type==="installment"){body.amount=Number(expenseAmount.value);body.due_day=Number(expenseDueDay.value);body.installment_count=Number(expenseInstallments.value);MONTHS.forEach((m,i)=>body[m.key]=i<idx?"CLOSE":null)}
+else if(type==="expense" || type==="income"){
+
+    body.amount=null;
+    body.due_day=null;
+    body.installment_count=null;
+
+    MONTHS.forEach((m,i)=>
+        body[m.key]=
+        i<idx
+        ?"CLOSE"
+        :i===idx
+        ?Number(expenseAmount.value)
+        :null
+    );
+}
+
+return body}
 function buildEditBody(type){
 
   const body={
@@ -298,7 +871,20 @@ loadMoreButton.addEventListener("click",()=>{visibleCount+=PAGE_SIZE;renderAllCa
 document.querySelectorAll(".report-card[data-report]").forEach(c=>c.addEventListener("click",()=>openReportDetails(c.dataset.report)));
 closeReportDetails.addEventListener("click",closeReportModal);reportDetailsModal.querySelector(".modal-backdrop").addEventListener("click",closeReportModal);
 addExpenseButton.addEventListener("click",openNewModal);closeExpenseModalButton.addEventListener("click",closeModal);expenseModal.querySelector(".modal-backdrop").addEventListener("click",closeModal);
-installmentTypeButton.addEventListener("click",()=>setExpenseType("installment"));expenseTypeButton.addEventListener("click",()=>setExpenseType("expense"));expenseForm.addEventListener("submit",saveExpense);
+installmentTypeButton.addEventListener("click",()=>setExpenseType("installment"));
+setupTransferButtons();
+expenseTypeButton.addEventListener("click",()=>setExpenseType("expense"));
+transferTypeButton.addEventListener(
+    "click",
+    ()=>setExpenseType("transfer")
+);
+if(incomeTypeButton){
+    incomeTypeButton.addEventListener(
+        "click",
+        ()=>setExpenseType("income")
+    );
+}
+expenseForm.addEventListener("submit",saveExpense);
 updatePersianDate();
 expenseStartMonth.value=currentMonthKey;
 setExpenseType("installment");
