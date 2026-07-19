@@ -195,8 +195,6 @@ $lastExpenseRow = [int]$excelIdRows["10007"]
                     }
                 }
                 else {
-                    Write-Host "هزینه جدید" -ForegroundColor Blue
-
                     $copyRow = $lastExpenseRow
                     $excelRow = $copyRow + 1
 
@@ -331,8 +329,6 @@ function Get-LoanList {
 }
 #  خواندن داده‌ها (Data)
 # ============================================================
-
-# محاسبه اقساط فعال، نزدیک سررسید و معوق.
 # محاسبه اقساط فعال، نزدیک سررسید و معوق
 function Get-DueSoon {
 
@@ -1414,12 +1410,11 @@ else {
                     if (
                         -not [string]::IsNullOrWhiteSpace($errorBody)
                     ) {
-                        Write-Host $errorBody
+
                     }
                 }
             }
             catch {
-                Write-Host "Could not read HTTP error response."
             }
         }
 
@@ -2274,15 +2269,7 @@ $Popup.Add_Deactivate({
         $Btn.Cursor = 'Hand'
         $Btn.Text = ""
 
-      #  # آیکن
-      #  $Icon = New-Object System.Windows.Forms.Label
-      #  $Icon.Size = New-Object System.Drawing.Size(28,34)
-      #  $Icon.Location = New-Object System.Drawing.Point(132,0)
-      #  $Icon.TextAlign = 'MiddleCenter'
-      #  $Icon.Font = New-Object System.Drawing.Font($Config.FontEmoji, $Config.FontSizeNormal)
-      #  $Icon.ForeColor = $Clr.White
-      #  $Icon.BackColor = $Clr.Transparent
-      #  $Icon.Text = $TagIcons[$Tag]
+  
 # PictureBox آیکن
 # ============================================================
 
