@@ -81,6 +81,29 @@ expenseModal.querySelector(".modal-backdrop")
 .addEventListener("click", () => {
     closeModal();
 });
+
+async function addTransaction(data){
+    console.log("SENDING TRANSACTION:", data);
+
+    return await supabaseRequest(
+        TRANSACTION_TABLE,
+        {
+            method:"POST",
+            headers:{
+                Prefer:"return=representation"
+            },
+            body:JSON.stringify(data)
+        }
+    );
+}
+async function getTransactions(){
+    return await supabaseRequest(
+        `${TRANSACTION_TABLE}?select=*&order=id.desc`,
+        {
+            method:"GET"
+        }
+    );
+}
 function addSwipeToClose(modal) {
   const sheet = modal.querySelector('.modal-sheet');
   const handle = modal.querySelector('.modal-handle');
@@ -105,28 +128,6 @@ addSwipeToClose(expenseModal);
 addSwipeToClose(transferModal);
 addSwipeToClose(paymentModal);
 
-async function addTransaction(data){
-    console.log("SENDING TRANSACTION:", data);
-
-    return await supabaseRequest(
-        TRANSACTION_TABLE,
-        {
-            method:"POST",
-            headers:{
-                Prefer:"return=representation"
-            },
-            body:JSON.stringify(data)
-        }
-    );
-}
-async function getTransactions(){
-    return await supabaseRequest(
-        `${TRANSACTION_TABLE}?select=*&order=id.desc`,
-        {
-            method:"GET"
-        }
-    );
-}
 function setupActiveButtons(selector){
 
     document.querySelectorAll(selector).forEach(btn=>{
@@ -1335,25 +1336,15 @@ function openWithType(type) {
   setExpenseType(type);
   openModal();
 }
-// خطوط 1438-1461 را با این جایگزین کنید:
-const handle = document.querySelector("#expenseModal .modal-handle");
-let startY = 0;
 
-handle.addEventListener("touchstart", e => {
-    startY = e.touches[0].clientY;
+
+// بستن منو با کلیک خارج از آن
+document.addEventListener("click", e => {
+  if (!$("fabContainer").contains(e.target)) {
+    fabMenu.classList.add("hidden");
+    addExpenseButton.classList.remove("open");
+  }
 });
-
-handle.addEventListener("touchend", e => {
-    if (e.changedTouches[0].clientY - startY > 120) {
-        expenseModal.classList.remove("open");
-        document.body.style.overflow = "";
-    }
-});
-
-document.querySelector("#expenseModal .modal-sheet").addEventListener("touchstart", e => {
-    e.stopPropagation();
-});
-
  
 
 ///addExpenseButton.addEventListener("click",openNewModal);closeExpenseModalButton.addEventListener("click",closeModal);expenseModal.querySelector(".modal-backdrop").addEventListener("click",closeModal);
