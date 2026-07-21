@@ -364,11 +364,12 @@ data-report="month">
 
 <span class="report-icon">
 💳
-</span>
-
 <div class="report-label">
 اقساط این ماه
 </div>
+</span>
+
+
 
 <div 
 class="report-value"
@@ -389,12 +390,13 @@ data-report="paid">
 
 <span class="report-icon">
 ✓
-</span>
-
-
 <div class="report-label">
 اقساط پرداخت‌شده
 </div>
+</span>
+
+
+
 
 
 <div 
@@ -415,12 +417,13 @@ data-report="remaining">
 
 <span class="report-icon">
 ⏳
-</span>
-
-
 <div class="report-label">
 اقساط باقی‌مانده
 </div>
+</span>
+
+
+
 
 
 <div 
@@ -442,12 +445,13 @@ data-report="expenses">
 
 <span class="report-icon">
 🧾
-</span>
-
-
 <div class="report-label">
 هزینه‌های این ماه
 </div>
+</span>
+
+
+
 
 
 <div 
@@ -463,18 +467,19 @@ id="reportExpensesTotal">
 
 
 <article 
-class="report-card total report-card-wide clickable"
+class="report-card total clickable"
 data-report="all">
 
 
 <span class="report-icon">
 📊
-</span>
-
-
 <div class="report-label">
 جمع کل پرداختی
 </div>
+
+</span>
+
+
 
 
 <div 
@@ -495,11 +500,12 @@ data-report="income">
 
 <span class="report-icon">
 💰
-</span>
-
 <div class="report-label">
 درآمد این ماه
 </div>
+</span>
+
+
 
 <div 
 class="report-value"
@@ -517,11 +523,12 @@ class="report-card balance report-card-wide">
 
 <span class="report-icon">
 ⚖️
-</span>
-
 <div class="report-label">
 مانده (درآمد − پرداختی)
 </div>
+
+</span>
+
 
 <div 
 class="report-value"
@@ -534,8 +541,6 @@ id="reportBalanceTotal">
 
 
 </div>
-
-
 
 
 <article class="chart-card">
@@ -605,58 +610,21 @@ id="remainingBar">
 
 
 </div>
-
-
-</div>
-
-
-</article>
-
-
-
-<article class="chart-card">
-
-<div class="section-title">
-وضعیت درآمد و پرداختی این ماه
-</div>
-
-
-<div class="chart">
-
-
 <div class="chart-row">
+  <div class="chart-info">
+    <span class="legend-item">🟢 درآمد <b id="incomePercent">۰٪</b></span>
+    <span class="legend-item">🔵 قسط پرداخت‌شده <b id="paidInstallmentPercent">۰٪</b></span>
+    <span class="legend-item">🟣 هزینه‌ها <b id="expensePercent">۰٪</b></span>
+    <span class="legend-item">🟠 قسط پرداخت‌نشده <b id="unpaidInstallmentPercent">۰٪</b></span>
+  </div>
 
-<div class="chart-info">
-
-<span class="legend-item">
-🟢 درآمد
-<b id="incomePercent">۰٪</b>
-</span>
-
-<span class="legend-item">
-🟣 پرداختی
-<b id="paymentPercent">۰٪</b>
-</span>
-
+  <div class="chart-track split-track four-part-track">
+    <div class="chart-bar income-bar" id="incomeBar"></div>
+    <div class="chart-bar paid-installment-bar" id="paidInstallmentBar"></div>
+    <div class="chart-bar expense-bar" id="expenseBar"></div>
+    <div class="chart-bar unpaid-installment-bar" id="unpaidInstallmentBar"></div>
+  </div>
 </div>
-
-
-<div class="chart-track split-track">
-
-<div 
-class="chart-bar income-bar"
-id="incomeBar">
-</div>
-
-<div
-class="chart-bar payment-bar"
-id="paymentBar">
-</div>
-
-</div>
-
-</div>
-
 
 </div>
 

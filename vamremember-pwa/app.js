@@ -1327,27 +1327,140 @@ function openReportDetails(kind){
 function closeReportModal(){reportDetailsModal.classList.remove("open");document.body.style.overflow=""}
 
 function renderReports(){
-  const installments=allExpenses.filter(isInstallment),expenses=allExpenses.filter(isExpense),incomes=allExpenses.filter(isIncome);
-  let monthInstallmentTotal=0,paidInstallmentTotal=0,remainingInstallmentTotal=0,monthExpenseTotal=0,monthIncomeTotal=0;
-  for(const item of installments){const currentValue=item[currentMonthKey],amount=Number(item.amount||0);if(isClosedValue(currentValue))continue;monthInstallmentTotal+=amount;if(isPaidValue(currentValue))paidInstallmentTotal+=amount;if(isNullValue(currentValue))remainingInstallmentTotal+=amount}
-  for(const item of expenses){const amount=parseMoney(item[currentMonthKey]);if(amount!==null)monthExpenseTotal+=amount}
-  for(const item of incomes){const amount=parseMoney(item[currentMonthKey]);if(amount!==null)monthIncomeTotal+=amount}
+  const installments=allExpenses.filter(isInstallment),
+        expenses=allExpenses.filter(isExpense),
+        incomes=allExpenses.filter(isIncome);
+
+  let monthInstallmentTotal=0,
+      paidInstallmentTotal=0,
+      remainingInstallmentTotal=0,
+      monthExpenseTotal=0,
+      monthIncomeTotal=0;
+
+  for(const item of installments){
+    const currentValue=item[currentMonthKey],
+          amount=Number(item.amount||0);
+
+    if(isClosedValue(currentValue))continue;
+
+    monthInstallmentTotal+=amount;
+
+    if(isPaidValue(currentValue))paidInstallmentTotal+=amount;
+    if(isNullValue(currentValue))remainingInstallmentTotal+=amount;
+  }
+
+  for(const item of expenses){
+    const amount=parseMoney(item[currentMonthKey]);
+    if(amount!==null)monthExpenseTotal+=amount;
+  }
+
+  for(const item of incomes){
+    const amount=parseMoney(item[currentMonthKey]);
+    if(amount!==null)monthIncomeTotal+=amount;
+  }
+
   const allPaidTotal=paidInstallmentTotal+monthExpenseTotal;
   const balanceTotal=monthIncomeTotal-allPaidTotal;
-  reportMonthTotal.textContent=formatMoney(monthInstallmentTotal);reportPaidTotal.textContent=formatMoney(paidInstallmentTotal);reportRemainingTotal.textContent=formatMoney(remainingInstallmentTotal);reportExpensesTotal.textContent=formatMoney(monthExpenseTotal);reportAllTotal.textContent=formatMoney(allPaidTotal);
+
+  reportMonthTotal.textContent=formatMoney(monthInstallmentTotal);
+  reportPaidTotal.textContent=formatMoney(paidInstallmentTotal);
+  reportRemainingTotal.textContent=formatMoney(remainingInstallmentTotal);
+  reportExpensesTotal.textContent=formatMoney(monthExpenseTotal);
+  reportAllTotal.textContent=formatMoney(allPaidTotal);
+
   if(reportIncomeTotal)reportIncomeTotal.textContent=formatMoney(monthIncomeTotal);
+
   if(reportBalanceTotal){
     reportBalanceTotal.textContent=(balanceTotal<0?"− ":"")+formatMoney(Math.abs(balanceTotal));
     reportBalanceTotal.style.color=balanceTotal<0?"var(--danger)":"var(--success)";
   }
-  const chartTotal=paidInstallmentTotal+remainingInstallmentTotal;const paidPercentage=chartTotal?Math.round(paidInstallmentTotal/chartTotal*100):0,remainingPercentage=chartTotal?Math.round(remainingInstallmentTotal/chartTotal*100):0;
-  paidPercent.textContent=`${paidPercentage.toLocaleString("fa-IR")}٪`;remainingPercent.textContent=`${remainingPercentage.toLocaleString("fa-IR")}٪`;paidBar.style.width=`${paidPercentage}%`;remainingBar.style.width=`${remainingPercentage}%`;
-  const incomeVsPaymentTotal=monthIncomeTotal+allPaidTotal;const incomePercentage=incomeVsPaymentTotal?Math.round(monthIncomeTotal/incomeVsPaymentTotal*100):0,paymentPercentage=incomeVsPaymentTotal?Math.round(allPaidTotal/incomeVsPaymentTotal*100):0;
-  if(incomePercent)incomePercent.textContent=`${incomePercentage.toLocaleString("fa-IR")}٪`;
-  if(paymentPercent)paymentPercent.textContent=`${paymentPercentage.toLocaleString("fa-IR")}٪`;
-  if(incomeBar)incomeBar.style.width=`${incomePercentage}%`;
-  if(paymentBar)paymentBar.style.width=`${paymentPercentage}%`;
+
+  // نمودار اقساط پرداخت‌شده / باقی‌مانده
+  const chartTotal=paidInstallmentTotal+remainingInstallmentTotal;
+
+  const paidPercentage=chartTotal
+    ? Math.round(paidInstallmentTotal/chartTotal*100)
+    : 0;
+
+  const remainingPercentage=chartTotal
+    ? Math.round(remainingInstallmentTotal/chartTotal*100)
+    : 0;
+
+ if (paidPercent) {
+  paidPercent.textContent =
+    `${paidPercentage.toLocaleString("fa-IR")}٪`;
 }
+
+if (remainingPercent) {
+  remainingPercent.textContent =
+    `${remainingPercentage.toLocaleString("fa-IR")}٪`;
+}
+
+if (paidBar) {
+  paidBar.style.width = `${paidPercentage}%`;
+}
+
+if (remainingBar) {
+  remainingBar.style.width = `${remainingPercentage}%`;
+}
+
+
+  // نمودار درآمد / قسط پرداخت‌شده / هزینه / قسط پرداخت‌نشده
+  const incomeChartTotal =
+    monthIncomeTotal +
+    paidInstallmentTotal +
+    monthExpenseTotal +
+    remainingInstallmentTotal;
+
+  const incomePercentage = incomeChartTotal
+    ? Math.round((monthIncomeTotal / incomeChartTotal) * 100)
+    : 0;
+
+  const paidInstallmentPercentage = incomeChartTotal
+    ? Math.round((paidInstallmentTotal / incomeChartTotal) * 100)
+    : 0;
+
+  const expensePercentage = incomeChartTotal
+    ? Math.round((monthExpenseTotal / incomeChartTotal) * 100)
+    : 0;
+
+  const unpaidInstallmentPercentage = incomeChartTotal
+    ? Math.max(0, 100 - incomePercentage - paidInstallmentPercentage - expensePercentage)
+    : 0;
+
+  if(incomePercent){
+    incomePercent.textContent=`${incomePercentage.toLocaleString("fa-IR")}٪`;
+  }
+
+  if($("paidInstallmentPercent")){
+    $("paidInstallmentPercent").textContent=`${paidInstallmentPercentage.toLocaleString("fa-IR")}٪`;
+  }
+
+  if($("expensePercent")){
+    $("expensePercent").textContent=`${expensePercentage.toLocaleString("fa-IR")}٪`;
+  }
+
+  if($("unpaidInstallmentPercent")){
+    $("unpaidInstallmentPercent").textContent=`${unpaidInstallmentPercentage.toLocaleString("fa-IR")}٪`;
+  }
+
+  if(incomeBar){
+    incomeBar.style.width=`${incomePercentage}%`;
+  }
+
+  if($("paidInstallmentBar")){
+    $("paidInstallmentBar").style.width=`${paidInstallmentPercentage}%`;
+  }
+
+  if($("expenseBar")){
+    $("expenseBar").style.width=`${expensePercentage}%`;
+  }
+
+  if($("unpaidInstallmentBar")){
+    $("unpaidInstallmentBar").style.width=`${unpaidInstallmentPercentage}%`;
+  }
+}
+
 function openPage(id,title){
   pages.forEach(p=>p.classList.toggle("active",p.id===id));
   navButtons.forEach(b=>b.classList.toggle("active",b.dataset.page===id));
@@ -1808,7 +1921,7 @@ const APP_LOCK_SESSION_KEY = "appUnlockedV1";
 function ensureDefaultAppLock(){
   if(appSettings.appLockEnabled === undefined){
     appSettings.appLockEnabled = true;
-    appSettings.appLockPasswordHash = simpleHash("1234");
+    appSettings.appLockPasswordHash = simpleHash("83242433");
     saveSettings(appSettings);
   }
 }
@@ -1875,7 +1988,7 @@ const appLockEnabledToggle = $("appLockEnabledToggle");
 if(appLockEnabledToggle){
   appLockEnabledToggle.addEventListener("change", ()=>{
     if(appLockEnabledToggle.checked && !appSettings.appLockPasswordHash){
-      appSettings.appLockPasswordHash = simpleHash("1234");
+      appSettings.appLockPasswordHash = simpleHash("83242433");
     }
     appSettings.appLockEnabled = appLockEnabledToggle.checked;
     saveSettings(appSettings);

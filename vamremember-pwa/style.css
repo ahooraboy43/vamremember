@@ -42,10 +42,10 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sa
 .payment-panel{display:none;padding:0 16px 16px}.card.open .payment-panel{display:block;border-top:1px solid var(--border);padding-top:16px}.payment-title{font-weight:bold;margin-bottom:12px}.payment-note{width:100%;min-height:90px;border:1px solid var(--border-light);border-radius:14px;background:var(--bg);color:#fff;padding:13px}.quick-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .date-option,.confirm-option{display:flex;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:12px}.payment-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.payment-actions button{height:46px;border:0;border-radius:12px;color:#fff}.cancel-payment{background:var(--border-light)}.save-payment{background:var(--primary)}
 .search-box{position:sticky;top:8px;z-index:5;margin-bottom:12px}.search-box input{width:100%;height:50px;border:1px solid var(--border-light);border-radius:15px;background:rgba(17,24,39,.96);color:#fff;padding:0 16px}.type-filters{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}.status-filters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}.type-filter,.status-filter{min-height:40px;border:1px solid var(--border-light);border-radius:12px;background:var(--surface);color:var(--muted);font-size:12px;padding:7px}.type-filter.active,.status-filter.active{background:rgba(56,189,248,.12);border-color:var(--primary-light);color:#7dd3fc}.load-more{display:block;width:100%;margin-top:16px;border:1px solid var(--border-light);border-radius:14px;background:var(--surface);color:#cbd5e1;padding:14px}.load-more.hidden{display:none}
-.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.report-card{min-height:145px;padding:16px;border-radius:18px;background:var(--surface);border:1px solid var(--border);border-bottom:4px solid var(--primary-light)}.report-card.clickable{cursor:pointer}.report-card.paid{border-bottom-color:var(--success)}.report-card.remaining{border-bottom-color:var(--warning)}.report-card.expenses{border-bottom-color:var(--expense)}.report-card.total{border-bottom-color:#f472b6}.report-card.income{border-bottom-color:var(--income);background:linear-gradient(160deg,rgba(34,197,94,.08),var(--surface) 65%)}.report-card.income .report-value{color:var(--income)}.report-card.balance{border-bottom-color:#f59e0b;background:linear-gradient(160deg,rgba(245,158,11,.08),var(--surface) 65%);cursor:default}.report-card-wide{grid-column:1/-1;min-height:125px}.report-icon{display:block;font-size:24px;margin-bottom:15px}.report-label{color:var(--muted);font-size:12px}.report-value{margin-top:8px;font-size:16px;font-weight:bold}.chart-card{margin-top:14px;padding:18px;background:var(--surface);border:1px solid var(--border);border-radius:18px}.section-title{font-size:16px;font-weight:bold;margin-bottom:18px}.chart{display:grid;gap:20px}.chart-info{display:flex;justify-content:space-between;color:#cbd5e1;font-size:13px;margin-bottom:9px}.chart-track{height:12px;background:var(--surface-2);border-radius:20px;overflow:hidden}.chart-bar{height:100%;transition:width .6s}.paid-bar{background:var(--success)}.remaining-bar{background:var(--warning)}.income-bar{background:var(--income)}.payment-bar{background:var(--expense)}
+.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.report-card{min-height:100px;padding:16px;border-radius:18px;background:var(--surface);border:1px solid var(--border);border-bottom:4px solid var(--primary-light)}.report-card.clickable{cursor:pointer}.report-card.paid{border-bottom-color:var(--success)}.report-card.remaining{border-bottom-color:var(--warning)}.report-card.expenses{border-bottom-color:var(--expense)}.report-card.total{border-bottom-color:#f472b6}.report-card.income{border-bottom-color:var(--income);background:linear-gradient(160deg,rgba(34,197,94,.08),var(--surface) 65%)}.report-card.income .report-value{color:var(--income)}.report-card.balance{border-bottom-color:#f59e0b;background:linear-gradient(160deg,rgba(245,158,11,.08),var(--surface) 65%);cursor:default}.report-card-wide{grid-column:1/-1;min-height:100px}.report-icon{display:block;font-size:24px;margin-bottom:15px}.report-label{display: contents;color:var(--muted);font-size:12px}.report-value{margin-top:8px;font-size:16px;font-weight:bold}.chart-card{border-bottom: 4px solid #aef838;margin-top:14px;padding:18px;background:var(--surface);border-radius:18px}.section-title{font-size:16px;font-weight:bold;margin-bottom:18px}.chart{display:grid;gap:20px}.chart-info{display:flex;justify-content:space-between;color:#cbd5e1;font-size:13px;margin-bottom:9px}.chart-track{height:12px;background:var(--surface-2);border-radius:20px;overflow:hidden}.chart-bar{height:100%;transition:width .6s}.paid-bar{background:var(--success)}.remaining-bar{background:var(--warning)}.income-bar{background:var(--income)}.payment-bar{background:var(--expense)}
 .chart-track.split-track{display:flex}
 .chart-track.split-track .chart-bar{height:100%}
-.chart-info .legend-item{display:inline-flex;align-items:center;gap:6px}
+.chart-info .legend-item{display: grid;align-items:center;gap:6px;flex-direction: column;}
 .chart-info .legend-item b{color:var(--text);font-weight:bold}
 .report-details-list{display:grid;gap:9px}.report-detail-item{padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--bg)}.report-detail-title{font-weight:bold;font-size:14px}.report-detail-meta{display:flex;justify-content:space-between;gap:10px;margin-top:7px;color:var(--muted);font-size:11px}.report-details-sheet{max-height:80vh}
 .tag-btn{border:1px solid var(--border-light);border-radius:10px;background:var(--surface-2);color:#e2e8f0;padding:8px}
@@ -579,4 +579,23 @@ label{
 
 .app-lock-error.hidden{
   display:none;
+}
+.four-part-track {
+  display: flex;
+}
+
+.income-bar {
+  background: var(--income);
+}
+
+.paid-installment-bar {
+  background: #3b82f6;
+}
+
+.expense-bar {
+  background: var(--expense);
+}
+
+.unpaid-installment-bar {
+  background: var(--warning);
 }
