@@ -165,57 +165,65 @@ function Sync-SupabaseToExcel {
                 $excelIdRows["$id"] = $row
             }
         }
-$excelIdRows.Keys | Sort-Object | ForEach-Object { Write-Host $_ }
-$lastExpenseRow = [int]$excelIdRows["10007"]
-                foreach ($item in $rows) {
-            $id = "$($item.id)"
+$lastExpenseRow = ($excelIdRows.Keys |
+    Where-Object { [int]$_ -ge 10000 -and [int]$_ -lt 20000 } |
+    ForEach-Object { $excelIdRows[$_] } |
+    Measure-Object -Maximum).Maximum
 
-            if ($excelIdRows.ContainsKey($id)) {
-                $excelRow = $excelIdRows[$id]
+foreach ($item in $rows) {
+    $id = "$($item.id)"
+
+    if ($excelIdRows.ContainsKey($id)) {
+        $excelRow = $excelIdRows[$id]
+    }
+    else {
+        if ([int]$item.id -lt 10000) {
+            $sheet.InsertRow(14, 1)
+            $excelRow = 14
+            $sheet.Row($excelRow).Height = $sheet.Row(15).Height
+            for ($c = 1; $c -le 5; $c++) {
+                $sheet.Cells[$excelRow,$c].StyleID = $sheet.Cells[15,$c].StyleID
             }
-            else {
-                if ([int]$item.id -lt 10000) {
-                    $sheet.InsertRow(14,1)
-                    $excelRow = 14
-                    $sheet.Row($excelRow).Height = $sheet.Row($excelRow + 1).Height
-                    $fromRow = $excelRow + 1
-
-                    for ($c = 1; $c -le 5; $c++) {
-                        $sheet.Cells[$excelRow,$c].StyleID = $sheet.Cells[$fromRow,$c].StyleID
-                    }
-
-                    foreach($key in @($excelIdRows.Keys)){
-                        if($excelIdRows[$key] -ge 14){
-                            $excelIdRows[$key]++
-                        }
-                    }
-
-                    if ($lastExpenseRow -ge 14) {
-                        $lastExpenseRow++
-                    }
-                }
-                else {
-                    $copyRow = $lastExpenseRow
-                    $excelRow = $copyRow + 1
-
-                    $sheet.InsertRow($excelRow,1)
-                    $sheet.Row($excelRow).Height = $sheet.Row($copyRow).Height
-
-                    for ($c = 1; $c -le 5; $c++) {
-                        $sheet.Cells[$excelRow,$c].StyleID = $sheet.Cells[$copyRow,$c].StyleID
-                    }
-
-                    $lastExpenseRow++
-
-                    foreach($key in @($excelIdRows.Keys)){
-                        if($excelIdRows[$key] -ge $excelRow){
-                            $excelIdRows[$key]++
-                        }
-                    }
-                }
-
-                $excelIdRows[$id] = $excelRow
+            foreach ($key in @($excelIdRows.Keys)) {
+                if ($excelIdRows[$key] -ge 14) { $excelIdRows[$key]++ }
             }
+            if ($lastExpenseRow -ge 14) { $lastExpenseRow++ }
+        }
+        elseif ([int]$item.id -lt 20000) {
+            $copyRow  = $lastExpenseRow
+            $excelRow = $copyRow + 1
+            $sheet.InsertRow($excelRow, 1)
+            $sheet.Row($excelRow).Height = $sheet.Row($copyRow).Height
+            for ($c = 1; $c -le 5; $c++) {
+                $sheet.Cells[$excelRow,$c].StyleID = $sheet.Cells[$copyRow,$c].StyleID
+            }
+            $lastExpenseRow++
+            foreach ($key in @($excelIdRows.Keys)) {
+                if ($excelIdRows[$key] -ge $excelRow) { $excelIdRows[$key]++ }
+            }
+        }
+        else {
+            $maxIncomeRow = ($excelIdRows.Keys |
+                Where-Object { [int]$_ -ge 20000 } |
+                ForEach-Object { $excelIdRows[$_] } |
+                Measure-Object -Maximum).Maximum
+
+            $copyRow  = if ($maxIncomeRow) { $maxIncomeRow } else { $sheet.Dimension.End.Row - 1 }
+            $excelRow = $copyRow + 1
+            $sheet.InsertRow($excelRow, 1)
+            $sheet.Row($excelRow).Height = $sheet.Row($copyRow).Height
+            for ($c = 1; $c -le 5; $c++) {
+                $sheet.Cells[$excelRow,$c].StyleID = $sheet.Cells[$copyRow,$c].StyleID
+            }
+            foreach ($key in @($excelIdRows.Keys)) {
+                if ($excelIdRows[$key] -ge $excelRow) { $excelIdRows[$key]++ }
+            }
+            if ($lastExpenseRow -ge $excelRow) { $lastExpenseRow++ }
+        }
+
+        $excelIdRows[$id] = $excelRow
+    }
+
 
             foreach ($property in $columnMap.Keys) {
                 $column = $columnMap[$property]
@@ -226,9 +234,22 @@ $lastExpenseRow = [int]$excelIdRows["10007"]
                     $cell.Value = $null
                     $cell.StyleName = "Style 2"
                 }
+                
                 else {
-                    $cell.Value = $value
-                }
+    $numericColumns = @(2, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17)
+    if ($column -in $numericColumns) {
+        $parsed = 0.0
+        if ([double]::TryParse("$value", [System.Globalization.NumberStyles]::Any,
+            [System.Globalization.CultureInfo]::InvariantCulture, [ref]$parsed)) {
+            $cell.Value = $parsed
+        } else {
+            $cell.Value = $value
+        }
+    } else {
+        $cell.Value = $value
+    }
+}
+
             }
         }
 
@@ -438,6 +459,27 @@ function Get-DueSoon {
 
             continue
         }
+        # ماه بعد — فقط اگه امروز نزدیک آخر ماه باشیم
+$nextMonthIndex = if ($monthIndex -eq 12) { 1 } else { $monthIndex + 1 }
+$nextMonth = $MonthMap[$nextMonthIndex]
+$nextPaid  = "$($row.$nextMonth)".Trim()
+
+$daysUntilNextDue = ($Config.PersianMonthDays - $today) + $dueDay
+
+if ($nextPaid -ne 'CLOSED' -and
+    [string]::IsNullOrWhiteSpace($nextPaid) -and
+    $daysUntilNextDue -le $Config.DueSoonDays) {
+
+    $result += [PSCustomObject]@{
+        id                    = $row.id
+        Name                  = $name
+        Amount                = $row.amount
+        Days                  = $daysUntilNextDue
+        MonthColumn           = $nextMonth
+        RemainingInstallments = $remainingInstallments
+    }
+}
+
 
 
         # ==========================================
@@ -2687,7 +2729,7 @@ function New-InstallmentCard {
      $lblRemaining = New-Object System.Windows.Forms.Label
 
 if ($null -eq $item.RemainingInstallments) {
-    $lblRemaining.Text = 'اقساط باقی‌مانده: نامشخص'
+    $lblRemaining.Text = ''
 }
 else {
     $lblRemaining.Text = " $($item.RemainingInstallments)"
