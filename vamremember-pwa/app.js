@@ -1340,38 +1340,13 @@ function renderReports(){
     reportBalanceTotal.textContent=(balanceTotal<0?"− ":"")+formatMoney(Math.abs(balanceTotal));
     reportBalanceTotal.style.color=balanceTotal<0?"var(--danger)":"var(--success)";
   }
-const chartTotal =
-  monthIncomeTotal +
-  paidInstallmentTotal +
-  monthExpenseTotal +
-  remainingInstallmentTotal;
-
-const incomePercentage = chartTotal
-  ? Math.round((monthIncomeTotal / chartTotal) * 100)
-  : 0;
-
-const paidInstallmentPercentage = chartTotal
-  ? Math.round((paidInstallmentTotal / chartTotal) * 100)
-  : 0;
-
-const expensePercentage = chartTotal
-  ? Math.round((monthExpenseTotal / chartTotal) * 100)
-  : 0;
-
-const unpaidInstallmentPercentage = chartTotal
-  ? Math.max(0, 100 - incomePercentage - paidInstallmentPercentage - expensePercentage)
-  : 0;
-
-$("incomePercent").textContent = `${incomePercentage.toLocaleString("fa-IR")}٪`;
-$("paidInstallmentPercent").textContent = `${paidInstallmentPercentage.toLocaleString("fa-IR")}٪`;
-$("expensePercent").textContent = `${expensePercentage.toLocaleString("fa-IR")}٪`;
-$("unpaidInstallmentPercent").textContent = `${unpaidInstallmentPercentage.toLocaleString("fa-IR")}٪`;
-
-$("incomeBar").style.width = `${incomePercentage}%`;
-$("paidInstallmentBar").style.width = `${paidInstallmentPercentage}%`;
-$("expenseBar").style.width = `${expensePercentage}%`;
-$("unpaidInstallmentBar").style.width = `${unpaidInstallmentPercentage}%`;
-
+  const chartTotal=paidInstallmentTotal+remainingInstallmentTotal;const paidPercentage=chartTotal?Math.round(paidInstallmentTotal/chartTotal*100):0,remainingPercentage=chartTotal?Math.round(remainingInstallmentTotal/chartTotal*100):0;
+  paidPercent.textContent=`${paidPercentage.toLocaleString("fa-IR")}٪`;remainingPercent.textContent=`${remainingPercentage.toLocaleString("fa-IR")}٪`;paidBar.style.width=`${paidPercentage}%`;remainingBar.style.width=`${remainingPercentage}%`;
+  const incomeVsPaymentTotal=monthIncomeTotal+allPaidTotal;const incomePercentage=incomeVsPaymentTotal?Math.round(monthIncomeTotal/incomeVsPaymentTotal*100):0,paymentPercentage=incomeVsPaymentTotal?Math.round(allPaidTotal/incomeVsPaymentTotal*100):0;
+  if(incomePercent)incomePercent.textContent=`${incomePercentage.toLocaleString("fa-IR")}٪`;
+  if(paymentPercent)paymentPercent.textContent=`${paymentPercentage.toLocaleString("fa-IR")}٪`;
+  if(incomeBar)incomeBar.style.width=`${incomePercentage}%`;
+  if(paymentBar)paymentBar.style.width=`${paymentPercentage}%`;
 }
 function openPage(id,title){
   pages.forEach(p=>p.classList.toggle("active",p.id===id));
