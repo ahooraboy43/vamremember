@@ -18,6 +18,42 @@
 
 <body>
 
+<!-- ================= قفل اپلیکیشن ================= -->
+
+<div id="appLockScreen" class="app-lock-screen hidden">
+
+<div class="app-lock-box">
+
+<img class="app-lock-logo" src="assets/book.png" alt="">
+
+<h2>حسابداری شایان</h2>
+
+<p>برای ورود، رمز عبور را وارد کنید</p>
+
+<form id="appLockForm">
+
+<input
+id="appLockInput"
+type="password"
+inputmode="numeric"
+autocomplete="off"
+placeholder="رمز عبور"
+required>
+
+<button class="primary-button" type="submit">
+ورود
+</button>
+
+</form>
+
+<p id="appLockError" class="app-lock-error hidden">
+رمز عبور اشتباه است
+</p>
+
+</div>
+
+</div>
+
 <main class="app">
 
 <header class="app-header">
@@ -34,6 +70,16 @@
 
 </div>
 
+<div class="header-actions">
+
+<button 
+id="settingsButton" 
+class="icon-button" 
+type="button"
+aria-label="تنظیمات">
+⚙
+</button>
+
 <button 
 id="refresh" 
 class="icon-button" 
@@ -41,6 +87,8 @@ type="button"
 aria-label="بروزرسانی">
 ↻
 </button>
+
+</div>
 
 </header>
 
@@ -233,6 +281,14 @@ type="button">
 </button>
 
 
+<button
+class="type-filter"
+data-filter="income"
+type="button">
+درآمدها
+</button>
+
+
 </div>
 
 
@@ -250,6 +306,7 @@ type="button">
 
 
 <button
+id="statusFilterPaid"
 class="status-filter"
 data-status="paid"
 type="button">
@@ -258,6 +315,7 @@ type="button">
 
 
 <button
+id="statusFilterUnpaid"
 class="status-filter"
 data-status="unpaid"
 type="button">
@@ -404,8 +462,34 @@ id="reportExpensesTotal">
 
 
 
+
+
+
 <article 
-class="report-card total report-card-wide clickable"
+class="report-card income clickable"
+data-report="income">
+
+<span class="report-icon">
+💰
+</span>
+
+<div class="report-label">
+درآمد این ماه
+</div>
+
+<div 
+class="report-value"
+id="reportIncomeTotal">
+۰ ریال
+</div>
+
+</article>
+
+
+
+
+<article 
+class="report-card total clickable"
 data-report="all">
 
 
@@ -425,6 +509,25 @@ id="reportAllTotal">
 ۰ ریال
 </div>
 
+
+</article>
+
+<article 
+class="report-card balance report-card-wide">
+
+<span class="report-icon">
+⚖️
+</span>
+
+<div class="report-label">
+مانده (درآمد − پرداختی)
+</div>
+
+<div 
+class="report-value"
+id="reportBalanceTotal">
+۰ ریال
+</div>
 
 </article>
 
@@ -501,14 +604,167 @@ id="remainingBar">
 </div>
 
 
+
+
+
+</div>
+<div class="chart-row">
+
+<div class="chart-info">
+
+<span class="legend-item">
+🟢 درآمد
+<b id="incomePercent">۰٪</b>
+</span>
+
+<span class="legend-item">
+🟣 پرداختی
+<b id="paymentPercent">۰٪</b>
+</span>
+
 </div>
 
 
+<div class="chart-track split-track">
+
+<div 
+class="chart-bar income-bar"
+id="incomeBar">
 </div>
 
+<div
+class="chart-bar payment-bar"
+id="paymentBar">
+</div>
+
+</div>
+
+</div>
+</div>
 
 </article>
 
+
+
+
+
+</section>
+
+
+
+<!-- ================= تنظیمات ================= -->
+
+<section class="page" id="settingsPage">
+
+
+<div class="home-section">
+
+<div class="section-title">
+🔐 قفل کل اپلیکیشن
+</div>
+
+<label class="field settings-switch-row">
+<span>فعال‌سازی قفل ورود به اپلیکیشن</span>
+<input type="checkbox" id="appLockEnabledToggle">
+</label>
+
+<label class="field">
+<span>رمز عبور جدید اپلیکیشن</span>
+<input type="password" id="newAppLockPassword" autocomplete="new-password" inputmode="numeric" placeholder="رمز عبور را وارد کنید">
+</label>
+
+<button class="primary-button" id="saveAppLockPasswordButton" type="button">
+ذخیره رمز عبور
+</button>
+
+<p class="settings-hint">
+رمز پیش‌فرض فعلی: 1234 — پیشنهاد می‌شود آن را تغییر دهید.
+</p>
+
+</div>
+
+
+
+<div class="home-section">
+
+<div class="section-title">
+🔒 قفل تنظیمات با رمز عبور
+</div>
+
+<label class="field settings-switch-row">
+<span>فعال‌سازی قفل رمز عبور</span>
+<input type="checkbox" id="settingsLockEnabled">
+</label>
+
+<label class="field">
+<span>رمز عبور جدید</span>
+<input type="password" id="newSettingsPassword" autocomplete="new-password" placeholder="رمز عبور را وارد کنید">
+</label>
+
+<button class="primary-button" id="saveSettingsPasswordButton" type="button">
+ذخیره رمز عبور
+</button>
+
+</div>
+
+
+
+<div class="home-section">
+
+<div class="section-title">
+🎨 تم برنامه
+</div>
+
+<div class="theme-selector">
+
+<button type="button" class="theme-btn" data-theme="dark">
+🌙 تیره
+</button>
+
+<button type="button" class="theme-btn" data-theme="light">
+☀️ روشن
+</button>
+
+</div>
+
+</div>
+
+
+
+<div class="home-section">
+
+<div class="section-title">
+🖼 آیکون برنامه (PWA)
+</div>
+
+<p class="settings-hint">
+تصویری انتخاب کنید تا به‌عنوان آیکون برنامه هنگام افزودن به صفحه اصلی گوشی استفاده شود. برای اعمال کامل روی گوشی، ممکن است لازم باشد برنامه را دوباره به صفحه اصلی اضافه کنید.
+</p>
+
+<input type="file" id="appIconInput" accept="image/*">
+
+<div class="app-icon-preview-row">
+<img id="appIconPreview" src="assets/book.png" alt="آیکون برنامه">
+<button type="button" class="edit-expense app-icon-reset" id="resetAppIconButton">
+بازگردانی پیش‌فرض
+</button>
+</div>
+
+</div>
+
+
+
+<div class="home-section">
+
+<div class="section-title">
+ℹ️ درباره برنامه
+</div>
+
+<p class="settings-hint">
+نسخه <span id="appVersion">۱.۰.۰</span>
+</p>
+
+</div>
 
 
 </section>
@@ -1506,6 +1762,76 @@ type="submit">
 </div>
 
 </div>
+<!-- ================= مودال قفل تنظیمات ================= -->
+
+<div 
+class="modal"
+id="settingsLockModal">
+
+
+<div class="modal-backdrop"></div>
+
+
+<div class="modal-sheet">
+
+
+<div class="modal-handle"></div>
+
+
+<div class="modal-header">
+
+<h2>
+ورود به تنظیمات
+</h2>
+
+
+<button
+class="close-modal"
+id="closeSettingsLockModal"
+type="button">
+
+✕
+
+</button>
+
+</div>
+
+
+
+<form id="settingsLockForm">
+
+<label class="field">
+
+<span>
+رمز عبور
+</span>
+
+<input
+id="settingsLockInput"
+type="password"
+autocomplete="off"
+required>
+
+</label>
+
+<button
+class="primary-button"
+type="submit">
+
+ورود
+
+</button>
+
+
+</form>
+
+
+</div>
+
+
+</div>
+
+
 <script src="./app.js"></script>
 
 

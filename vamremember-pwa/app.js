@@ -43,6 +43,7 @@ const accounts = [
 const editExpenseId=$("editExpenseId"),expenseType=$("expenseType"),installmentTypeButton=$("installmentTypeButton"),expenseTypeButton=$("expenseTypeButton");
 const expenseTitleLabel=$("expenseTitleLabel"),expenseTitle=$("expenseTitle"),expenseAmount=$("expenseAmount"),expenseTitleSelect=$("expenseTitleSelect"),expenseDueDay=$("expenseDueDay"),expenseInstallments=$("expenseInstallments"),installmentFields=$("installmentFields"),startMonthLabel=$("startMonthLabel"),expenseStartMonth=$("expenseStartMonth"),expenseNote=$("expenseNote"),monthsEditor=$("monthsEditor"),monthFields=$("monthFields"),saveExpenseButton=$("saveExpenseButton");
 const reportMonthTotal=$("reportMonthTotal"),reportPaidTotal=$("reportPaidTotal"),reportRemainingTotal=$("reportRemainingTotal"),reportExpensesTotal=$("reportExpensesTotal"),reportAllTotal=$("reportAllTotal"),paidPercent=$("paidPercent"),remainingPercent=$("remainingPercent"),paidBar=$("paidBar"),remainingBar=$("remainingBar");
+const reportIncomeTotal=$("reportIncomeTotal"),reportBalanceTotal=$("reportBalanceTotal"),incomePercent=$("incomePercent"),paymentPercent=$("paymentPercent"),incomeBar=$("incomeBar"),paymentBar=$("paymentBar");
 const transferTypeButton = $("transferTypeButton");
 const transferFrom = $("transferFrom");
 const transferTo = $("transferTo");
@@ -502,8 +503,7 @@ function getFilteredItems() {
       return false;
     }
 
-    if(activeStatusFilter==="unpaid" &&
-       (!isInstallment(i) || !isNullValue(i[currentMonthKey]))){
+    if(activeStatusFilter==="unpaid" && !isNullValue(i[currentMonthKey])){
       return false;
     }
 
@@ -523,14 +523,17 @@ function getFilteredItems() {
 function createAllItemCard(item){
  const expense=isExpense(item);
 const income=isIncome(item);
+const usesMonthlyAmounts=expense||income;
 const card=document.createElement("article");
 const v=item[currentMonthKey];
-  card.className=`card compact-card ${expense?"expense-card":""} ${!expense&&isPaidValue(v)?"paid-card":""}`;
-  const mainAmount=expense?getLatestExpenseAmount(item):Number(item.amount||0);
-  const secondary=expense?`جمع کل: ${formatMoney(getExpenseTotal(item))}`:`${getRemainingInstallments(item).toLocaleString("fa-IR")} مانده`;
-  const counter=expense?`${getPaidCount(item).toLocaleString("fa-IR")} پرداخت`:`${getRemainingInstallments(item).toLocaleString("fa-IR")} قسط باقی‌مانده`;
+  const cardTypeClass=expense?"expense-card":income?"income-card":(isPaidValue(v)?"paid-card":"");
+  card.className=`card compact-card ${cardTypeClass}`;
+  const mainAmount=usesMonthlyAmounts?getLatestExpenseAmount(item):Number(item.amount||0);
+  const secondary=usesMonthlyAmounts?`جمع کل: ${formatMoney(getExpenseTotal(item))}`:`${getRemainingInstallments(item).toLocaleString("fa-IR")} مانده`;
+  const counter=usesMonthlyAmounts?`${getPaidCount(item).toLocaleString("fa-IR")} ${income?"دریافت":"پرداخت"}`:`${getRemainingInstallments(item).toLocaleString("fa-IR")} قسط باقی‌مانده`;
+  const amountPrefix=income?"+ ":"";
   card.innerHTML=`<div class="card-main compact-main">
-    <div class="compact-head"><div class="compact-amount-wrap"><div class="amount compact-amount">${formatMoney(mainAmount)}</div></div><div class="compact-side">${counter}</div><div class="id-badge">ID ${Number(item.id).toLocaleString("fa-IR")}</div></div>
+    <div class="compact-head"><div class="compact-amount-wrap"><div class="amount compact-amount ${income?"income-amount":""}">${amountPrefix}${formatMoney(mainAmount)}</div></div><div class="compact-side">${counter}</div><div class="id-badge">ID ${Number(item.id).toLocaleString("fa-IR")}</div></div>
     <div class="compact-foot"><div class="compact-title">${escapeHtml(item.title)}</div><div class="badge-row">
     <span class="${
 expense
@@ -547,7 +550,7 @@ expense
 :"💳 قسط"
 }
 </span>
-    <span class="status-badge">${currentStatus(item)}</span></div></div>
+    <span class="status-badge">${income?(isPaidValue(v)?"دریافت‌شده":"دریافت‌نشده"):currentStatus(item)}</span></div></div>
     <div class="all-card-actions"><button type="button" class="edit-expense">ویرایش</button></div>
   </div>`;
   card.querySelector(".edit-expense").addEventListener("click",e=>{e.stopPropagation();openEditModal(item)});return card
@@ -1227,11 +1230,12 @@ function buildEditBody(type){
   return body;
 }
 function getReportItems(kind){
-  const installments=allExpenses.filter(isInstallment),expenses=allExpenses.filter(isExpense);
+  const installments=allExpenses.filter(isInstallment),expenses=allExpenses.filter(isExpense),incomes=allExpenses.filter(isIncome);
   if(kind==="month")return installments.filter(i=>!isClosedValue(i[currentMonthKey]));
   if(kind==="paid")return installments.filter(i=>isPaidValue(i[currentMonthKey]));
   if(kind==="remaining")return installments.filter(i=>isNullValue(i[currentMonthKey]));
   if(kind==="expenses")return expenses.filter(i=>parseMoney(i[currentMonthKey])!==null);
+  if(kind==="income")return incomes.filter(i=>parseMoney(i[currentMonthKey])!==null);
   if(kind==="all")return [...installments.filter(i=>isPaidValue(i[currentMonthKey])),...expenses.filter(i=>isPaidValue(i[currentMonthKey]))];
   return[];
 }
@@ -1307,13 +1311,13 @@ formatMoney(expense);
 
 }
 function openReportDetails(kind){
-  const titles={month:"اقساط این ماه",paid:"اقساط پرداخت‌شده",remaining:"اقساط باقی‌مانده",expenses:"هزینه‌های این ماه",all:"جمع کل پرداختی"};
+  const titles={month:"اقساط این ماه",paid:"اقساط پرداخت‌شده",remaining:"اقساط باقی‌مانده",expenses:"هزینه‌های این ماه",income:"درآمدهای این ماه",all:"جمع کل پرداختی"};
   const items=getReportItems(kind);reportDetailsTitle.textContent=titles[kind]||"جزئیات گزارش";reportDetailsList.innerHTML="";
   if(!items.length){reportDetailsList.innerHTML='<div class="empty">موردی وجود ندارد</div>'}
   items.forEach(item=>{
-    const expense=isExpense(item),paid=isPaidValue(item[currentMonthKey]),row=document.createElement("article");row.className="report-detail-item";
+    const expense=isExpense(item),income=isIncome(item),paid=isPaidValue(item[currentMonthKey]),row=document.createElement("article");row.className="report-detail-item";
     let detail="";
-    if(expense)detail=`<span>${formatMoney(parseMoney(item[currentMonthKey])||0)}</span><span>پرداخت شده</span>`;
+    if(expense||income)detail=`<span>${formatMoney(parseMoney(item[currentMonthKey])||0)}</span><span>${income?"دریافت شده":"پرداخت شده"}</span>`;
     else if(paid)detail=`<span>${formatMoney(item.amount)}</span><span>تاریخ پرداخت: ${escapeHtml(extractPaymentDate(item[currentMonthKey]))}</span>`;
     else detail=`<span>${formatMoney(item.amount)}</span><span>سررسید: روز ${Number(item.due_day||0).toLocaleString("fa-IR")}ام</span>`;
     row.innerHTML=`<div class="report-detail-title">${escapeHtml(item.title)}</div><div class="report-detail-meta">${detail}</div>`;reportDetailsList.appendChild(row)
@@ -1323,14 +1327,26 @@ function openReportDetails(kind){
 function closeReportModal(){reportDetailsModal.classList.remove("open");document.body.style.overflow=""}
 
 function renderReports(){
-  const installments=allExpenses.filter(isInstallment),expenses=allExpenses.filter(isExpense);
-  let monthInstallmentTotal=0,paidInstallmentTotal=0,remainingInstallmentTotal=0,monthExpenseTotal=0;
+  const installments=allExpenses.filter(isInstallment),expenses=allExpenses.filter(isExpense),incomes=allExpenses.filter(isIncome);
+  let monthInstallmentTotal=0,paidInstallmentTotal=0,remainingInstallmentTotal=0,monthExpenseTotal=0,monthIncomeTotal=0;
   for(const item of installments){const currentValue=item[currentMonthKey],amount=Number(item.amount||0);if(isClosedValue(currentValue))continue;monthInstallmentTotal+=amount;if(isPaidValue(currentValue))paidInstallmentTotal+=amount;if(isNullValue(currentValue))remainingInstallmentTotal+=amount}
   for(const item of expenses){const amount=parseMoney(item[currentMonthKey]);if(amount!==null)monthExpenseTotal+=amount}
+  for(const item of incomes){const amount=parseMoney(item[currentMonthKey]);if(amount!==null)monthIncomeTotal+=amount}
   const allPaidTotal=paidInstallmentTotal+monthExpenseTotal;
+  const balanceTotal=monthIncomeTotal-allPaidTotal;
   reportMonthTotal.textContent=formatMoney(monthInstallmentTotal);reportPaidTotal.textContent=formatMoney(paidInstallmentTotal);reportRemainingTotal.textContent=formatMoney(remainingInstallmentTotal);reportExpensesTotal.textContent=formatMoney(monthExpenseTotal);reportAllTotal.textContent=formatMoney(allPaidTotal);
+  if(reportIncomeTotal)reportIncomeTotal.textContent=formatMoney(monthIncomeTotal);
+  if(reportBalanceTotal){
+    reportBalanceTotal.textContent=(balanceTotal<0?"− ":"")+formatMoney(Math.abs(balanceTotal));
+    reportBalanceTotal.style.color=balanceTotal<0?"var(--danger)":"var(--success)";
+  }
   const chartTotal=paidInstallmentTotal+remainingInstallmentTotal;const paidPercentage=chartTotal?Math.round(paidInstallmentTotal/chartTotal*100):0,remainingPercentage=chartTotal?Math.round(remainingInstallmentTotal/chartTotal*100):0;
-  paidPercent.textContent=`${paidPercentage.toLocaleString("fa-IR")}٪`;remainingPercent.textContent=`${remainingPercentage.toLocaleString("fa-IR")}٪`;paidBar.style.width=`${paidPercentage}%`;remainingBar.style.width=`${remainingPercentage}%`
+  paidPercent.textContent=`${paidPercentage.toLocaleString("fa-IR")}٪`;remainingPercent.textContent=`${remainingPercentage.toLocaleString("fa-IR")}٪`;paidBar.style.width=`${paidPercentage}%`;remainingBar.style.width=`${remainingPercentage}%`;
+  const incomeVsPaymentTotal=monthIncomeTotal+allPaidTotal;const incomePercentage=incomeVsPaymentTotal?Math.round(monthIncomeTotal/incomeVsPaymentTotal*100):0,paymentPercentage=incomeVsPaymentTotal?Math.round(allPaidTotal/incomeVsPaymentTotal*100):0;
+  if(incomePercent)incomePercent.textContent=`${incomePercentage.toLocaleString("fa-IR")}٪`;
+  if(paymentPercent)paymentPercent.textContent=`${paymentPercentage.toLocaleString("fa-IR")}٪`;
+  if(incomeBar)incomeBar.style.width=`${incomePercentage}%`;
+  if(paymentBar)paymentBar.style.width=`${paymentPercentage}%`;
 }
 function openPage(id,title){
   pages.forEach(p=>p.classList.toggle("active",p.id===id));
@@ -1346,7 +1362,18 @@ function openPage(id,title){
 refreshButton.addEventListener("click",loadData);
 navButtons.forEach(b=>b.addEventListener("click",()=>openPage(b.dataset.page,b.dataset.title)));
 searchInput.addEventListener("input",()=>{visibleCount=PAGE_SIZE;renderAllCards()});
-typeFilters.forEach(b=>b.addEventListener("click",()=>{typeFilters.forEach(x=>x.classList.remove("active"));b.classList.add("active");activeFilter=b.dataset.filter;visibleCount=PAGE_SIZE;renderAllCards()}));
+function updateStatusFilterLabels(filter){
+  const paidBtn=$("statusFilterPaid"),unpaidBtn=$("statusFilterUnpaid");
+  if(!paidBtn||!unpaidBtn)return;
+  if(filter==="income"){
+    paidBtn.textContent="دریافت‌شده این ماه";
+    unpaidBtn.textContent="دریافت‌نشده این ماه";
+  }else{
+    paidBtn.textContent="پرداخت‌شده این ماه";
+    unpaidBtn.textContent="پرداخت‌نشده این ماه";
+  }
+}
+typeFilters.forEach(b=>b.addEventListener("click",()=>{typeFilters.forEach(x=>x.classList.remove("active"));b.classList.add("active");activeFilter=b.dataset.filter;updateStatusFilterLabels(activeFilter);visibleCount=PAGE_SIZE;renderAllCards()}));
 statusFilters.forEach(b=>b.addEventListener("click",()=>{statusFilters.forEach(x=>x.classList.remove("active"));b.classList.add("active");activeStatusFilter=b.dataset.status;visibleCount=PAGE_SIZE;renderAllCards()}));
 loadMoreButton.addEventListener("click",()=>{visibleCount+=PAGE_SIZE;renderAllCards()});
 document.querySelectorAll(".report-card[data-report]").forEach(c=>c.addEventListener("click",()=>openReportDetails(c.dataset.report)));
@@ -1532,7 +1559,7 @@ function addSwipeToClose(modalId) {
   }, { passive: true });
 }
 
-["expenseModal", "transferModal", "paymentModal"].forEach(addSwipeToClose);
+["expenseModal", "transferModal", "paymentModal", "settingsLockModal"].forEach(addSwipeToClose);
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -1542,3 +1569,334 @@ if ("serviceWorker" in navigator) {
       .catch((err) => console.error("Service Worker registration failed:", err));
   });
 }
+
+// ================= تنظیمات (Settings) =================
+
+const SETTINGS_KEY = "appSettingsV1";
+const APP_VERSION = "1.0.0";
+
+function loadSettings(){
+  try{
+    return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
+  }catch(e){
+    return {};
+  }
+}
+
+function saveSettings(settings){
+  try{
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  }catch(e){
+    console.error("خطا در ذخیره تنظیمات", e);
+  }
+}
+
+let appSettings = loadSettings();
+
+// هش ساده برای رمز عبور (فقط جهت جلوگیری از دیدن ساده رمز، امنیت بالا نیست)
+function simpleHash(str){
+  let hash = 0;
+  const s = String(str || "");
+  for(let i=0; i<s.length; i++){
+    hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+  }
+  return String(hash);
+}
+
+function toPersianDigits(str){
+  return String(str).replace(/[0-9]/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]);
+}
+
+function applyTheme(theme){
+  const finalTheme = theme === "light" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", finalTheme);
+  document.querySelectorAll(".theme-btn").forEach(b=>{
+    b.classList.toggle("active", b.dataset.theme === finalTheme);
+  });
+}
+
+function applyAppIcon(dataUrl){
+  if(!dataUrl) return;
+
+  let touchIcon = document.querySelector('link[rel="apple-touch-icon"]');
+  if(!touchIcon){
+    touchIcon = document.createElement("link");
+    touchIcon.rel = "apple-touch-icon";
+    document.head.appendChild(touchIcon);
+  }
+  touchIcon.href = dataUrl;
+
+  let favicon = document.querySelector('link[rel="icon"]');
+  if(!favicon){
+    favicon = document.createElement("link");
+    favicon.rel = "icon";
+    document.head.appendChild(favicon);
+  }
+  favicon.href = dataUrl;
+
+  fetch("./manifest.json")
+    .then(r => r.json())
+    .then(manifest => {
+      const updated = {
+        ...manifest,
+        icons: [
+          { src: dataUrl, sizes: "192x192", type: "image/png" },
+          { src: dataUrl, sizes: "512x512", type: "image/png" }
+        ]
+      };
+      const blob = new Blob([JSON.stringify(updated)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const manifestLink = document.querySelector('link[rel="manifest"]');
+      if(manifestLink) manifestLink.href = url;
+    })
+    .catch(() => {});
+
+  const preview = $("appIconPreview");
+  if(preview) preview.src = dataUrl;
+}
+
+function resetAppIcon(){
+  delete appSettings.icon;
+  saveSettings(appSettings);
+
+  const preview = $("appIconPreview");
+  if(preview) preview.src = "assets/book.png";
+
+  const touchIcon = document.querySelector('link[rel="apple-touch-icon"]');
+  if(touchIcon) touchIcon.remove();
+
+  const favicon = document.querySelector('link[rel="icon"]');
+  if(favicon) favicon.remove();
+
+  const manifestLink = document.querySelector('link[rel="manifest"]');
+  if(manifestLink) manifestLink.href = "./manifest.json";
+}
+
+function initSettingsUI(){
+  applyTheme(appSettings.theme || "dark");
+
+  if(appSettings.icon){
+    applyAppIcon(appSettings.icon);
+  }
+
+  const lockToggle = $("settingsLockEnabled");
+  if(lockToggle) lockToggle.checked = !!appSettings.lockEnabled;
+
+  const versionEl = $("appVersion");
+  if(versionEl) versionEl.textContent = toPersianDigits(APP_VERSION);
+}
+
+document.querySelectorAll(".theme-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    appSettings.theme = btn.dataset.theme;
+    saveSettings(appSettings);
+    applyTheme(appSettings.theme);
+  });
+});
+
+const settingsButton = $("settingsButton");
+const settingsLockModal = $("settingsLockModal");
+const settingsLockForm = $("settingsLockForm");
+const settingsLockInput = $("settingsLockInput");
+const closeSettingsLockModal = $("closeSettingsLockModal");
+
+function openSettingsPage(){
+  openPage("settingsPage", "⚙️ تنظیمات");
+}
+
+function openSettingsLockModal(){
+  if(!settingsLockModal) return;
+  settingsLockModal.classList.add("open");
+  document.body.style.overflow = "hidden";
+  if(settingsLockInput){
+    settingsLockInput.value = "";
+    setTimeout(()=>settingsLockInput.focus(), 100);
+  }
+}
+
+function closeSettingsLockModalFn(){
+  if(!settingsLockModal) return;
+  settingsLockModal.classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+if(settingsButton){
+  settingsButton.addEventListener("click", ()=>{
+    if(appSettings.lockEnabled && appSettings.passwordHash){
+      openSettingsLockModal();
+    }else{
+      openSettingsPage();
+    }
+  });
+}
+
+if(settingsLockForm){
+  settingsLockForm.addEventListener("submit", e=>{
+    e.preventDefault();
+    const val = settingsLockInput ? settingsLockInput.value : "";
+    if(simpleHash(val) === appSettings.passwordHash){
+      closeSettingsLockModalFn();
+      openSettingsPage();
+    }else{
+      alert("رمز عبور اشتباه است");
+    }
+  });
+}
+
+if(closeSettingsLockModal){
+  closeSettingsLockModal.addEventListener("click", closeSettingsLockModalFn);
+}
+if(settingsLockModal){
+  settingsLockModal.querySelector(".modal-backdrop")?.addEventListener("click", closeSettingsLockModalFn);
+}
+
+const saveSettingsPasswordButton = $("saveSettingsPasswordButton");
+if(saveSettingsPasswordButton){
+  saveSettingsPasswordButton.addEventListener("click", ()=>{
+    const input = $("newSettingsPassword");
+    const val = input ? input.value : "";
+    if(!val){
+      alert("رمز عبور را وارد کنید");
+      return;
+    }
+    appSettings.passwordHash = simpleHash(val);
+    saveSettings(appSettings);
+    if(input) input.value = "";
+    alert("رمز عبور ذخیره شد");
+  });
+}
+
+const settingsLockEnabledInput = $("settingsLockEnabled");
+if(settingsLockEnabledInput){
+  settingsLockEnabledInput.addEventListener("change", ()=>{
+    if(settingsLockEnabledInput.checked && !appSettings.passwordHash){
+      alert("ابتدا یک رمز عبور تنظیم و ذخیره کنید");
+      settingsLockEnabledInput.checked = false;
+      return;
+    }
+    appSettings.lockEnabled = settingsLockEnabledInput.checked;
+    saveSettings(appSettings);
+  });
+}
+
+const appIconInput = $("appIconInput");
+if(appIconInput){
+  appIconInput.addEventListener("change", ()=>{
+    const file = appIconInput.files && appIconInput.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      appSettings.icon = reader.result;
+      saveSettings(appSettings);
+      applyAppIcon(appSettings.icon);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+const resetAppIconButton = $("resetAppIconButton");
+if(resetAppIconButton){
+  resetAppIconButton.addEventListener("click", resetAppIcon);
+}
+
+updateStatusFilterLabels(activeFilter);
+
+// ================= قفل کل اپلیکیشن (App Lock) =================
+
+const APP_LOCK_SESSION_KEY = "appUnlockedV1";
+
+function ensureDefaultAppLock(){
+  if(appSettings.appLockEnabled === undefined){
+    appSettings.appLockEnabled = true;
+    appSettings.appLockPasswordHash = simpleHash("1234");
+    saveSettings(appSettings);
+  }
+}
+
+function isAppLocked(){
+  return !!(
+    appSettings.appLockEnabled &&
+    appSettings.appLockPasswordHash &&
+    !sessionStorage.getItem(APP_LOCK_SESSION_KEY)
+  );
+}
+
+function showAppLockScreen(){
+  const el = $("appLockScreen");
+  if(el) el.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+  const input = $("appLockInput");
+  if(input){
+    input.value = "";
+    setTimeout(()=>input.focus(), 150);
+  }
+}
+
+function hideAppLockScreen(){
+  const el = $("appLockScreen");
+  if(el) el.classList.add("hidden");
+  document.body.style.overflow = "";
+}
+
+function initAppLock(){
+  ensureDefaultAppLock();
+  const toggle = $("appLockEnabledToggle");
+  if(toggle) toggle.checked = !!appSettings.appLockEnabled;
+
+  if(isAppLocked()){
+    showAppLockScreen();
+  }else{
+    hideAppLockScreen();
+  }
+}
+
+const appLockForm = $("appLockForm");
+if(appLockForm){
+  appLockForm.addEventListener("submit", e=>{
+    e.preventDefault();
+    const input = $("appLockInput");
+    const val = input ? input.value : "";
+    const errEl = $("appLockError");
+    if(simpleHash(val) === appSettings.appLockPasswordHash){
+      sessionStorage.setItem(APP_LOCK_SESSION_KEY, "1");
+      if(errEl) errEl.classList.add("hidden");
+      hideAppLockScreen();
+    }else{
+      if(errEl) errEl.classList.remove("hidden");
+      if(input){
+        input.value = "";
+        input.focus();
+      }
+    }
+  });
+}
+
+const appLockEnabledToggle = $("appLockEnabledToggle");
+if(appLockEnabledToggle){
+  appLockEnabledToggle.addEventListener("change", ()=>{
+    if(appLockEnabledToggle.checked && !appSettings.appLockPasswordHash){
+      appSettings.appLockPasswordHash = simpleHash("1234");
+    }
+    appSettings.appLockEnabled = appLockEnabledToggle.checked;
+    saveSettings(appSettings);
+  });
+}
+
+const saveAppLockPasswordButton = $("saveAppLockPasswordButton");
+if(saveAppLockPasswordButton){
+  saveAppLockPasswordButton.addEventListener("click", ()=>{
+    const input = $("newAppLockPassword");
+    const val = input ? input.value : "";
+    if(!val){
+      alert("رمز عبور را وارد کنید");
+      return;
+    }
+    appSettings.appLockPasswordHash = simpleHash(val);
+    saveSettings(appSettings);
+    if(input) input.value = "";
+    alert("رمز عبور اپلیکیشن ذخیره شد");
+  });
+}
+
+initAppLock();
+initSettingsUI();
