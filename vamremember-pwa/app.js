@@ -104,29 +104,6 @@ async function getTransactions(){
         }
     );
 }
-function addSwipeToClose(modal) {
-  const sheet = modal.querySelector('.modal-sheet');
-  const handle = modal.querySelector('.modal-handle');
-  let startY = 0;
-
-  sheet.addEventListener('touchstart', e => e.stopPropagation(), {passive:true});
-  sheet.addEventListener('click', e => e.stopPropagation());
-
-  handle.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, {passive:true});
-  handle.addEventListener('touchmove', e => {
-    const dy = e.touches[0].clientY - startY;
-    if (dy > 0) sheet.style.transform = `translateX(-50%) translateY(${dy}px)`;
-  }, {passive:true});
-  handle.addEventListener('touchend', e => {
-    const dy = e.changedTouches[0].clientY - startY;
-    sheet.style.transform = '';
-    if (dy > 80) modal.querySelector('.modal-backdrop').click();
-  });
-}
-
-addSwipeToClose(expenseModal);
-addSwipeToClose(transferModal);
-addSwipeToClose(paymentModal);
 
 function setupActiveButtons(selector){
 
@@ -1547,30 +1524,24 @@ alert("انتقال ثبت شد");
 loadData().then(()=>{
     openPage("duePage","⏰ سررسید اقساط");
 });
-let startY = 0;
-
-
-const sheet = document.querySelector("#expenseModal .modal-sheet");
-
-
-sheet.addEventListener("touchstart", e=>{
+function addSwipeToClose(modalId) {
+  const modal = document.getElementById(modalId);
+  const handle = modal?.querySelector(".modal-handle");
+  if (!handle) return;
+  let startY = 0;
+  handle.addEventListener("touchstart", e => {
     startY = e.touches[0].clientY;
-});
-
-
-sheet.addEventListener("touchend", e=>{
-
-    let endY = e.changedTouches[0].clientY;
-
-
-    if(endY - startY > 120){
-
-expenseModal.classList.remove("open");
-document.body.style.overflow="";
-
+  }, { passive: true });
+  handle.addEventListener("touchend", e => {
+    if (e.changedTouches[0].clientY - startY > 80) {
+      modal.classList.remove("open");
+      document.body.style.overflow = "";
     }
+  }, { passive: true });
+}
 
-});
+["expenseModal", "transferModal", "paymentModal"].forEach(addSwipeToClose);
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
