@@ -1,5 +1,4 @@
-//const CACHE="vamremember-v1";const FILES=["./","./index.html","./style.css","./app.js","./manifest.json"];self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES))));self.addEventListener("activate",e=>e.waitUntil(self.clients.claim()));self.addEventListener("fetch",e=>{if(e.request.method!=="GET")return;e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)))});
-const CACHE_NAME = "aghsat-cache-v1";
+const CACHE_NAME = "aghsat-cache-v2";
 const OFFLINE_URLS = [
   "./",
   "./index.html",
@@ -35,6 +34,12 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
+
+  // فقط درخواست‌های http/https قابل کش شدن هستند
+  // (مثلاً درخواست‌های chrome-extension:// باید نادیده گرفته شوند)
+  if (!request.url.startsWith("http")) {
+    return;
+  }
 
   // درخواست‌های به Supabase همیشه از شبکه بروند (داده زنده)
   if (request.url.includes("supabase.co")) {

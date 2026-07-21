@@ -371,7 +371,7 @@ function setupButtonGroup(parent, selector, callback){
     });
 
 }
-function createDueCard(item){const card=document.createElement("article");card.className="card "+(item.daysRemaining<0?"overdue":"soon");const dayText=item.daysRemaining<0?`${Math.abs(item.daysRemaining).toLocaleString("fa-IR")} روز گذشته`:item.daysRemaining===0?"امروز":`${item.daysRemaining.toLocaleString("fa-IR")} روز مانده`;card.innerHTML=`<div class="card-main"><div class="top"><div class="name">${escapeHtml(item.title)}</div><div class="days">${dayText}</div></div><div class="amount">${formatMoney(item.amount)}</div><div class="meta">سررسید: روز ${Number(item.due_day).toLocaleString("fa-IR")}ام</div><div class="installment-badge">${getRemainingInstallments(item).toLocaleString("fa-IR")} قسط باقی مانده</div></div>${createPaymentPanelHtml()}`;card.querySelector(".card-main").addEventListener("click",()=>{document.querySelectorAll("#cards .card.open").forEach(c=>{if(c!==card)c.classList.remove("open")});card.classList.toggle("open")});setupPaymentPanel(card,item);return card}
+function createDueCard(item){const card=document.createElement("article");card.className="card "+(item.daysRemaining<0?"overdue":"soon");const dayText=item.daysRemaining<0?`${Math.abs(item.daysRemaining).toLocaleString("fa-IR")} روز گذشته`:item.daysRemaining===0?"امروز":`${item.daysRemaining.toLocaleString("fa-IR")} روز مانده`;card.innerHTML=`<div class="card-main"><div class="name">${escapeHtml(item.title)}</div><div class="top"><div class="days">${dayText}</div><div class="installment-badge">${getRemainingInstallments(item).toLocaleString("fa-IR")} قسط باقی مانده</div></div><div class="amount">${formatMoney(item.amount)}</div><div class="meta">سررسید: روز ${Number(item.due_day).toLocaleString("fa-IR")}ام</div></div>${createPaymentPanelHtml()}`;card.querySelector(".card-main").addEventListener("click",()=>{document.querySelectorAll("#cards .card.open").forEach(c=>{if(c!==card)c.classList.remove("open")});card.classList.toggle("open")});setupPaymentPanel(card,item);return card}
 function extractBank(text){
 
     const banks=[
@@ -746,6 +746,35 @@ fabCreate.onclick = ()=>{
 
 const paymentModal = $("paymentModal");
 const closePaymentModal = $("closePaymentModal");
+let selectedPaymentBank = null;
+
+function monthKeyFromDatePart(dateStr){
+    const cleaned = toEnglishDigits(dateStr||"").trim();
+    const parts = cleaned.split(/[\/\-]/);
+    if(parts.length < 2) return null;
+    const mm = parseInt(parts[1], 10);
+    if(!Number.isFinite(mm) || mm < 1 || mm > 12) return null;
+    return MONTHS[mm-1].key;
+}
+
+async function updateAccountCellFromPayment(itemId, monthKey, amount){
+    if(!itemId || !monthKey) return;
+
+    // مقدار فعلی سلول را پیدا می‌کنیم تا مبلغ جدید به آن اضافه شود، نه جایگزین آن
+    const item = allExpenses.find(i => Number(i.id) === Number(itemId));
+    const existing = item ? parseMoney(item[monthKey]) : null;
+    const total = (existing || 0) + amount;
+
+    await supabaseRequest(
+        `${TABLE_NAME}?id=eq.${itemId}`,
+        {
+            method:"PATCH",
+            headers:{ Prefer:"return=representation" },
+            body: JSON.stringify({ [monthKey]: total })
+        }
+    );
+}
+
 // تغییر حالت پرداخت / دریافت در مودال
 document.querySelectorAll(".payment-type-btn")
 .forEach(btn => {
@@ -758,33 +787,83 @@ document.querySelectorAll(".payment-type-btn")
 
         btn.classList.add("active");
 
-
         const type = btn.dataset.type;
-
 
         // ذخیره نوع عملیات
         $("paymentType").value = type;
         fillPaymentItems(type);
 
-
-
         // تغییر عنوان مودال
-        if(type==="income"){
-
-            $("paymentModalTitle").textContent =
-            "ثبت دریافت";
-
-        }
-        else{
-
-            $("paymentModalTitle").textContent =
-            "ثبت پرداخت";
-
-        }
-
+        $("paymentModalTitle").textContent =
+            type === "income" ? "ثبت دریافت" : "ثبت پرداخت";
 
     });
 
+});
+
+// انتخاب بانک/حساب
+document.querySelectorAll(".payment-bank").forEach(btn => {
+    btn.addEventListener("click", () => {
+        document.querySelectorAll(".payment-bank").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        selectedPaymentBank = btn.dataset.bank;
+    });
+});
+
+$("paymentForm").addEventListener("submit", async e => {
+    e.preventDefault();
+
+    const type = $("paymentType").value || "payment";
+    const itemSelect = $("paymentItemSelect");
+    const itemId = itemSelect ? itemSelect.value : "";
+    const amount = parseFloat($("paymentAmount").value);
+    const date = $("paymentDate").value;
+    const note = $("paymentNote").value.trim();
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+
+    if(!itemId){ alert("حساب را انتخاب کنید."); return; }
+    if(!Number.isFinite(amount) || amount<=0){ alert("مبلغ معتبر نیست."); return; }
+    if(!selectedPaymentBank){ alert("بانک را انتخاب کنید."); return; }
+
+    const monthKey = monthKeyFromDatePart(date) || currentMonthKey;
+
+    if(submitBtn) submitBtn.disabled = true;
+
+    try{
+        // ابتدا خود تراکنش (پرداخت/دریافت) ثبت می‌شود؛ این مهم‌ترین بخش است
+        await addTransaction({
+            expense_id: Number(itemId),
+            title: itemSelect.options[itemSelect.selectedIndex]?.text || "",
+            amount,
+            type,
+            account: null,
+            from_account: type === "payment" ? selectedPaymentBank : null,
+            to_account: type === "income" ? selectedPaymentBank : null,
+            transaction_date: new Date().toISOString(),
+            note: note || null
+        });
+
+        // سپس سلول مربوط به ماه/حساب مورد نظر آپدیت می‌شود
+        try{
+            await updateAccountCellFromPayment(itemId, monthKey, amount);
+        }catch(cellErr){
+            console.error("خطا در بروزرسانی سلول ماه:", cellErr);
+            alert("تراکنش ثبت شد اما بروزرسانی جدول با خطا مواجه شد:\n"+cellErr.message);
+        }
+
+        paymentModal.classList.remove("open");
+        document.body.style.overflow = "";
+        e.target.reset();
+        selectedPaymentBank = null;
+        document.querySelectorAll(".payment-bank").forEach(b => b.classList.remove("active"));
+
+        await loadData();
+    }catch(err){
+        console.error("خطا در ثبت تراکنش:", err);
+        alert("خطا در ثبت:\n"+err.message);
+    }finally{
+        if(submitBtn) submitBtn.disabled = false;
+    }
 });
 
 fabPayment.onclick = ()=>{
@@ -926,6 +1005,11 @@ function fillPaymentItems(type) {
             op.textContent = item.title;
             sel.appendChild(op);
         });
+
+    const label = $("paymentItemLabel");
+    if(label){
+        label.textContent = type === "income" ? "انتخاب حساب درآمد" : "انتخاب حساب هزینه";
+    }
 }
 
 async function saveExpense(e){
@@ -1293,17 +1377,7 @@ function openModal(){
 
 }
 function loadIncomeOptions(){
-    const select = $("paymentItemSelect");
-    if(!select) return;
-    select.innerHTML = `<option value="">انتخاب کنید</option>`;
-    allExpenses
-        .filter(isIncome)
-        .forEach(item=>{
-            const option=document.createElement("option");
-            option.value=item.id;
-            option.textContent=item.title;
-            select.appendChild(option);
-        });
+    fillPaymentItems($("paymentType")?.value || "payment");
 }
 
 function openWithType(type) {
@@ -1374,65 +1448,6 @@ $("transferFromModal").value = btn.dataset.bank;
 
 });
 
-// تغییر فرم دریافت / پرداخت
-let paymentOperationType = "payment";
-
-document.querySelectorAll(".payment-type-btn")
-.forEach(btn => {
-
-    btn.addEventListener("click",()=>{
-
-        // فعال کردن دکمه
-        document.querySelectorAll(".payment-type-btn")
-        .forEach(b=>b.classList.remove("active"));
-
-        btn.classList.add("active");
-
-
-        // نوع عملیات
-        paymentOperationType = btn.dataset.type;
-
-        $("paymentType").value = paymentOperationType;
-
-
-        const title = $("paymentModalTitle");
-        const amountLabel = $("paymentAmount")
-            .closest(".field")
-            .querySelector("span");
-
-
-       const titleField = $("paymentItemSelect").closest(".field");
-       const incomeField = $("paymentIncomeSelect").closest(".field");
-       
-
-
-if(paymentOperationType==="payment"){
-
-    title.textContent="ثبت پرداخت";
-
-    titleField.style.display="block";
-    // پیدا کردن خط‌ای که incomeField.style.display استفاده شده و قبلش اضافه کن:
-const incomeField = $("paymentItemSelect").closest(".field");
-
-    incomeField.style.display="none";
-
-}
-else{
-
-    title.textContent="ثبت دریافت";
-
-    titleField.style.display="none";
-    // پیدا کردن خط‌ای که incomeField.style.display استفاده شده و قبلش اضافه کن:
-const incomeField = $("paymentItemSelect").closest(".field");
-
-    incomeField.style.display="block";
-
-}
-
-    });
-
-});
-
 document.querySelectorAll(".transfer-to")
 .forEach(btn=>{
 
@@ -1487,29 +1502,6 @@ to_account:to,
 transaction_date:new Date().toISOString(),
 note:$("transferNote").value || null
 
-});
-$("paymentForm").addEventListener("submit", async e=>{
-    e.preventDefault();
-    const type = document.querySelector('input[name="paymentType"]:checked')?.value;
-    const itemId = $("paymentItemSelect").value;
-    const amount = $("paymentAmount").value;
-    const date = $("paymentDate").value;
-    const note = $("paymentNote")?.value || "";
-
-    if(!type || !itemId || !amount || !date) return;
-
-    const { error } = await supabase.from("transactions").insert([{
-        expense_id: itemId,
-        amount: parseFloat(amount),
-        date,
-        note,
-        type
-    }]);
-
-    if(!error){
-        closeModal("paymentModal");
-        await loadData();
-    }
 });
 
 

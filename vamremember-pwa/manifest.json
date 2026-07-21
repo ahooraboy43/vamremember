@@ -12,19 +12,19 @@
   "lang": "fa",
   "icons": [
     {
-      "src": "assets\a.png",
+      "src": "assets/V1.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "assets\home2.png",
+      "src": "assets/v2.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "assets\1fin.png",
+      "src": "assets/a.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
