@@ -580,3 +580,22 @@ label{
 .app-lock-error.hidden{
   display:none;
 }
+.four-part-track {
+  display: flex;
+}
+
+.income-bar {
+  background: var(--income);
+}
+
+.paid-installment-bar {
+  background: #3b82f6;
+}
+
+.expense-bar {
+  background: var(--expense);
+}
+
+.unpaid-installment-bar {
+  background: var(--warning);
+}
