@@ -41,7 +41,7 @@ const accounts = [
 ];
 
 const editExpenseId=$("editExpenseId"),expenseType=$("expenseType"),installmentTypeButton=$("installmentTypeButton"),expenseTypeButton=$("expenseTypeButton");
-const expenseTitleLabel=$("expenseTitleLabel"),expenseTitle=$("expenseTitle"),expenseAmount=$("expenseAmount"),expenseDueDay=$("expenseDueDay"),expenseInstallments=$("expenseInstallments"),installmentFields=$("installmentFields"),startMonthLabel=$("startMonthLabel"),expenseStartMonth=$("expenseStartMonth"),expenseNote=$("expenseNote"),monthsEditor=$("monthsEditor"),monthFields=$("monthFields"),saveExpenseButton=$("saveExpenseButton");
+const expenseTitleLabel=$("expenseTitleLabel"),expenseTitle=$("expenseTitle"),expenseAmount=$("expenseAmount"),expenseTitleSelect=$("expenseTitleSelect"),expenseDueDay=$("expenseDueDay"),expenseInstallments=$("expenseInstallments"),installmentFields=$("installmentFields"),startMonthLabel=$("startMonthLabel"),expenseStartMonth=$("expenseStartMonth"),expenseNote=$("expenseNote"),monthsEditor=$("monthsEditor"),monthFields=$("monthFields"),saveExpenseButton=$("saveExpenseButton");
 const reportMonthTotal=$("reportMonthTotal"),reportPaidTotal=$("reportPaidTotal"),reportRemainingTotal=$("reportRemainingTotal"),reportExpensesTotal=$("reportExpensesTotal"),reportAllTotal=$("reportAllTotal"),paidPercent=$("paidPercent"),remainingPercent=$("remainingPercent"),paidBar=$("paidBar"),remainingBar=$("remainingBar");
 const transferTypeButton = $("transferTypeButton");
 const transferFrom = $("transferFrom");
@@ -81,6 +81,29 @@ expenseModal.querySelector(".modal-backdrop")
 .addEventListener("click", () => {
     closeModal();
 });
+function addSwipeToClose(modal) {
+  const sheet = modal.querySelector('.modal-sheet');
+  const handle = modal.querySelector('.modal-handle');
+  let startY = 0;
+
+  sheet.addEventListener('touchstart', e => e.stopPropagation(), {passive:true});
+  sheet.addEventListener('click', e => e.stopPropagation());
+
+  handle.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, {passive:true});
+  handle.addEventListener('touchmove', e => {
+    const dy = e.touches[0].clientY - startY;
+    if (dy > 0) sheet.style.transform = `translateX(-50%) translateY(${dy}px)`;
+  }, {passive:true});
+  handle.addEventListener('touchend', e => {
+    const dy = e.changedTouches[0].clientY - startY;
+    sheet.style.transform = '';
+    if (dy > 80) modal.querySelector('.modal-backdrop').click();
+  });
+}
+
+addSwipeToClose(expenseModal);
+addSwipeToClose(transferModal);
+addSwipeToClose(paymentModal);
 
 async function addTransaction(data){
     console.log("SENDING TRANSACTION:", data);
@@ -255,9 +278,45 @@ function fillExpenseTitles(type){
     });
 
 }
-function getDueItems(){const today=getCurrentPersianDay();return allExpenses.filter(isInstallment).filter(i=>isNullValue(i[currentMonthKey])&&Number.isFinite(Number(i.due_day))&&Number(i.due_day)>0).map(i=>({...i,daysRemaining:Number(i.due_day)-today})).filter(i=>i.daysRemaining<=7).sort((a,b)=>a.daysRemaining-b.daysRemaining)}
+function getDaysInPersianMonth(monthIndex){
+    if(monthIndex <= 5) return 31;   // فروردین تا شهریور
+    if(monthIndex <= 10) return 30;  // مهر تا بهمن
+    return 29;                        // اسفند
+}
+
+function getDueItems(){
+    const today = getCurrentPersianDay();
+    const daysInCurrentMonth = getDaysInPersianMonth(currentMonthIndex);
+
+    return allExpenses
+        .filter(isInstallment)
+        .filter(i =>
+            Number.isFinite(Number(i.due_day)) &&
+            Number(i.due_day) > 0
+        )
+        .map(i => {
+            const dueDay = Number(i.due_day);
+            let diff = dueDay - today;
+            let targetMonthIndex = currentMonthIndex;
+
+            if(diff < 0){
+                diff += daysInCurrentMonth;
+                targetMonthIndex = (currentMonthIndex + 1) % 12;
+            }
+
+            return {
+                ...i,
+                daysRemaining: diff,
+                targetMonthKey: MONTHS[targetMonthIndex].key
+            };
+        })
+        .filter(i =>
+            isNullValue(i[i.targetMonthKey]) &&
+            i.daysRemaining <= 7
+        )
+        .sort((a, b) => a.daysRemaining - b.daysRemaining);
+}
 function renderDueCards(){const items=getDueItems();cards.innerHTML="";if(!items.length){cards.innerHTML='<div class="empty">قسط سررسیدشده یا نزدیک به سررسید وجود ندارد</div>';return}items.forEach(i=>cards.appendChild(createDueCard(i)))}
-// 2. app.js — تکمیل setupPaymentPanel (خط ~154)
 function setupPaymentPanel(card, item){
     const save    = card.querySelector(".save-payment");
     const cancel  = card.querySelector(".cancel-payment");
@@ -272,7 +331,7 @@ function setupPaymentPanel(card, item){
         ["بانک ملی","بانک رفاه","ویپاد","بلو بانک","بانک ملت"]
             .forEach(b => { text = text.replace(b, ""); });
         text = text.replace(/^\s*-\s*/, "").trim();
-        noteBox.value = btn.dataset.bank + (text ? " - " + text : "");
+        noteBox.value = btn.dataset.bank + (text ? " - " + text : "-");
     });
 
     cancel.addEventListener("click", () => card.classList.remove("open"));
@@ -366,10 +425,8 @@ return`
 <button type="button" class="tag-btn bank-tag" data-bank="بانک رفاه">بانک رفاه</button>
 <button type="button" class="tag-btn bank-tag" data-bank="ویپاد">ویپاد</button>
 <button type="button" class="tag-btn bank-tag" data-bank="بلو بانک">بلو بانک</button>
+<button type="button" class="tag-btn bank-tag" data-bank=" بانک ملت">بانک ملت </button>
 
-<button type="button" class="tag-btn" data-tag="پرداخت شد">پرداخت شد</button>
-<button type="button" class="tag-btn" data-tag="واریز بانکی">واریز بانکی</button>
-<button type="button" class="tag-btn" data-tag="پرداخت اینترنتی">پرداخت اینترنتی</button>
 </div>
 
 
@@ -760,6 +817,11 @@ fabPayment.onclick = ()=>{
     paymentModal.classList.add("open");
     fillPaymentItems($("paymentType").value || "payment");
     document.body.style.overflow="hidden";
+   /// $("paymentDate").value = <تابع تاریخ امروز به فرمت YYYY/MM/DD>;
+
+    const p = getPersianDateParts();
+    $("paymentDate").value =
+        `${p.year}/${String(p.month).padStart(2,"0")}/${String(p.day).padStart(2,"0")}`;
 
 };
 
@@ -768,6 +830,7 @@ closePaymentModal.onclick = ()=>{
 
     paymentModal.classList.remove("open");
     document.body.style.overflow="";
+    
 
 };
 
@@ -1252,31 +1315,19 @@ function openModal(){
 
 }
 function loadIncomeOptions(){
-
-    const select = $("paymentIncomeSelect");
-
+    const select = $("paymentItemSelect");
     if(!select) return;
-
-
-    select.innerHTML = `
-    <option value="">انتخاب کنید</option>
-    `;
-
-
+    select.innerHTML = `<option value="">انتخاب کنید</option>`;
     allExpenses
-    .filter(isIncome)
-    .forEach(item=>{
-
-        const option=document.createElement("option");
-
-        option.value=item.id;
-        option.textContent=item.title;
-
-        select.appendChild(option);
-
-    });
-
+        .filter(isIncome)
+        .forEach(item=>{
+            const option=document.createElement("option");
+            option.value=item.id;
+            option.textContent=item.title;
+            select.appendChild(option);
+        });
 }
+
 function openWithType(type) {
   fabMenu.classList.add("hidden");
   addExpenseButton.classList.remove("open");
@@ -1284,15 +1335,25 @@ function openWithType(type) {
   setExpenseType(type);
   openModal();
 }
+// خطوط 1438-1461 را با این جایگزین کنید:
+const handle = document.querySelector("#expenseModal .modal-handle");
+let startY = 0;
 
-
-// بستن منو با کلیک خارج از آن
-document.addEventListener("click", e => {
-  if (!$("fabContainer").contains(e.target)) {
-    fabMenu.classList.add("hidden");
-    addExpenseButton.classList.remove("open");
-  }
+handle.addEventListener("touchstart", e => {
+    startY = e.touches[0].clientY;
 });
+
+handle.addEventListener("touchend", e => {
+    if (e.changedTouches[0].clientY - startY > 120) {
+        expenseModal.classList.remove("open");
+        document.body.style.overflow = "";
+    }
+});
+
+document.querySelector("#expenseModal .modal-sheet").addEventListener("touchstart", e => {
+    e.stopPropagation();
+});
+
  
 
 ///addExpenseButton.addEventListener("click",openNewModal);closeExpenseModalButton.addEventListener("click",closeModal);expenseModal.querySelector(".modal-backdrop").addEventListener("click",closeModal);
@@ -1373,6 +1434,8 @@ document.querySelectorAll(".payment-type-btn")
 
 
        const titleField = $("paymentItemSelect").closest(".field");
+       const incomeField = $("paymentIncomeSelect").closest(".field");
+       
 
 
 if(paymentOperationType==="payment"){
@@ -1380,6 +1443,9 @@ if(paymentOperationType==="payment"){
     title.textContent="ثبت پرداخت";
 
     titleField.style.display="block";
+    // پیدا کردن خط‌ای که incomeField.style.display استفاده شده و قبلش اضافه کن:
+const incomeField = $("paymentItemSelect").closest(".field");
+
     incomeField.style.display="none";
 
 }
@@ -1388,6 +1454,9 @@ else{
     title.textContent="ثبت دریافت";
 
     titleField.style.display="none";
+    // پیدا کردن خط‌ای که incomeField.style.display استفاده شده و قبلش اضافه کن:
+const incomeField = $("paymentItemSelect").closest(".field");
+
     incomeField.style.display="block";
 
 }
@@ -1451,6 +1520,29 @@ transaction_date:new Date().toISOString(),
 note:$("transferNote").value || null
 
 });
+$("paymentForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    const type = document.querySelector('input[name="paymentType"]:checked')?.value;
+    const itemId = $("paymentItemSelect").value;
+    const amount = $("paymentAmount").value;
+    const date = $("paymentDate").value;
+    const note = $("paymentNote")?.value || "";
+
+    if(!type || !itemId || !amount || !date) return;
+
+    const { error } = await supabase.from("transactions").insert([{
+        expense_id: itemId,
+        amount: parseFloat(amount),
+        date,
+        note,
+        type
+    }]);
+
+    if(!error){
+        closeModal("paymentModal");
+        await loadData();
+    }
+});
 
 
 transferModal.classList.remove("open");
@@ -1488,3 +1580,11 @@ document.body.style.overflow="";
     }
 
 });
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("./sw.js")
+      .then((reg) => console.log("Service Worker registered:", reg.scope))
+      .catch((err) => console.error("Service Worker registration failed:", err));
+  });
+}

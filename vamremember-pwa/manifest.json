@@ -1,10 +1,33 @@
 {
-  "name": "مدیریت اقساط و هزینه‌ها",
+  "name": "حسابداری شایان",
   "short_name": "اقساط",
-  "start_url": "./",
+  "description": "اپلیکیشن مدیریت اقساط، هزینه‌ها و درآمدها",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0b1220",
   "theme_color": "#0b1220",
+  "dir": "rtl",
   "lang": "fa",
-  "dir": "rtl"
+  "icons": [
+    {
+      "src": "assets\a.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets\home2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets\1fin.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
 }
