@@ -2,114 +2,90 @@ const SUPABASE_URL = "https://yfgyauzuzznlhradsrbo.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmZ3lhdXp1enpubGhyYWRzcmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NDIxOTMsImV4cCI6MjA5OTQxODE5M30.Mshjl3p-fJtkTuRSKP_3DhNe9IW7D6jv1C9pD_bv39A";
 const TABLE_NAME="expenses";
 const TRANSACTION_TABLE = "transactions";
-const MONTHS = [
-    { key: "farvardin", name: "فروردین" },
-    { key: "ordibehesht", name: "اردیبهشت" },
-    { key: "khordad", name: "خرداد" },
-    { key: "tir", name: "تیر" },
-    { key: "mordad", name: "مرداد" },
-    { key: "shahrivar", name: "شهریور" },
-    { key: "mehr", name: "مهر" },
-    { key: "aban", name: "آبان" },
-    { key: "azar", name: "آذر" },
-    { key: "dey", name: "دی" },
-    { key: "bahman", name: "بهمن" },
-    { key: "esfand", name: "اسفند" }
+const MONTHS=[{key:"farvardin",name:"فروردین"},{key:"ordibehesht",name:"اردیبهشت"},{key:"khordad",name:"خرداد"},{key:"tir",name:"تیر"},{key:"mordad",name:"مرداد"},{key:"shahrivar",name:"شهریور"},{key:"mehr",name:"مهر"},{key:"aban",name:"آبان"},{key:"azar",name:"آذر"},{key:"dey",name:"دی"},{key:"bahman",name:"بهمن"},{key:"esfand",name:"اسفند"}];
+const PAGE_SIZE=10;
+let allExpenses=[],visibleCount=PAGE_SIZE,activeFilter="all",activeStatusFilter="all",currentMonthKey=null,currentMonthIndex=0;
+const $=id=>document.getElementById(id);
+const cards=$("cards"),statusBox=$("status"),refreshButton=$("refresh"),todayElement=$("today");
+const pages=document.querySelectorAll(".page"),navButtons=document.querySelectorAll(".nav-button"),pageTitle=$("pageTitle");
+const allCards=$("allCards"),allStatus=$("allStatus"),searchInput=$("searchInput"),loadMoreButton=$("loadMore");
+const typeFilters=document.querySelectorAll(".type-filter"),statusFilters=document.querySelectorAll(".status-filter"),addExpenseButton=$("addExpenseButton");
+const expenseModal = document.getElementById("expenseModal");
+const closeExpenseModal = document.getElementById("closeExpenseModal");
+const accounts = [
+    {
+        id:1,
+        title:"بانک ملی",
+        type:"bank"
+    },
+    {
+        id:2,
+        title:"بانک رفاه",
+        type:"bank"
+    },
+    {
+        id:3,
+        title:"ویپاد",
+        type:"bank"
+    },
+    {
+        id:4,
+        title:"بلو بانک",
+        type:"bank"
+    },
+    {
+        id:5,
+        title:"وجه نقد",
+        type:"cash"
+    }
 ];
-const PAGE_SIZE = 10;
 
-let allExpenses = [],
-    visibleCount = PAGE_SIZE,
-    activeFilter = "all",
-    activeStatusFilter = "all",
-    currentMonthKey = null,
-    currentMonthIndex = 0;
-
-const $ = id => document.getElementById(id);
-
-const cards = $("cards"),
-    statusBox = $("status"),
-    refreshButton = $("refresh"),
-    todayElement = $("today");
-
-const pages = document.querySelectorAll(".page"),
-    navButtons = document.querySelectorAll(".nav-button"),
-    pageTitle = $("pageTitle");
-
-const allCards = $("allCards"),
-    allStatus = $("allStatus"),
-    searchInput = $("searchInput"),
-    loadMoreButton = $("loadMore");
-
-const typeFilters = document.querySelectorAll(".type-filter"),
-    statusFilters = document.querySelectorAll(".status-filter"),
-    addExpenseButton = $("addExpenseButton");
-
-const expenseModal = $("expenseModal");
-const closeExpenseModal = $("closeExpenseModal");
-
-const editExpenseId = $("editExpenseId"),
-    expenseType = $("expenseType"),
-    installmentTypeButton = $("installmentTypeButton"),
-    expenseTypeButton = $("expenseTypeButton");
-
-const expenseTitleLabel = $("expenseTitleLabel"),
-    expenseTitle = $("expenseTitle"),
-    expenseAmount = $("expenseAmount"),
-    expenseTitleSelect = $("expenseTitleSelect"),
-    expenseDueDay = $("expenseDueDay"),
-    expenseInstallments = $("expenseInstallments"),
-    installmentFields = $("installmentFields"),
-    startMonthLabel = $("startMonthLabel"),
-    expenseStartMonth = $("expenseStartMonth"),
-    expenseNote = $("expenseNote"),
-    monthsEditor = $("monthsEditor"),
-    monthFields = $("monthFields"),
-    saveExpenseButton = $("saveExpenseButton");
-
-const reportMonthTotal = $("reportMonthTotal"),
-    reportPaidTotal = $("reportPaidTotal"),
-    reportRemainingTotal = $("reportRemainingTotal"),
-    reportExpensesTotal = $("reportExpensesTotal"),
-    reportAllTotal = $("reportAllTotal"),
-    paidPercent = $("paidPercent"),
-    remainingPercent = $("remainingPercent"),
-    paidBar = $("paidBar"),
-    remainingBar = $("remainingBar");
-
-const reportIncomeTotal = $("reportIncomeTotal"),
-    reportBalanceTotal = $("reportBalanceTotal"),
-    incomePercent = $("incomePercent"),
-    paymentPercent = $("paymentPercent"),
-    incomeBar = $("incomeBar"),
-    paymentBar = $("paymentBar");
-
+const editExpenseId=$("editExpenseId"),expenseType=$("expenseType"),installmentTypeButton=$("installmentTypeButton"),expenseTypeButton=$("expenseTypeButton");
+const expenseTitleLabel=$("expenseTitleLabel"),expenseTitle=$("expenseTitle"),expenseAmount=$("expenseAmount"),expenseTitleSelect=$("expenseTitleSelect"),expenseDueDay=$("expenseDueDay"),expenseInstallments=$("expenseInstallments"),installmentFields=$("installmentFields"),startMonthLabel=$("startMonthLabel"),expenseStartMonth=$("expenseStartMonth"),expenseNote=$("expenseNote"),monthsEditor=$("monthsEditor"),monthFields=$("monthFields"),saveExpenseButton=$("saveExpenseButton");
+const reportMonthTotal=$("reportMonthTotal"),reportPaidTotal=$("reportPaidTotal"),reportRemainingTotal=$("reportRemainingTotal"),reportExpensesTotal=$("reportExpensesTotal"),reportAllTotal=$("reportAllTotal"),paidPercent=$("paidPercent"),remainingPercent=$("remainingPercent"),paidBar=$("paidBar"),remainingBar=$("remainingBar");
+const reportIncomeTotal=$("reportIncomeTotal"),reportBalanceTotal=$("reportBalanceTotal"),incomePercent=$("incomePercent"),paymentPercent=$("paymentPercent"),incomeBar=$("incomeBar"),paymentBar=$("paymentBar");
 const transferTypeButton = $("transferTypeButton");
 const transferFrom = $("transferFrom");
 const transferTo = $("transferTo");
 const expenseFields = $("expenseFields");
 const transferFields = $("transferFields");
 const incomeTypeButton = $("incomeTypeButton");
-let selectedIncomeBank = null;
+let selectedIncomeBank = null;let selectedExpenseBank = null;
 const incomeFields = $("incomeFields");
 const transferModal = $("transferModal");
 const closeTransferModal = $("closeTransferModal");
 const transferForm = $("transferForm");
-const reportDetailsModal = $("reportDetailsModal"),
-    reportDetailsTitle = $("reportDetailsTitle"),
-    reportDetailsList = $("reportDetailsList"),
-    closeReportDetails = $("closeReportDetails");
-function closeModalEl(modalEl){
-    modalEl.classList.remove("open");
-    document.body.style.overflow="";
-}
+let transferFromAccount = null;
+let transferToAccount = null;
+const incomeBankButtons = document.querySelectorAll(".income-bank");
+const reportDetailsModal=$("reportDetailsModal"),reportDetailsTitle=$("reportDetailsTitle"),reportDetailsList=$("reportDetailsList"),closeReportDetails=$("closeReportDetails");
 
 closeExpenseModal.addEventListener("click", closeModal);
-closeTransferModal.addEventListener("click", ()=>closeModalEl(transferModal));
-transferModal.querySelector(".modal-backdrop").addEventListener("click", ()=>closeModalEl(transferModal));
-expenseModal.querySelector(".modal-backdrop").addEventListener("click", closeModal);
+closeTransferModal.addEventListener("click",()=>{
+
+transferModal.classList.remove("open");
+document.body.style.overflow="";
+
+});
+
+
+transferModal.querySelector(".modal-backdrop")
+.addEventListener("click",()=>{
+
+transferModal.classList.remove("open");
+document.body.style.overflow="";
+
+});
+
+
+expenseModal.querySelector(".modal-backdrop")
+.addEventListener("click", () => {
+    closeModal();
+});
 
 async function addTransaction(data){
+    console.log("SENDING TRANSACTION:", data);
+
     return await supabaseRequest(
         TRANSACTION_TABLE,
         {
@@ -121,6 +97,32 @@ async function addTransaction(data){
         }
     );
 }
+async function getTransactions(){
+    return await supabaseRequest(
+        `${TRANSACTION_TABLE}?select=*&order=id.desc`,
+        {
+            method:"GET"
+        }
+    );
+}
+
+function setupActiveButtons(selector){
+
+    document.querySelectorAll(selector).forEach(btn=>{
+
+        btn.addEventListener("click",()=>{
+
+            btn.parentElement
+                .querySelectorAll(selector)
+                .forEach(b=>b.classList.remove("active"));
+
+            btn.classList.add("active");
+
+        });
+
+    });
+
+}
 function getHeaders(){return{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`,"Content-Type":"application/json"}}
 async function supabaseRequest(path,options={}){const response=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,headers:{...getHeaders(),...(options.headers||{})}});const text=await response.text();if(!response.ok)throw new Error(text||`HTTP ${response.status}`);return text?JSON.parse(text):null}
 function toEnglishDigits(value){return String(value).replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d))}
@@ -129,78 +131,13 @@ function updatePersianDate(){todayElement.textContent=new Intl.DateTimeFormat("f
 function isInstallment(i){
     return i.type==="installment" || Number(i.id)<10000;
 }
-let banks = JSON.parse(localStorage.getItem("banks") || '');
 
-function saveBanks() {
-  localStorage.setItem("banks", JSON.stringify(banks));
-}
-
-function renderBanks() {
-  const list = document.getElementById("banksList");
-  if (!list) return;
-  list.innerHTML = banks.map((b, i) => `
-    <div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
-      <span>${b}</span>
-      <div style="display:flex;gap:6px">
-        <button class="btn-sm" onclick="editBank(${i})">ویرایش</button>
-        <button class="btn-sm btn-danger" onclick="deleteBank(${i})">حذف</button>
-      </div>
-    </div>
-  `).join("");
-}
-
-function editBank(i) {
-  const name = prompt("نام جدید:", banks[i]);
-  if (name && name.trim()) {
-    banks[i] = name.trim();
-    saveBanks();
-    renderBanks();
-    renderPaymentBanks();
-  }
-}
-
-function deleteBank(i) {
-  if (!confirm(`حذف "${banks[i]}"؟`)) return;
-  banks.splice(i, 1);
-  saveBanks();
-  renderBanks();
-  renderPaymentBanks();
-}
-
-function renderPaymentBanks() {
-  const container = document.getElementById("paymentBanksContainer");
-  if (!container) return;
-  container.innerHTML = banks.map(b =>
-    `<button type="button" class="tag-btn payment-bank" data-bank="${b}">${b}</button>`
-  ).join("");
-  container.querySelectorAll(".payment-bank").forEach(btn => {
-    btn.addEventListener("click", () => {
-      container.querySelectorAll(".payment-bank").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      selectedIncomeBank = btn.dataset.bank;
-    });
-  });
-}
-
-
-document.getElementById("addBankButton")?.addEventListener("click", () => {
-  const input = document.getElementById("bankNameInput");
-  const name = input.value.trim();
-  if (!name) return;
-  banks.push(name);
-  saveBanks();
-  renderBanks();
-  renderPaymentBanks();
-  input.value = "";
-});
-
-renderBanks();
-renderPaymentBanks();
 
 function isExpense(i){
     const id=Number(i.id);
     return i.type==="expense" || (id>=10000 && id<20000);
 }
+
 
 function isIncome(i){
     const id=Number(i.id);
@@ -251,6 +188,7 @@ async function loadData(){
         renderReports();
         renderHome();
 
+
         statusBox.textContent =
         `${allExpenses.length.toLocaleString("fa-IR")} مورد دریافت شد`;
 
@@ -274,6 +212,50 @@ async function loadData(){
         refreshButton.disabled=false;
 
     }
+}
+function fillExpenseTitles(type){
+
+    if(!expenseTitleSelect) return;
+
+
+    expenseTitleSelect.innerHTML =
+    `<option value="">انتخاب کنید</option>`;
+
+
+    let items=[];
+
+
+    if(type==="expense"){
+
+        items = allExpenses.filter(i=>{
+            let id=Number(i.id);
+            return id>=10000 && id<20000;
+        });
+
+    }
+
+
+    if(type==="income"){
+
+        items = allExpenses.filter(i=>{
+            let id=Number(i.id);
+            return id>=20000 && id<30000;
+        });
+
+    }
+
+
+    items.forEach(item=>{
+
+        const op=document.createElement("option");
+
+        op.value=item.title;
+        op.textContent=item.title;
+
+        expenseTitleSelect.appendChild(op);
+
+    });
+
 }
 function getDaysInPersianMonth(monthIndex){
     if(monthIndex <= 5) return 31;   // فروردین تا شهریور
@@ -325,8 +307,8 @@ function setupPaymentPanel(card, item){
     setupButtonGroup(card, ".bank-tag", btn => {
         selectedBank = btn.dataset.bank;
         let text = noteBox.value;
-        (JSON.parse(localStorage.getItem('banks')||'[]'))
-        .forEach(b => { text = text.replace(b, ""); });
+        ["بانک ملی","بانک رفاه","ویپاد","بلو بانک","بانک ملت"]
+            .forEach(b => { text = text.replace(b, ""); });
         text = text.replace(/^\s*-\s*/, "").trim();
         noteBox.value = btn.dataset.bank + (text ? " - " + text : "-");
     });
@@ -367,6 +349,7 @@ function setupPaymentPanel(card, item){
     }
 });
 
+
 }
 
 function setupButtonGroup(parent, selector, callback){
@@ -390,6 +373,22 @@ function setupButtonGroup(parent, selector, callback){
 
 }
 function createDueCard(item){const card=document.createElement("article");card.className="card "+(item.daysRemaining<0?"overdue":"soon");const dayText=item.daysRemaining<0?`${Math.abs(item.daysRemaining).toLocaleString("fa-IR")} روز گذشته`:item.daysRemaining===0?"امروز":`${item.daysRemaining.toLocaleString("fa-IR")} روز مانده`;card.innerHTML=`<div class="card-main"><div class="name">${escapeHtml(item.title)}</div><div class="top"><div class="days">${dayText}</div><div class="installment-badge">${getRemainingInstallments(item).toLocaleString("fa-IR")} قسط باقی مانده</div></div><div class="amount">${formatMoney(item.amount)}</div><div class="meta">سررسید: روز ${Number(item.due_day).toLocaleString("fa-IR")}ام</div></div>${createPaymentPanelHtml()}`;card.querySelector(".card-main").addEventListener("click",()=>{document.querySelectorAll("#cards .card.open").forEach(c=>{if(c!==card)c.classList.remove("open")});card.classList.toggle("open")});setupPaymentPanel(card,item);return card}
+function extractBank(text){
+
+    const banks=[
+        "بانک ملی",
+        "بانک رفاه",
+        "ویپاد",
+        "بلو بانک",
+        "بانک ملت"
+    ];
+
+
+    return banks.find(
+        b=>String(text).includes(b)
+    ) || null;
+
+}
 function createPaymentPanelHtml(){
   
 return`
@@ -397,26 +396,36 @@ return`
 
 <div class="payment-title">ثبت پرداخت</div>
 
+
 <textarea class="payment-note" placeholder="توضیح پرداخت..."></textarea>
 
 <div class="quick-tags">
-  ${(JSON.parse(localStorage.getItem('banks')||'[]')).map(b=>`<button type="button" class="tag-btn bank-tag" data-bank="${b}">${b}</button>`).join('')}
+<button type="button" class="tag-btn bank-tag" data-bank="بانک ملی">بانک ملی</button>
+<button type="button" class="tag-btn bank-tag" data-bank="بانک رفاه">بانک رفاه</button>
+<button type="button" class="tag-btn bank-tag" data-bank="ویپاد">ویپاد</button>
+<button type="button" class="tag-btn bank-tag" data-bank="بلو بانک">بلو بانک</button>
+<button type="button" class="tag-btn bank-tag" data-bank=" بانک ملت">بانک ملت </button>
+
 </div>
+
 
 <label class="date-option">
 <input type="checkbox" class="add-date" checked>
 افزودن تاریخ پرداخت
 </label>
 
+
 <label class="confirm-option">
 <input type="checkbox" class="confirm-payment">
 پرداخت این قسط را تأیید می‌کنم
 </label>
 
+
 <div class="payment-actions">
 <button type="button" class="cancel-payment">انصراف</button>
 <button type="button" class="save-payment">ثبت پرداخت</button>
 </div>
+
 
 </div>
 `;
@@ -438,30 +447,42 @@ async function registerPaymentTransaction(item, note, account, date){
     return await addTransaction(data);
 }
 
-function setupTransferButtons() {
-  const fromContainer = document.getElementById("transferFromContainer");
-  const toContainer = document.getElementById("transferToContainer");
-  const transferFrom = document.getElementById("transferFromModal");  
-  const transferTo = document.getElementById("transferToModal"); 
-  if (!fromContainer || !toContainer) return;
+function setupTransferButtons(){
 
-  function renderBtns(container, hiddenInput, activeClass) {
-    container.innerHTML = banks.map(b =>
-      `<button type="button" class="tag-btn ${activeClass}" data-bank="${b}">${b}</button>`
-    ).join('');
-    container.querySelectorAll(`.${activeClass}`).forEach(btn => {
-      btn.addEventListener("click", () => {
-        container.querySelectorAll(`.${activeClass}`).forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        hiddenInput.value = btn.dataset.bank;
-      });
+    document.querySelectorAll(".from-bank")
+    .forEach(btn=>{
+
+        btn.addEventListener("click",()=>{
+
+            document.querySelectorAll(".from-bank")
+            .forEach(b=>b.classList.remove("active"));
+
+            btn.classList.add("active");
+
+            transferFrom.value=btn.dataset.bank;
+
+        });
+
     });
-  }
 
-  renderBtns(fromContainer, transferFrom, "from-bank");
-  renderBtns(toContainer, transferTo, "to-bank");
+
+    document.querySelectorAll(".to-bank")
+    .forEach(btn=>{
+
+        btn.addEventListener("click",()=>{
+
+            document.querySelectorAll(".to-bank")
+            .forEach(b=>b.classList.remove("active"));
+
+            btn.classList.add("active");
+
+            transferTo.value=btn.dataset.bank;
+
+        });
+
+    });
+
 }
-
 function getFilteredItems() {
   const s = searchInput.value.trim().toLowerCase();
 
@@ -535,6 +556,29 @@ expense
   card.querySelector(".edit-expense").addEventListener("click",e=>{e.stopPropagation();openEditModal(item)});return card
 }
 function getExpenseAmount(item){return getLatestExpenseAmount(item)}
+function updateExpenseFormType(type){
+
+    const titleInput = document.getElementById("expenseTitle");
+    const titleLabel = document.getElementById("expenseTitleLabel");
+
+    titleInput.classList.remove("hidden");
+
+    if(type==="installment"){
+        titleLabel.textContent="عنوان قسط";
+        titleInput.placeholder="مثلا وام بانک ملی";
+    }
+
+    if(type==="expense"){
+        titleLabel.textContent="عنوان هزینه";
+        titleInput.placeholder="مثلا خرید، قبض، بنزین";
+    }
+
+    if(type==="income"){
+        titleLabel.textContent="عنوان درآمد";
+        titleInput.placeholder="مثلا حقوق، فروش";
+    }
+
+}
 function setExpenseType(type){
 
     expenseType.value = type;
@@ -553,6 +597,8 @@ function setExpenseType(type){
         type === "installment"
     );
 
+
+
     expenseTypeButton?.classList.toggle(
         "active",
         type === "expense"
@@ -567,6 +613,7 @@ function setExpenseType(type){
         "active",
         type === "transfer"
     );
+
 
     // نمایش فرم مربوطه
     installmentFields?.classList.toggle(
@@ -589,6 +636,8 @@ incomeFields?.classList.toggle(
         type !== "transfer"
     );
 
+
+
     // عنوان‌ها
     switch(type){
 
@@ -603,6 +652,7 @@ startMonthLabel.textContent="ماه شروع";
 
 break;
 
+
 case "expense":
 
 expenseTitleLabel.textContent="عنوان هزینه";
@@ -613,12 +663,15 @@ startMonthLabel.textContent="ماه هزینه";
 
 break;
 
+
+
 case "income":
 
     expenseTitleLabel.textContent="عنوان درآمد";
     expenseTitle.placeholder="مثلا حقوق، فروش، سود";
     startMonthLabel.textContent="ماه درآمد";
     break;
+
 
 case "transfer":
 
@@ -630,8 +683,13 @@ case "transfer":
     }
 
     // اجباری بودن فیلدهای قسط
-    expenseDueDay.required = false;
-expenseInstallments.required = false;
+    expenseDueDay.required =
+        type === "installment";
+
+    expenseInstallments.required =
+        type === "installment";
+
+
 
     // متن دکمه ثبت
     if(editExpenseId.value){
@@ -675,6 +733,7 @@ expenseInstallments.required = false;
             "form-transfer"
         );
 
+
         sheet.classList.add(
             "form-" + type
         );
@@ -686,6 +745,7 @@ fabCreate.onclick = ()=>{
     openWithType("expense");
 
 };
+
 
 const paymentModal = $("paymentModal");
 const closePaymentModal = $("closePaymentModal");
@@ -817,6 +877,7 @@ fabPayment.onclick = ()=>{
     paymentModal.classList.add("open");
     fillPaymentItems($("paymentType").value || "payment");
     document.body.style.overflow="hidden";
+   /// $("paymentDate").value = <تابع تاریخ امروز به فرمت YYYY/MM/DD>;
 
     const p = getPersianDateParts();
     $("paymentDate").value =
@@ -824,9 +885,24 @@ fabPayment.onclick = ()=>{
 
 };
 
-closePaymentModal.onclick = ()=>closeModalEl(paymentModal);
 
-paymentModal.querySelector(".modal-backdrop").addEventListener("click", ()=>closeModalEl(paymentModal));
+closePaymentModal.onclick = ()=>{
+
+    paymentModal.classList.remove("open");
+    document.body.style.overflow="";
+    
+
+};
+
+
+paymentModal.querySelector(".modal-backdrop")
+.addEventListener("click",()=>{
+
+    paymentModal.classList.remove("open");
+    document.body.style.overflow="";
+
+});
+
 
 fabTransfer.onclick = ()=>{
 
@@ -908,9 +984,11 @@ function getNextId(type){
             return null;
     }
 
+
     const ids = allExpenses
         .map(x=>Number(x.id))
         .filter(id=>id>=min && id<=max);
+
 
     return ids.length
         ? Math.max(...ids)+1
@@ -998,6 +1076,7 @@ if(type !== "expense" && type !== "income"){
         return;
     }
 
+
     const editingId =
         editExpenseId.value
         ? Number(editExpenseId.value)
@@ -1020,20 +1099,23 @@ if(type !== "expense" && type !== "income"){
     }
 }
 
-   if (type === "installment") {
-  const d = Number(expenseDueDay.value);
-  const c = Number(expenseInstallments.value);
 
-  if (expenseDueDay.value !== "" && (!Number.isFinite(d) || d < 1 || d > 31)) {
-    alert("روز سررسید معتبر نیست.");
-    return;
-  }
-  if (expenseInstallments.value !== "" && (!Number.isFinite(c) || c < 0)) {
-    alert("تعداد اقساط معتبر نیست.");
-    return;
-  }
-}
+    if(type==="installment"){
 
+        const d=Number(expenseDueDay.value);
+        const c=Number(expenseInstallments.value);
+
+        if(!Number.isFinite(d)||d<1||d>31){
+            alert("روز سررسید معتبر نیست.");
+            return;
+        }
+
+        if(!Number.isFinite(c)||c<1){
+            alert("تعداد اقساط معتبر نیست.");
+            return;
+        }
+
+    }
 
     saveExpenseButton.disabled=true;
     saveExpenseButton.textContent="در حال ذخیره...";
@@ -1074,6 +1156,7 @@ if(type !== "expense" && type !== "income"){
         note: expenseNote.value.trim() || null
     });
 }
+
 
         closeModal();
 
@@ -1160,6 +1243,7 @@ function renderHome(){
 
 const today=getCurrentPersianDay();
 
+
 const overdue =
 allExpenses.filter(i=>
     isInstallment(i)
@@ -1169,12 +1253,19 @@ allExpenses.filter(i=>
     Number(i.due_day)<today
 ).length;
 
+
+
 const soon=getDueItems().length;
+
+
 
 let paid=0;
 let expense=0;
 
+
+
 allExpenses.forEach(i=>{
+
 
 // پرداخت اقساط این ماه
 if(
@@ -1184,6 +1275,7 @@ if(
 ){
     paid += Number(i.amount)||0;
 }
+
 
 // هزینه های ماه
 if(isExpense(i)){
@@ -1196,19 +1288,26 @@ if(isExpense(i)){
 
 }
 
+
 });
+
+
 
 $("homeOverdue").textContent=
 overdue.toLocaleString("fa-IR");
 
+
 $("homeSoon").textContent=
 soon.toLocaleString("fa-IR");
+
 
 $("homePaid").textContent=
 formatMoney(paid);
 
+
 $("homeExpense").textContent=
 formatMoney(expense);
+
 
 }
 function openReportDetails(kind){
@@ -1305,6 +1404,7 @@ if (remainingBar) {
   remainingBar.style.width = `${remainingPercentage}%`;
 }
 
+
   // نمودار درآمد / قسط پرداخت‌شده / هزینه / قسط پرداخت‌نشده
   const incomeChartTotal =
     monthIncomeTotal +
@@ -1391,6 +1491,9 @@ statusFilters.forEach(b=>b.addEventListener("click",()=>{statusFilters.forEach(x
 loadMoreButton.addEventListener("click",()=>{visibleCount+=PAGE_SIZE;renderAllCards()});
 document.querySelectorAll(".report-card[data-report]").forEach(c=>c.addEventListener("click",()=>openReportDetails(c.dataset.report)));
 closeReportDetails.addEventListener("click",closeReportModal);reportDetailsModal.querySelector(".modal-backdrop").addEventListener("click",closeReportModal);
+// جایگزین خط 893:
+// addExpenseButton.addEventListener("click",openNewModal);
+
 const fabMenu = $("fabMenu");
 
 addExpenseButton.addEventListener("click", () => {
@@ -1425,6 +1528,7 @@ function openWithType(type) {
   openModal();
 }
 
+
 // بستن منو با کلیک خارج از آن
 document.addEventListener("click", e => {
   if (!$("fabContainer").contains(e.target)) {
@@ -1432,6 +1536,10 @@ document.addEventListener("click", e => {
     addExpenseButton.classList.remove("open");
   }
 });
+ 
+
+///addExpenseButton.addEventListener("click",openNewModal);closeExpenseModalButton.addEventListener("click",closeModal);expenseModal.querySelector(".modal-backdrop").addEventListener("click",closeModal);
+
 installmentTypeButton.addEventListener("click",()=>setExpenseType("installment"));
 setupTransferButtons();
 expenseTypeButton.addEventListener("click",()=>setExpenseType("expense"));
@@ -1503,19 +1611,24 @@ $("transferForm").addEventListener("submit", async e=>{
 
 e.preventDefault();
 
+
 const from=$("transferFromModal").value;
 const to=$("transferToModal").value;
 const amount=Number($("transferAmount").value);
+
 
 if(!from || !to){
     alert("حساب مبدا و مقصد را انتخاب کنید");
     return;
 }
 
+
 if(from===to){
     alert("مبدا و مقصد یکسان است");
     return;
 }
+
+
 
 await addTransaction({
 
@@ -1531,9 +1644,11 @@ note:$("transferNote").value || null
 
 });
 
+
 transferModal.classList.remove("open");
 
 document.body.style.overflow="";
+
 
 alert("انتقال ثبت شد");
 
