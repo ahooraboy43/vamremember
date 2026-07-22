@@ -129,7 +129,16 @@ function updatePersianDate(){todayElement.textContent=new Intl.DateTimeFormat("f
 function isInstallment(i){
     return i.type==="installment" || Number(i.id)<10000;
 }
-let banks = JSON.parse(localStorage.getItem("banks") || '[]');
+const DEFAULT_BANKS = ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
+
+let banks;
+try {
+  const saved = localStorage.getItem("banks");
+  banks = saved ? JSON.parse(saved) : [...DEFAULT_BANKS];
+} catch {
+  banks = [...DEFAULT_BANKS];
+}
+
 
 function saveBanks() {
   localStorage.setItem("banks", JSON.stringify(banks));
