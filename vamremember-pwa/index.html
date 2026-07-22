@@ -524,7 +524,41 @@ id="remainingBar">
 <!-- ================= تنظیمات ================= -->
 
 <section class="page" id="settingsPage">
+<div class="home-section">
 
+<div class="section-title">
+🔐 قفل کل اپلیکیشن
+</div>
+
+<div class="settings-section">
+  <div class="settings-section-title">اعلان‌های روزانه</div>
+  <div class="settings-switch-row">
+    <label for="notifEnabledToggle">فعال‌سازی اعلان روزانه</label>
+    <input type="checkbox" id="notifEnabledToggle" class="settings-switch">
+  </div>
+  <div id="notifOptions" style="display: block;margin-top: 13px;">
+    <div class="settings-row">
+      <label>ساعت اعلان</label>
+      <input type="time" class="settings-row1" id="notifTime" value="20:00">
+    </div>
+    <div class="settings-row" style="display: block;margin-top: 13px;">
+      <label>تعداد دفعات در روز</label>
+      <select id="notifCount" class="settings-row1">
+        <option value="1">۱ بار</option>
+        <option value="2">۲ بار</option>
+        <option value="3">۳ بار</option>
+      </select>
+    </div>
+    <button id="saveNotifSettings" class="btn-primary">ذخیره تنظیمات اعلان</button>
+  </div>
+</div>
+
+
+<p class="settings-hint">
+تنظیمات نوتیف
+</p>
+
+</div>
 <div class="home-section">
 
 <div class="section-title">
@@ -621,6 +655,7 @@ id="remainingBar">
 </div>
 
 </div>
+
 
 <div class="home-section">
 
@@ -1332,6 +1367,7 @@ type="submit">
 </div>
 
 </div>
+<div id="toast" class="toast hidden"></div>
 
 <script src="./app.js"></script>
 

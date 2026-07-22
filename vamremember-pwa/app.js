@@ -1916,3 +1916,64 @@ if(saveAppLockPasswordButton){
 
 initAppLock();
 initSettingsUI();
+// Notification Settings
+const notifToggle = document.getElementById('notifEnabledToggle');
+const notifOptions = document.getElementById('notifOptions');
+const notifTime = document.getElementById('notifTime');
+const notifCount = document.getElementById('notifCount');
+
+function loadNotifSettings() {
+  const s = JSON.parse(localStorage.getItem('notifSettings') || '{}');
+  notifToggle.checked = s.enabled || false;
+  notifTime.value = s.time || '20:00';
+  notifCount.value = s.count || '1';
+  notifOptions.style.display = s.enabled ? 'block' : 'none';
+}
+
+notifToggle.addEventListener('change', () => {
+  notifOptions.style.display = notifToggle.checked ? 'block' : 'none';
+  if (notifToggle.checked) requestNotifPermission();
+});
+
+async function requestNotifPermission() {
+  if (!('Notification' in window)) return alert('مرورگر شما از اعلان پشتیبانی نمی‌کند');
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') {
+    notifToggle.checked = false;
+    notifOptions.style.display = 'none';
+    alert('دسترسی به اعلان رد شد');
+  }
+}
+
+document.getElementById('saveNotifSettings').addEventListener('click', () => {
+  const s = { enabled: notifToggle.checked, time: notifTime.value, count: parseInt(notifCount.value) };
+  localStorage.setItem('notifSettings', JSON.stringify(s));
+  scheduleNotifications(s);
+  alert('تنظیمات اعلان ذخیره شد');
+});
+
+function scheduleNotifications(s) {
+  // Clear existing alarms
+  if (window._notifTimers) window._notifTimers.forEach(clearTimeout);
+  window._notifTimers = [];
+  if (!s.enabled || Notification.permission !== 'granted') return;
+
+  const [h, m] = s.time.split(':').map(Number);
+  const interval = s.count > 1 ? Math.floor((24 * 60) / s.count) : null;
+
+  for (let i = 0; i < s.count; i++) {
+    const now = new Date();
+    const target = new Date();
+    target.setHours(h + (interval ? Math.floor(interval * i / 60) : 0), m + (interval ? (interval * i) % 60 : 0), 0, 0);
+    if (target <= now) target.setDate(target.getDate() + 1);
+    const delay = target - now;
+    window._notifTimers.push(setTimeout(() => {
+      new Notification('یادآوری هزینه‌ها', { body: 'هزینه‌های امروز رو ثبت کردی؟', dir: 'rtl' });
+    }, delay));
+  }
+}
+
+// Init
+loadNotifSettings();
+const savedNotif = JSON.parse(localStorage.getItem('notifSettings') || '{}');
+if (savedNotif.enabled) scheduleNotifications(savedNotif);

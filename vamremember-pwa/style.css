@@ -132,6 +132,7 @@ font-size:32px;
     font-weight: bold;
     margin-left: 26px;
     padding: 13px;
+    margin-top: 12px;
 }
 
 .home-button.active{
@@ -634,4 +635,49 @@ label{
 
 .unpaid-installment-bar {
   background: var(--warning);
+}
+.toast {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom) + 80px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e2d45;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  z-index: 9999;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  transition: opacity 0.3s;
+}
+.toast.hidden { opacity: 0; pointer-events: none; }
+.toast.success { border-right: 4px solid #22c55e; }
+.toast.error   { border-right: 4px solid #ef4444; }
+.toast.info    { border-right: 4px solid #3b82f6; }
+.settings-row{        display: block;
+    justify-content: center;
+    align-items: end;
+    border: 1px solid var(--border-light);
+    border-radius: 14px;
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 16px;
+    padding: 6px;
+    align-content: start;
+    justify-items: stretch;
+}
+.settings-row1{        display: block;
+    justify-content: center;
+    align-items: end;
+    border: 1px solid var(--border-light);
+    border-radius: 14px;
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 16px;
+    padding: 6px;
+    align-content: start;
+    justify-items: stretch;
+    margin-top: 5px;
 }
