@@ -129,7 +129,7 @@ function updatePersianDate(){todayElement.textContent=new Intl.DateTimeFormat("f
 function isInstallment(i){
     return i.type==="installment" || Number(i.id)<10000;
 }
-let banks = JSON.parse(localStorage.getItem("banks") || '');
+let banks = JSON.parse(localStorage.getItem("banks") || '[]');
 
 function saveBanks() {
   localStorage.setItem("banks", JSON.stringify(banks));
