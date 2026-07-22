@@ -99,6 +99,15 @@ const reportDetailsModal = $("reportDetailsModal"),
     reportDetailsTitle = $("reportDetailsTitle"),
     reportDetailsList = $("reportDetailsList"),
     closeReportDetails = $("closeReportDetails");
+let _toastTimer;
+function showToast(msg, type = 'info') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast ${type}`;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.add('hidden'), 3000);
+}
+
 function closeModalEl(modalEl){
     modalEl.classList.remove("open");
     document.body.style.overflow="";
