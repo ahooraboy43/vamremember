@@ -140,7 +140,15 @@ aria-label="بروزرسانی">
 </div>
 
 </div>
+<div class="home-section">
 
+<div class="section-title">
+🤝 قرض و دین
+</div>
+
+<div id="debtsPanel"></div>
+
+</div>
 <div class="home-status-grid">
 
 <div class="status-card danger">
@@ -190,25 +198,7 @@ alt="">
 
 </div>
 
-<div class="home-section">
 
-<div class="section-title">
-آخرین اقساط
-</div>
-
-<div id="homeRecent"></div>
-
-</div>
-
-<div class="home-section">
-
-<div class="section-title">
-وضعیت مالی
-</div>
-
-<div id="homeSummary"></div>
-
-</div>
 
 </section>
 
@@ -527,35 +517,6 @@ id="remainingBar">
 <div class="home-section">
 
 <div class="section-title">
-💦 اعلان ها
-</div>
-
-<div class="settings-section">
-  <div class="settings-switch-row">
-    <label for="notifEnabledToggle">فعال‌سازی اعلان روزانه</label>
-    <input type="checkbox" id="notifEnabledToggle" class="settings-switch">
-  </div>
-  <div id="notifOptions" style="display: block;margin-top: 13px;">
-    <div class="settings-row">
-      <label>ساعت اعلان</label>
-      <input type="time" class="settings-row1" id="notifTime" value="20:00">
-    </div>
-    <div class="settings-row" style="display: block;margin-top: 13px;">
-      <label>تعداد دفعات در روز</label>
-      <select id="notifCount" class="settings-row1">
-        <option value="1">۱ بار</option>
-        <option value="2">۲ بار</option>
-        <option value="3">۳ بار</option>
-      </select>
-    </div>
-    <button id="saveNotifSettings" class="btn-primary">ذخیره تنظیمات اعلان</button>
-  </div>
-</div>
-
-</div>
-<div class="home-section">
-
-<div class="section-title">
 🔐 قفل کل اپلیکیشن
 </div>
 
@@ -841,8 +802,39 @@ id="reportDetailsList">
 </div>
 
 </div>
-<!-- ================= مودال ثبت مورد ================= -->
 
+<!-- ================= مودال جزئیات قرض و دین ================= -->
+
+<div class="modal" id="debtDetailsModal">
+  <div class="modal-backdrop"></div>
+
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+
+    <div class="modal-header">
+      <h2 id="debtDetailsTitle">جزئیات قرض / دین</h2>
+
+      <button
+        class="close-modal"
+        id="closeDebtDetailsModal"
+        type="button"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="debt-details-body" id="debtDetailsBody"></div>
+
+<div class="debt-details-actions">
+  <button id="editDebtDetailsBtn" type="button" class="edit-btn">ویرایش</button>
+  <button id="deleteDebtDetailsBtn" type="button" class="delete-btn">حذف</button>
+</div>
+
+  </div>
+</div>
+
+
+<!-----------------dsadsasda================= -->
 <div 
 class="modal"
 id="expenseModal">
@@ -911,6 +903,12 @@ type="button">
 
 💰 درآمد
 
+</button>
+<button
+id="debtTypeButton"
+data-type="debt"
+type="button">
+🤝 قرض و دین
 </button>
 
 </div>
@@ -995,6 +993,33 @@ min="1">
 
 </div>
 
+<!-- ================= قرض و دیون================= -->
+<div id="debtFields" class="hidden">
+
+<div class="field">
+<span>نوع تراکنش</span>
+<div class="expense-type-selector">
+<button type="button" class="debt-direction-btn active" data-direction="lent">💸 دادم (طلبکارم)</button>
+<button type="button" class="debt-direction-btn" data-direction="borrowed">🙏 گرفتم (بدهکارم)</button>
+</div>
+<input type="hidden" id="debtDirection" value="lent">
+</div>
+
+<label class="field">
+<span>طرف حساب</span>
+<input type="text" id="debtCounterparty" placeholder="مثلا علی رضایی">
+</label>
+
+<div class="field">
+<span>موعد تسویه</span>
+<div class="field-grid" style="grid-template-columns:1fr 1.4fr 1fr">
+<select id="debtDueDay"></select>
+<select id="debtDueMonth"></select>
+<input type="number" id="debtDueYear" placeholder="۱۴۰۵" inputmode="numeric">
+</div>
+</div>
+
+</div>
 <!-- ================= هزینه ================= -->
 
 <div 

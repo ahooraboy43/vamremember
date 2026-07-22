@@ -290,7 +290,7 @@ height: 35px;
 
 
 .home-section{
-  background:var(--surface);
+  background:linear-gradient(21deg, #161010, #770303);
   border:1px solid var(--border);
   border-radius:20px;
   padding:18px;
@@ -681,3 +681,214 @@ label{
     justify-items: stretch;
     margin-top: 5px;
 }
+.debt-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border-radius:14px;background:#1e293b57;margin-bottom:8px;border-right:4px solid var(--border-light)}
+.debt-row.debt-lent{border-right-color:#22b6c5f0;}
+.debt-row.debt-borrowed{border-right-color:var(--danger)}
+.debt-title{font-weight:bold;font-size:13px}
+.debt-meta{color:var(--muted);font-size:11px;margin-top:4px}
+.debt-amount{font-weight:bold;font-size:13px;white-space:nowrap}
+.debt-actions{display:flex;gap:6px}
+.debt-actions button{border:0;border-radius:8px;background:var(--surface);color:var(--text);padding:6px 8px;font-size:11px}
+.debt-actions .delete-debt{color:var(--danger)}
+#debtsPanel{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.debt-row{
+  border-radius:16px;
+  padding:14px 16px;
+  cursor:pointer;
+  transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.debt-row:hover{
+  transform:translateY(-2px);
+}
+
+.debt-row:active{
+  transform:scale(.99);
+}
+
+.debt-row:focus-visible{
+  outline:2px solid #7c9cff;
+  outline-offset:2px;
+}
+
+.debt-lent{
+  background:linear-gradient(135deg, rgba(16,185,129,.16), rgba(16,185,129,.07));
+  border-right:4px solid #10b981;
+}
+
+.debt-borrowed{
+  background:linear-gradient(135deg, rgba(239,68,68,.16), rgba(239,68,68,.07));
+  border-right:4px solid #ef4444;
+}
+
+.debt-card-summary{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.debt-card-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.debt-title{
+  font-weight:700;
+  font-size:15px;
+  color:var(--text-color, #fff);
+}
+
+.debt-amount{
+  font-weight:800;
+  font-size:15px;
+  white-space:nowrap;
+}
+
+.debt-card-bottom{
+  font-size:13px;
+  opacity:.85;
+}
+
+.debt-details-body{
+  padding:8px 0 14px;
+}
+
+.debt-detail-list{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.debt-detail-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+
+.debt-detail-item span{
+  font-size:13px;
+  opacity:.8;
+}
+
+.debt-detail-item strong{
+  font-size:14px;
+  text-align:left;
+}
+
+.debt-details-actions{
+  display:flex;
+  gap:10px;
+  margin-top:14px;
+}
+
+.debt-details-actions button{
+  flex:1;
+}
+.edit-btn,
+.delete-btn {
+  width: 100%;
+  height: 48px;
+  border: none;
+  outline: none;
+  border-radius: 16px;
+  padding: 0 18px;
+  margin-top: 10px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease,
+    filter .18s ease,
+    background .18s ease;
+}
+
+.edit-btn::before,
+.delete-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(255,255,255,.22),
+    rgba(255,255,255,0) 45%
+  );
+  opacity: .7;
+  pointer-events: none;
+}
+
+.edit-btn {
+  background: linear-gradient(135deg, #2563eb, #06b6d4);
+  box-shadow:
+    0 12px 26px rgba(37, 99, 235, .32),
+    inset 0 1px 0 rgba(255,255,255,.25);
+}
+
+.delete-btn {
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  box-shadow:
+    0 12px 26px rgba(239, 68, 68, .32),
+    inset 0 1px 0 rgba(255,255,255,.25);
+}
+
+.edit-btn:hover,
+.delete-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.07);
+}
+
+.edit-btn:active,
+.delete-btn:active {
+  transform: translateY(0) scale(.98);
+  filter: brightness(.96);
+}
+
+.edit-btn:disabled,
+.delete-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none;
+  filter: grayscale(.3);
+}
+.edit-btn::after {
+  content: "✎";
+  font-size: 16px;
+  margin-right: 6px;
+}
+
+.delete-btn::after {
+  content: "×";
+  font-size: 22px;
+  line-height: 1;
+  margin-right: 6px;
+}
+.debt-details-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+

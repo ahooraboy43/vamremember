@@ -16,6 +16,27 @@ const MONTHS = [
     { key: "bahman", name: "بهمن" },
     { key: "esfand", name: "اسفند" }
 ];
+const DEBT_TABLE = "debts";
+let allDebts = [];
+let editingDebtId = null;
+
+function fillDebtDateSelects(){
+  const daySel = $("debtDueDay"), monthSel = $("debtDueMonth");
+  if(daySel && !daySel.options.length){
+    for(let d=1; d<=31; d++){
+      const op = document.createElement("option");
+      op.value = d; op.textContent = d.toLocaleString("fa-IR");
+      daySel.appendChild(op);
+    }
+  }
+  if(monthSel && !monthSel.options.length){
+    MONTHS.forEach(m=>{
+      const op = document.createElement("option");
+      op.value = m.key; op.textContent = m.name;
+      monthSel.appendChild(op);
+    });
+  }
+}
 const PAGE_SIZE = 10;
 
 let allExpenses = [],
@@ -113,10 +134,23 @@ function closeModalEl(modalEl){
     document.body.style.overflow="";
 }
 
-closeExpenseModal.addEventListener("click", closeModal);
-closeTransferModal.addEventListener("click", ()=>closeModalEl(transferModal));
-transferModal.querySelector(".modal-backdrop").addEventListener("click", ()=>closeModalEl(transferModal));
-expenseModal.querySelector(".modal-backdrop").addEventListener("click", closeModal);
+closeExpenseModal?.addEventListener("click", closeModal);
+
+closeTransferModal?.addEventListener("click", () => {
+  if (transferModal) {
+    closeModalEl(transferModal);
+  }
+});
+
+transferModal
+  ?.querySelector(".modal-backdrop")
+  ?.addEventListener("click", () => {
+    closeModalEl(transferModal);
+  });
+
+expenseModal
+  ?.querySelector(".modal-backdrop")
+  ?.addEventListener("click", closeModal);
 
 async function addTransaction(data){
     return await supabaseRequest(
@@ -596,7 +630,8 @@ function setExpenseType(type){
     "hidden",
     type !== "expense"
 );
-
+$("debtTypeButton")?.classList.toggle("active", type === "debt");
+$("debtFields")?.classList.toggle("hidden", type !== "debt");
 incomeFields?.classList.toggle(
     "hidden",
     type !== "income"
@@ -620,7 +655,16 @@ expenseTitleSelect.classList.add("hidden");
 startMonthLabel.textContent="ماه شروع";
 
 break;
-
+case "debt":
+    fillDebtDateSelects();
+    expenseTitleLabel.textContent = "توضیح (اختیاری)";
+    expenseTitle.placeholder = "توضیح دلخواه";
+    if(!editExpenseId.value && !editingDebtId){
+        $("debtDueDay").value = getCurrentPersianDay();
+        $("debtDueMonth").value = currentMonthKey;
+        $("debtDueYear").value = getPersianDateParts().year;
+    }
+    break;
 case "expense":
 
 expenseTitleLabel.textContent="عنوان هزینه";
@@ -664,6 +708,9 @@ expenseInstallments.required = false;
             case "installment":
                 saveExpenseButton.textContent="ثبت قسط";
                 break;
+                case "debt":
+    saveExpenseButton.textContent = "ثبت قرض/دین";
+    break;
 
             case "expense":
                 saveExpenseButton.textContent="ثبت هزینه";
@@ -856,7 +903,7 @@ fabTransfer.onclick = ()=>{
 
 };
 function closeModal(){expenseModal.classList.remove("open");document.body.style.overflow=""}
-function resetExpenseForm(){expenseForm.reset();editExpenseId.value="";monthsEditor.classList.add("hidden");monthFields.innerHTML="";expenseStartMonth.value=currentMonthKey;expenseModalTitle.textContent="ثبت مورد جدید";setExpenseType("installment")}
+function resetExpenseForm(){editingDebtId = null;expenseForm.reset();editExpenseId.value="";monthsEditor.classList.add("hidden");monthFields.innerHTML="";expenseStartMonth.value=currentMonthKey;expenseModalTitle.textContent="ثبت مورد جدید";setExpenseType("installment")}
 function openNewModal(){resetExpenseForm();openModal()}
 function openEditModal(item){
   resetExpenseForm();
@@ -960,6 +1007,69 @@ async function saveExpense(e){
     e.preventDefault();
 
     const type = expenseType.value;
+    if(type === "debt"){
+    const counterparty = $("debtCounterparty").value.trim();
+    const amount = Number(expenseAmount.value);
+    const day = Number($("debtDueDay").value);
+    const month = $("debtDueMonth").value;
+    const year = Number($("debtDueYear").value);
+    const direction = $("debtDirection").value || "lent";
+
+    if(!counterparty){ alert("نام طرف حساب را وارد کنید."); return; }
+    if(!Number.isFinite(amount) || amount <= 0){ alert("مبلغ معتبر نیست."); return; }
+    if(!Number.isFinite(day) || day < 1 || day > 31){ alert("روز موعد تسویه معتبر نیست."); return; }
+    if(!month){ alert("ماه موعد تسویه را انتخاب کنید."); return; }
+    if(!Number.isFinite(year) || year < 1300){ alert("سال معتبر نیست."); return; }
+
+    const body = {
+        direction, counterparty, amount,
+        due_day: day, due_month: month, due_year: year,
+        note: expenseTitle.value.trim() || null
+    };
+
+    saveExpenseButton.disabled = true;
+    try{
+        const debtPath = editingDebtId
+  ? `${DEBT_TABLE}?id=eq.${encodeURIComponent(editingDebtId)}`
+  : DEBT_TABLE;
+
+console.log("Saving debt:", {
+  editingDebtId,
+  method: editingDebtId ? "PATCH" : "POST",
+  path: debtPath,
+  body
+});
+
+const result = await supabaseRequest(
+  debtPath,
+  {
+    method: editingDebtId ? "PATCH" : "POST",
+    headers: {
+      Prefer: "return=representation"
+    },
+    body: JSON.stringify(body)
+  }
+);
+
+console.log("Save debt result:", result);
+
+if(editingDebtId && Array.isArray(result) && result.length === 0){
+  alert("ویرایش انجام نشد؛ رکوردی با این شناسه پیدا نشد.");
+  console.error("PATCH بدون نتیجه:", editingDebtId, result);
+  return;
+}
+
+closeModal();
+await loadDebts();
+
+    }catch(err){
+        alert("خطا:\n"+err.message);
+    }finally{
+        saveExpenseButton.disabled = false;
+        
+    }
+    return;
+}
 
     // انتقال وجه
     if(type==="transfer"){
@@ -1378,6 +1488,253 @@ if (remainingBar) {
     $("unpaidInstallmentBar").style.width=`${unpaidInstallmentPercentage}%`;
   }
 }
+async function loadDebts(){
+  try{
+    const data = await supabaseRequest(`${DEBT_TABLE}?select=*&order=due_year.asc`);
+    allDebts = Array.isArray(data) ? data : [];
+  }catch(e){
+    console.error("خطا در دریافت قرض و دیون", e);
+    allDebts = [];
+  }
+  renderDebtsPanel();
+}
+
+function renderDebtsPanel(){
+    
+  const container = $("debtsPanel");
+  if(!container) return;
+
+  if(!allDebts.length){
+    container.innerHTML = '<div class="empty">قرض یا دینی ثبت نشده</div>';
+    return;
+  }
+  
+
+  const sorted = [...allDebts].sort((a,b)=>{
+    const am = MONTHS.findIndex(m=>m.key === a.due_month);
+    const bm = MONTHS.findIndex(m=>m.key === b.due_month);
+    return (Number(a.due_year) - Number(b.due_year)) ||
+           (am - bm) ||
+           (Number(a.due_day) - Number(b.due_day));
+  });
+
+  container.innerHTML = "";
+
+  sorted.forEach(d=>{
+    const monthName = MONTHS.find(m=>m.key === d.due_month)?.name || "";
+
+    const row = document.createElement("article");
+    row.className = `debt-row ${d.direction === "lent" ? "debt-lent" : "debt-borrowed"}`;
+    row.setAttribute("tabindex", "0");
+    row.setAttribute("role", "button");
+
+    row.innerHTML = `
+      <div class="debt-card-summary">
+        <div class="debt-card-top">
+          <div class="debt-title">${escapeHtml(d.counterparty || "بدون نام")}</div>
+          <div class="debt-amount">${formatMoney(d.amount)}</div>
+        </div>
+
+        <div class="debt-card-bottom">
+          سررسید: ${Number(d.due_day || 0).toLocaleString("fa-IR")} ${monthName} ${Number(d.due_year || 0).toLocaleString("fa-IR")}
+        </div>
+      </div>
+    `;
+
+    row.addEventListener("click", ()=>openDebtDetailsModal(d));
+
+    row.addEventListener("keydown", (e)=>{
+      if(e.key === "Enter" || e.key === " "){
+        e.preventDefault();
+        openDebtDetailsModal(d);
+      }
+    });
+
+    container.appendChild(row);
+  });
+}
+let activeDebtDetails = null;
+
+function openDebtDetailsModal(d){
+  activeDebtDetails = d;
+
+  const modal = $("debtDetailsModal");
+  const body = $("debtDetailsBody");
+  const title = $("debtDetailsTitle");
+
+  // پشتیبانی از هر دو مدل ID برای جلوگیری از خراب شدن
+  const editBtn =
+    $("editDebtDetailsBtn") ||
+    $("debtDetailsEditBtn");
+
+  const deleteBtn =
+    $("deleteDebtDetailsBtn") ||
+    $("debtDetailsDeleteBtn");
+
+  if(!modal){
+    console.error("debtDetailsModal پیدا نشد");
+    return;
+  }
+
+  if(!body){
+    console.error("debtDetailsBody پیدا نشد");
+    return;
+  }
+
+  if(title){
+    title.textContent = d.counterparty || "جزئیات قرض / دین";
+  }
+
+  const monthName = MONTHS.find(m => m.key === d.due_month)?.name || "";
+  const directionText = d.direction === "lent" ? "طلب از او" : "بدهی به او";
+
+  body.innerHTML = `
+    <div class="debt-detail-list">
+
+      <div class="debt-detail-item">
+        <span>طرف حساب</span>
+        <strong>${escapeHtml(d.counterparty || "-")}</strong>
+      </div>
+
+      <div class="debt-detail-item">
+        <span>نوع</span>
+        <strong>${directionText}</strong>
+      </div>
+
+      <div class="debt-detail-item">
+        <span>مبلغ</span>
+        <strong>${formatMoney(d.amount)}</strong>
+      </div>
+
+      <div class="debt-detail-item">
+        <span>سررسید</span>
+        <strong>
+          ${Number(d.due_day || 0).toLocaleString("fa-IR")}
+          ${monthName}
+          ${Number(d.due_year || 0).toLocaleString("fa-IR")}
+        </strong>
+      </div>
+
+      <div class="debt-detail-item">
+        <span>عنوان / توضیح</span>
+        <strong>${escapeHtml(d.note || "-")}</strong>
+      </div>
+
+    </div>
+  `;
+
+  if(editBtn){
+    editBtn.onclick = (event)=>{
+      event.preventDefault();
+      event.stopPropagation();
+
+      closeDebtDetailsModal();
+      openEditDebtModal(d);
+    };
+  } else {
+    console.error("دکمه ویرایش مودال جزئیات پیدا نشد");
+  }
+
+  if(deleteBtn){
+   deleteBtn.onclick = async event => {
+  event.preventDefault();
+  event.stopPropagation();
+
+  console.log("Debt selected for delete:", d);
+
+  await deleteDebt(d.id);
+};
+
+  } else {
+    console.error("دکمه حذف مودال جزئیات پیدا نشد");
+  }
+
+  modal.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeDebtDetailsModal(){
+  const modal = $("debtDetailsModal");
+  if(!modal) return;
+  modal.classList.remove("open");
+  document.body.style.overflow = "";
+  activeDebtDetails = null;
+}
+
+
+async function deleteDebt(id) {
+  if (id === null || id === undefined || id === "") {
+    alert("شناسه قرض پیدا نشد.");
+    return;
+  }
+
+  if (!confirm("این مورد حذف شود؟")) return;
+
+  try {
+    console.log("Deleting debt:", id);
+
+    const result = await supabaseRequest(
+      `${DEBT_TABLE}?id=eq.${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+        headers: {
+          Prefer: "return=representation"
+        }
+      }
+    );
+
+    console.log("Delete debt result:", result);
+
+    if (!Array.isArray(result) || result.length === 0) {
+      throw new Error(
+        `رکورد با شناسه ${id} حذف نشد. Policy مربوط به DELETE را بررسی کنید.`
+      );
+    }
+
+    closeDebtDetailsModal();
+    await loadDebts();
+
+  } catch (err) {
+    console.error("Delete debt failed:", err);
+    alert("خطا در حذف:\n" + err.message);
+  }
+}
+
+
+
+function openEditDebtModal(d){
+  if(!d || !d.id){
+    alert("شناسه این مورد برای ویرایش پیدا نشد.");
+    console.error("openEditDebtModal بدون id:", d);
+    return;
+  }
+
+  resetExpenseForm();
+  fillDebtDateSelects();
+
+  editingDebtId = d.id;
+
+  setExpenseType("debt");
+
+  expenseTitle.value = d.note || "";
+  expenseAmount.value = d.amount ?? "";
+
+  $("debtCounterparty").value = d.counterparty || "";
+  $("debtDueDay").value = d.due_day || "";
+  $("debtDueMonth").value = d.due_month || currentMonthKey;
+  $("debtDueYear").value = d.due_year || "";
+
+  document.querySelectorAll(".debt-direction-btn").forEach(b=>{
+    b.classList.toggle("active", b.dataset.direction === d.direction);
+  });
+
+  $("debtDirection").value = d.direction || "lent";
+
+  expenseModalTitle.textContent = "ویرایش قرض/دین";
+  saveExpenseButton.textContent = "ذخیره تغییرات";
+
+  openModal();
+}
 
 function openPage(id,title){
   pages.forEach(p=>p.classList.toggle("active",p.id===id));
@@ -1442,6 +1799,9 @@ function openWithType(type) {
   setExpenseType(type);
   openModal();
 }
+$("closeDebtDetailsModal")?.addEventListener("click", closeDebtDetailsModal);
+$("debtDetailsModal")?.querySelector(".modal-backdrop")?.addEventListener("click", closeDebtDetailsModal);
+
 
 // بستن منو با کلیک خارج از آن
 document.addEventListener("click", e => {
@@ -1450,8 +1810,14 @@ document.addEventListener("click", e => {
     addExpenseButton.classList.remove("open");
   }
 });
+
+
 installmentTypeButton.addEventListener("click",()=>setExpenseType("installment"));
 setupTransferButtons();
+$("debtTypeButton")?.addEventListener("click", ()=>setExpenseType("debt"));
+setupButtonGroup(document, ".debt-direction-btn", btn=>{
+    $("debtDirection").value = btn.dataset.direction;
+});
 expenseTypeButton.addEventListener("click",()=>setExpenseType("expense"));
 if(transferTypeButton){
     transferTypeButton.addEventListener(
@@ -1558,6 +1924,7 @@ alert("انتقال ثبت شد");
 });
 loadData().then(()=>{
     openPage("duePage","⏰ سررسید اقساط");
+    loadDebts();
 });
 function addSwipeToClose(modalId) {
   const modal = document.getElementById(modalId);
@@ -1916,64 +2283,3 @@ if(saveAppLockPasswordButton){
 
 initAppLock();
 initSettingsUI();
-// Notification Settings
-const notifToggle = document.getElementById('notifEnabledToggle');
-const notifOptions = document.getElementById('notifOptions');
-const notifTime = document.getElementById('notifTime');
-const notifCount = document.getElementById('notifCount');
-
-function loadNotifSettings() {
-  const s = JSON.parse(localStorage.getItem('notifSettings') || '{}');
-  notifToggle.checked = s.enabled || false;
-  notifTime.value = s.time || '20:00';
-  notifCount.value = s.count || '1';
-  notifOptions.style.display = s.enabled ? 'block' : 'none';
-}
-
-notifToggle.addEventListener('change', () => {
-  notifOptions.style.display = notifToggle.checked ? 'block' : 'none';
-  if (notifToggle.checked) requestNotifPermission();
-});
-
-async function requestNotifPermission() {
-  if (!('Notification' in window)) return alert('مرورگر شما از اعلان پشتیبانی نمی‌کند');
-  const perm = await Notification.requestPermission();
-  if (perm !== 'granted') {
-    notifToggle.checked = false;
-    notifOptions.style.display = 'none';
-    alert('دسترسی به اعلان رد شد');
-  }
-}
-
-document.getElementById('saveNotifSettings').addEventListener('click', () => {
-  const s = { enabled: notifToggle.checked, time: notifTime.value, count: parseInt(notifCount.value) };
-  localStorage.setItem('notifSettings', JSON.stringify(s));
-  scheduleNotifications(s);
-  alert('تنظیمات اعلان ذخیره شد');
-});
-
-function scheduleNotifications(s) {
-  // Clear existing alarms
-  if (window._notifTimers) window._notifTimers.forEach(clearTimeout);
-  window._notifTimers = [];
-  if (!s.enabled || Notification.permission !== 'granted') return;
-
-  const [h, m] = s.time.split(':').map(Number);
-  const interval = s.count > 1 ? Math.floor((24 * 60) / s.count) : null;
-
-  for (let i = 0; i < s.count; i++) {
-    const now = new Date();
-    const target = new Date();
-    target.setHours(h + (interval ? Math.floor(interval * i / 60) : 0), m + (interval ? (interval * i) % 60 : 0), 0, 0);
-    if (target <= now) target.setDate(target.getDate() + 1);
-    const delay = target - now;
-    window._notifTimers.push(setTimeout(() => {
-      new Notification('یادآوری هزینه‌ها', { body: 'هزینه‌های امروز رو ثبت کردی؟', dir: 'rtl' });
-    }, delay));
-  }
-}
-
-// Init
-loadNotifSettings();
-const savedNotif = JSON.parse(localStorage.getItem('notifSettings') || '{}');
-if (savedNotif.enabled) scheduleNotifications(savedNotif);
