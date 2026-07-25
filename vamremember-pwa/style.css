@@ -290,7 +290,15 @@ height: 35px;
 
 
 .home-section{
-  background:linear-gradient(21deg, #161010, #770303);
+  background:#0b1220;
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:18px;
+  margin-bottom:14px;
+}
+
+.home-gharz{
+  background:linear-gradient(42deg, #4743441a, #000000f5);
   border:1px solid var(--border);
   border-radius:20px;
   padding:18px;
