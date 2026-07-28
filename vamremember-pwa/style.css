@@ -2820,7 +2820,130 @@ label{
 .toast.info{
   border-right:4px solid #3b82f6;
 }
+/* =========================================================
+   FIX — اندازه نوار پایین و کارت‌ها در آیفون
+   ========================================================= */
 
+/* نوار پایین */
+.bottom-nav{
+    height: 82px !important;
+    min-height: 82px !important;
+    padding: 4px 10px calc(4px + env(safe-area-inset-bottom)) !important;
+    align-items: center !important;
+    border-radius: 26px 26px 0 0 !important;
+}
+
+/* آیتم‌های نوار پایین */
+.nav-button{
+    min-height: 48px !important;
+    height: 48px !important;
+    padding: 3px 6px !important;
+    gap: 2px !important;
+    font-size: 10px !important;
+    line-height: 1.1 !important;
+}
+
+/* آیکن‌های نوار پایین */
+.nav-button span{
+    font-size: 21px !important;
+    line-height: 22px !important;
+}
+
+/* نوشته زیر آیکن */
+.nav-button small{
+    font-size: 10px !important;
+    line-height: 13px !important;
+}
+
+/* دکمه خانه وسط */
+.home-button{
+    width: 70px !important;
+    height: 70px !important;
+    margin-top: -48px !important;
+    border-radius: 50% !important;
+}
+
+/* آیکن خانه */
+.home-button span{
+    font-size: 29px !important;
+    line-height: 1 !important;
+}
+
+/* =========================================================
+   جلوگیری از بزرگ شدن کارت‌ها
+   ========================================================= */
+
+.card-main{
+    padding: 14px !important;
+}
+
+.card{
+    border-radius: 18px !important;
+}
+
+.name{
+    font-size: 15px !important;
+}
+
+.amount{
+    font-size: 18px !important;
+}
+
+.meta{
+    font-size: 12px !important;
+}
+
+.compact-main{
+    padding: 11px 13px !important;
+}
+
+.compact-amount{
+    font-size: 18px !important;
+}
+
+.compact-title{
+    font-size: 13px !important;
+}
+
+.compact-secondary{
+    font-size: 11px !important;
+}
+
+/* کارت‌های داشبورد */
+.status-card{
+    padding: 14px !important;
+    border-radius: 17px !important;
+}
+
+.status-card span{
+    font-size: 26px !important;
+}
+
+.status-card strong{
+    font-size: 22px !important;
+}
+
+/* =========================================================
+   جلوگیری از بزرگ شدن فضای کلی صفحات
+   ========================================================= */
+
+.page{
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+}
+
+/* روی موبایل حتی جمع‌وجورتر */
+@media(max-width:620px){
+
+    .page{
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+    }
+
+    .bottom-nav{
+        width:100% !important;
+    }
+}
 /* =========================================================
    LIGHT THEME
 ========================================================= */
