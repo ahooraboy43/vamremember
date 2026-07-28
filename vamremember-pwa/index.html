@@ -1,445 +1,1393 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html dir="rtl" lang="fa">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>سررسید اقساط و هزینه‌ها</title>
-  <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./style.css">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="اقساط">
-  <link rel="apple-touch-icon" href="assets/book.png">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<meta name="theme-color" content="#0b1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="اقساط">
+
+<link rel="manifest" href="./manifest.json">
+<link rel="stylesheet" href="./style.css">
+
+<title>حسابداری شایان</title>
 </head>
+
 <body>
-  <main class="app">
-    <!-- Header -->
-    <header class="app-header">
-      <div class="header-main">
-        <img src="assets/book.png" alt="لوگو" class="header-logo">
-        <h1 id="pageTitle">سررسید اقساط</h1>
-      </div>
-      <div class="header-sub">
-        <span id="today">در حال دریافت تاریخ...</span>
-        <div class="header-actions">
-          <button id="settingsButton" class="icon-button" type="button" aria-label="تنظیمات">⚙</button>
-          <button id="refresh" class="icon-button" type="button" aria-label="بروزرسانی">↻</button>
-        </div>
-      </div>
-    </header>
 
-    <!-- Home Page -->
-    <div id="homePage" class="page active">
-      <div class="summary-card">
-        <div class="summary-title">وضعیت پرداخت‌های پیش‌رو</div>
-        <div class="summary-value" id="nextDueAmount">۰ تومان</div>
-        <div class="summary-desc" id="nextDueDays">باری لود نشد</div>
-      </div>
+<!-- ================= قفل اپلیکیشن ================= -->
 
-      <div class="home-section">
-        <div class="section-title">⏰ سررسیدهای نزدیک</div>
-        <div id="dueList" class="due-list"></div>
-      </div>
+<div id="appLockScreen" class="app-lock-screen hidden">
 
-      <div class="home-section">
-        <div class="section-title">📊 خلاصه وضعیت مالی</div>
-        <div class="fin-summary-grid">
-          <div class="fin-box">
-            <span class="fin-label">کل بدهی باقیمانده</span>
-            <span class="fin-value" id="totalDebtsVal">۰ تومان</span>
-          </div>
-          <div class="fin-box">
-            <span class="fin-label">کل قسط‌های این ماه</span>
-            <span class="fin-value" id="currentMonthInstallmentsVal">۰ تومان</span>
-          </div>
-        </div>
-      </div>
-    </div>
+<div class="app-lock-box">
 
-    <!-- Expenses Page -->
-    <div id="expensesPage" class="page">
-      <div class="filter-bar">
-        <div class="search-box">
-          <input type="text" id="searchInput" placeholder="جستجو در عنوان یا توضیحات...">
-        </div>
-        <div class="filter-controls">
-          <select id="statusFilter">
-            <option value="all">همه وضعیت‌ها</option>
-            <option value="active">فعال (در حال پرداخت)</option>
-            <option value="finished">پایان یافته</option>
-          </select>
-          <select id="bankFilter">
-            <option value="all">همه بانک‌ها</option>
-          </select>
-        </div>
-      </div>
-      <div id="statusBox" class="status-box">در حال دریافت اطلاعات...</div>
-      <div id="cardsContainer" class="cards-grid"></div>
-    </div>
+<img class="app-lock-logo" src="assets/book.png" alt="">
 
-    <!-- Reports Page -->
-    <div id="reportsPage" class="page">
-      <div class="report-filters">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="reportYear">سال</label>
-            <select id="reportYear"></select>
-          </div>
-          <div class="form-group">
-            <label for="reportMonth">ماه</label>
-            <select id="reportMonth">
-              <option value="all">کل سال</option>
-              <option value="01">فروردین</option>
-              <option value="02">اردیبهشت</option>
-              <option value="03">خرداد</option>
-              <option value="04">تیر</option>
-              <option value="05">مرداد</option>
-              <option value="06">شهریور</option>
-              <option value="07">مهر</option>
-              <option value="08">آبان</option>
-              <option value="09">آذر</option>
-              <option value="10">دی</option>
-              <option value="11">بهمن</option>
-              <option value="12">اسفند</option>
-            </select>
-          </div>
-        </div>
-      </div>
+<h2>حسابداری شایان</h2>
 
-      <div class="report-summary">
-        <div class="report-stat">
-          <span class="report-stat-label">پرداخت‌شده در بازه انتخابی</span>
-          <span class="report-stat-val" id="reportPaidVal">۰ تومان</span>
-        </div>
-        <div class="report-stat">
-          <span class="report-stat-label">مانده پرداخت‌نشده</span>
-          <span class="report-stat-val" id="reportUnpaidVal">۰ تومان</span>
-        </div>
-      </div>
+<p>برای ورود، رمز عبور را وارد کنید</p>
 
-      <div class="report-section">
-        <div class="section-title">📋 جزئیات پرداخت‌های بازه</div>
-        <div id="reportList" class="report-list"></div>
-      </div>
-    </div>
+<form id="appLockForm">
 
-    <!-- Debts Page -->
-    <div id="debtsPage" class="page">
-      <div class="page-header-actions">
-        <h3>مدیریت طلب‌ها و بدهی‌ها</h3>
-        <button class="btn btn-primary" id="addDebtBtn">+ ثبت مورد جدید</button>
-      </div>
+<input
+id="appLockInput"
+type="password"
+inputmode="numeric"
+autocomplete="off"
+placeholder="رمز عبور"
+required>
 
-      <div class="debt-tabs">
-        <button class="debt-tab active" data-tab="all">همه</button>
-        <button class="debt-tab" data-tab="creditor">طلب‌های من</button>
-        <button class="debt-tab" data-tab="debtor">بدهی‌های من</button>
-      </div>
+<button class="primary-button" type="submit">
+ورود
+</button>
 
-      <div class="report-summary" style="margin-top: 15px; margin-bottom: 15px;">
-        <div class="report-stat">
-          <span class="report-stat-label">کل طلب‌های من</span>
-          <span class="report-stat-val text-success" id="totalCreditorVal">۰ تومان</span>
-        </div>
-        <div class="report-stat">
-          <span class="report-stat-label">کل بدهی‌های من</span>
-          <span class="report-stat-val text-danger" id="totalDebtorVal">۰ تومان</span>
-        </div>
-      </div>
+</form>
 
-      <div id="debtsStatusBox" class="status-box">در حال دریافت اطلاعات...</div>
-      <div id="debtsContainer" class="debts-grid"></div>
-    </div>
+<p id="appLockError" class="app-lock-error hidden">
+رمز عبور اشتباه است
+</p>
 
-    <!-- Settings Page -->
-    <div id="settingsPage" class="page">
-      <div class="settings-group">
-        <div class="settings-title">ظاهر و پوسته</div>
-        <div class="form-group">
-          <label for="themeSelect">انتخاب تم</label>
-          <select id="themeSelect">
-            <option value="light">روشن (پیش‌فرض)</option>
-            <option value="dark">تاریک شیک</option>
-            <option value="nord">نورد (Nord)</option>
-            <option value="sunset">غروب طلایی</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="iconSelect">آیکن برنامه (PWA)</label>
-          <select id="iconSelect">
-            <option value="book">کتابچه سرمه‌ای</option>
-            <option value="vam">وام سبز</option>
-            <option value="fin">مالی بنفش</option>
-          </select>
-          <p class="settings-hint">تغییر آیکن PWA نیاز به راه‌اندازی مجدد برنامه دارد.</p>
-        </div>
-      </div>
+</div>
 
-      <div class="settings-group">
-        <div class="settings-title">دسترسی و قفل</div>
-        <div class="form-group-row">
-          <label for="pwaLockCheckbox" class="checkbox-label">
-            <input type="checkbox" id="pwaLockCheckbox">
-            فعال‌سازی قفل ورود (رمز ۴ رقمی عددی)
-          </label>
-        </div>
-        <div class="form-group" id="passcodeSetupGroup" style="display:none; margin-top: 10px;">
-          <label for="setupPasscodeInput">تعیین رمز عبور جدید (۴ رقم)</label>
-          <input type="password" id="setupPasscodeInput" maxlength="4" placeholder="مثلا ۱۲۳۴" pattern="[0-9]*" inputmode="numeric">
-          <button type="button" class="btn btn-secondary" id="savePasscodeBtn" style="margin-top:8px;">ذخیره رمز عبور</button>
-        </div>
-      </div>
+</div>
 
-      <div class="settings-group">
-        <div class="settings-title">پشتیبان‌گیری و خروجی</div>
-        <div class="settings-actions-vertical">
-          <button type="button" class="btn btn-secondary" id="exportBackupBtn">📥 خروجی گرفتن از تمام داده‌ها (JSON)</button>
-          <div style="margin-top: 8px;">
-            <input type="file" id="importBackupInput" accept=".json" style="display:none;">
-            <button type="button" class="btn btn-secondary" id="importBackupBtn">📤 وارد کردن داده‌ها از فایل پشتیبان</button>
-          </div>
-        </div>
-      </div>
+<main class="app">
 
-      <div class="home-section" style="margin-top: 25px;">
-        <div class="section-title">ℹ️ درباره برنامه و بروزرسانی</div>
-        <div class="version-update-card">
-          <div class="version-info-row">
-            <span class="version-label">نسخه فعلی:</span>
-            <span id="appVersion" class="version-val">در حال دریافت...</span>
-          </div>
-          <div class="version-status-row">
-            <span id="updateStatusText" class="update-status-text">برنامه بروز است</span>
-          </div>
-          <button type="button" class="btn btn-primary" id="btnForceCheckUpdate" style="width: 100%; margin-top: 12px;">🔄 بررسی و بروزرسانی برنامه</button>
-        </div>
-      </div>
-    </div>
-  </main>
+<header class="app-header">
 
-  <!-- Bottom Navigation -->
-  <nav class="bottom-nav">
-    <button class="nav-item active" data-page="homePage">
-      <span class="nav-icon">⏰</span>
-      <span class="nav-label">سررسید</span>
-    </button>
-    <button class="nav-item" data-page="expensesPage">
-      <span class="nav-icon">💸</span>
-      <span class="nav-label">اقساط</span>
-    </button>
-    <button class="nav-item" data-page="debtsPage">
-      <span class="nav-icon">🤝</span>
-      <span class="nav-label">بدهی‌ها</span>
-    </button>
-    <button class="nav-item" data-page="reportsPage">
-      <span class="nav-icon">📊</span>
-      <span class="nav-label">گزارش‌ها</span>
-    </button>
-    <button class="nav-item" id="navSettingsBtn" data-page="settingsPage">
-      <span class="nav-icon">⚙</span>
-      <span class="nav-label">تنظیمات</span>
-    </button>
-  </nav>
+<div>
+<h1 id="pageTitle">
+<img class="img-btn1" src="assets/book.png" alt="">
+سررسید اقساط
+</h1>
 
-  <!-- Passcode Overlay -->
-  <div id="passcodeOverlay" class="passcode-overlay" style="display:none;">
-    <div class="passcode-container">
-      <div class="passcode-logo">🔒</div>
-      <h2>ورود به برنامه</h2>
-      <p>لطفاً رمز عبور ۴ رقمی خود را وارد کنید</p>
-      <div class="passcode-dots">
-        <span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot"></span>
-      </div>
-      <input type="password" id="passcodeHiddenInput" maxlength="4" pattern="[0-9]*" inputmode="numeric" autofocus readonly>
-      <div class="numpad">
-        <button class="numpad-btn" data-val="1">۱</button>
-        <button class="numpad-btn" data-val="2">۲</button>
-        <button class="numpad-btn" data-val="3">۳</button>
-        <button class="numpad-btn" data-val="4">۴</button>
-        <button class="numpad-btn" data-val="5">۵</button>
-        <button class="numpad-btn" data-val="6">۶</button>
-        <button class="numpad-btn" data-val="7">۷</button>
-        <button class="numpad-btn" data-val="8">۸</button>
-        <button class="numpad-btn" data-val="9">۹</button>
-        <button class="numpad-btn text-danger" id="numpadClear">پاک</button>
-        <button class="numpad-btn" data-val="0">۰</button>
-        <button class="numpad-btn text-warning" id="numpadDelete">⌫</button>
-      </div>
-    </div>
+<p id="today">
+در حال دریافت تاریخ…
+</p>
+
+</div>
+
+<div class="header-actions">
+
+<button 
+id="settingsButton" 
+class="icon-button" 
+type="button"
+aria-label="تنظیمات">
+⚙
+</button>
+
+<button 
+id="refresh" 
+class="icon-button" 
+type="button"
+aria-label="بروزرسانی">
+↻
+</button>
+
+</div>
+
+</header>
+
+<!-- ================= صفحات ================= -->
+
+<section class="page active" id="duePage">
+
+<div class="status" id="status">
+در حال اتصال به Supabase…
+</div>
+
+<div class="cards" id="cards"></div>
+
+</section>
+
+<!-- ================= داشبورد ================= -->
+
+<section class="page" id="homePage">
+
+<div class="home-balance-card">
+
+<div>
+<small>
+وضعیت این ماه
+</small>
+
+<h1 id="homeMonthTitle">
+تیر ۱۴۰۵
+</h1>
+
+</div>
+
+<div class="balance-row">
+
+<div>
+<span>💳 پرداخت شده</span>
+<strong id="homePaid">
+۰
+</strong>
+</div>
+
+<div>
+<span>🧾 هزینه‌ها</span>
+<strong id="homeExpense">
+۰
+</strong>
+</div>
+
+</div>
+
+</div>
+<div class="home-gharz">
+
+<div class="section-title">
+🤝 قرض و دین
+</div>
+
+<div id="debtsPanel"></div>
+
+</div>
+<div class="home-status-grid">
+
+<div class="status-card danger">
+
+<span>
+<img 
+class="img-btn1"
+src="assets/danger.png"
+alt="">
+</span>
+
+<div>
+<h3>
+عقب افتاده
+</h3>
+
+<strong id="homeOverdue">
+۰
+</strong>
+
+</div>
+
+</div>
+
+<div class="status-card warning">
+
+<span>
+<img 
+class="img-btn1"
+src="assets/book.png"
+alt="">
+</span>
+
+<div>
+
+<h3>
+نزدیک سررسید
+</h3>
+
+<strong id="homeSoon">
+۰
+</strong>
+
+</div>
+
+</div>
+
+</div>
+
+
+
+</section>
+
+<!-- ================= همه موارد ================= -->
+
+<section class="page" id="allPage">
+
+<div class="search-box">
+
+<input
+id="searchInput"
+type="search"
+autocomplete="off"
+placeholder="جستجو در اقساط و هزینه‌ها...">
+
+</div>
+
+<div class="type-filters">
+
+<button 
+class="type-filter active"
+data-filter="all"
+type="button">
+همه
+</button>
+
+<button
+class="type-filter"
+data-filter="installment"
+type="button">
+اقساط
+</button>
+
+<button
+class="type-filter"
+data-filter="expense"
+type="button">
+هزینه‌ها
+</button>
+
+<button
+class="type-filter"
+data-filter="income"
+type="button">
+درآمدها
+</button>
+
+</div>
+
+<div class="status-filters">
+
+<button
+class="status-filter active"
+data-status="all"
+type="button">
+همه وضعیت‌ها
+</button>
+
+<button
+id="statusFilterPaid"
+class="status-filter"
+data-status="paid"
+type="button">
+پرداخت‌شده این ماه
+</button>
+
+<button
+id="statusFilterUnpaid"
+class="status-filter"
+data-status="unpaid"
+type="button">
+پرداخت‌نشده این ماه
+</button>
+
+</div>
+
+<div class="status" id="allStatus">
+در حال دریافت اطلاعات…
+</div>
+
+<div class="cards" id="allCards"></div>
+
+<button 
+class="load-more"
+id="loadMore"
+type="button">
+نمایش بیشتر
+</button>
+
+</section>
+
+<!-- ================= گزارش‌ها ================= -->
+
+<section class="page" id="reportPage">
+
+<div class="report-grid">
+
+<article 
+class="report-card clickable"
+data-report="month">
+
+<span class="report-icon">
+💳
+<div class="report-label">
+اقساط این ماه
+</div>
+</span>
+
+<div 
+class="report-value"
+id="reportMonthTotal">
+۰ ریال
+</div>
+
+</article>
+
+<article 
+class="report-card paid clickable"
+data-report="paid">
+
+<span class="report-icon">
+✓
+<div class="report-label">
+اقساط پرداخت‌شده
+</div>
+</span>
+
+<div 
+class="report-value"
+id="reportPaidTotal">
+۰ ریال
+</div>
+
+</article>
+
+<article 
+class="report-card remaining clickable"
+data-report="remaining">
+
+<span class="report-icon">
+⏳
+<div class="report-label">
+اقساط باقی‌مانده
+</div>
+</span>
+
+<div 
+class="report-value"
+id="reportRemainingTotal">
+۰ ریال
+</div>
+
+</article>
+
+<article 
+class="report-card expenses clickable"
+data-report="expenses">
+
+<span class="report-icon">
+🧾
+<div class="report-label">
+هزینه‌های این ماه
+</div>
+</span>
+
+<div 
+class="report-value"
+id="reportExpensesTotal">
+۰ ریال
+</div>
+
+</article>
+
+<article 
+class="report-card total clickable"
+data-report="all">
+
+<span class="report-icon">
+📊
+<div class="report-label">
+جمع کل پرداختی
+</div>
+
+</span>
+
+<div 
+class="report-value"
+id="reportAllTotal">
+۰ ریال
+</div>
+
+</article>
+
+<article 
+class="report-card income clickable"
+data-report="income">
+
+<span class="report-icon">
+💰
+<div class="report-label">
+درآمد این ماه
+</div>
+</span>
+
+<div 
+class="report-value"
+id="reportIncomeTotal">
+۰ ریال
+</div>
+
+</article>
+
+<article 
+class="report-card balance report-card-wide">
+
+<span class="report-icon">
+⚖️
+<div class="report-label">
+مانده (درآمد − پرداختی)
+</div>
+
+</span>
+
+<div 
+class="report-value"
+id="reportBalanceTotal">
+۰ ریال
+</div>
+
+</article>
+
+</div>
+
+<article class="chart-card">
+
+<div class="section-title">
+وضعیت اقساط این ماه
+</div>
+
+<div class="chart">
+
+<div class="chart-row">
+
+<div class="chart-info">
+
+<span>
+پرداخت‌شده
+</span>
+
+<span id="paidPercent">
+۰٪
+</span>
+
+</div>
+
+<div class="chart-track">
+
+<div 
+class="chart-bar paid-bar"
+id="paidBar">
+</div>
+
+</div>
+
+</div>
+
+<div class="chart-row">
+
+<div class="chart-info">
+
+<span>
+باقی‌مانده
+</span>
+
+<span id="remainingPercent">
+۰٪
+</span>
+
+</div>
+
+<div class="chart-track">
+
+<div
+class="chart-bar remaining-bar"
+id="remainingBar">
+</div>
+
+</div>
+
+</div>
+<div class="chart-row">
+  <div class="chart-info">
+    <span class="legend-item">🟢 درآمد <b id="incomePercent">۰٪</b></span>
+    <span class="legend-item">🔵 قسط پرداخت‌شده <b id="paidInstallmentPercent">۰٪</b></span>
+    <span class="legend-item">🟣 هزینه‌ها <b id="expensePercent">۰٪</b></span>
+    <span class="legend-item">🟠 قسط پرداخت‌نشده <b id="unpaidInstallmentPercent">۰٪</b></span>
   </div>
 
-  <!-- Detail Modal -->
-  <div id="detailModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="modalTitle">جزئیات قسط</h2>
-        <button class="close-btn" id="closeDetailModal">&times;</button>
-      </div>
-      <div class="modal-body" id="modalBody"></div>
-    </div>
+  <div class="chart-track split-track four-part-track">
+    <div class="chart-bar income-bar" id="incomeBar"></div>
+    <div class="chart-bar paid-installment-bar" id="paidInstallmentBar"></div>
+    <div class="chart-bar expense-bar" id="expenseBar"></div>
+    <div class="chart-bar unpaid-installment-bar" id="unpaidInstallmentBar"></div>
   </div>
+</div>
 
-  <!-- Add/Edit Modal -->
-  <div id="addEditModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="addEditModalTitle">ثبت هزینه / وام جدید</h2>
-        <button class="close-btn" id="closeAddEditModal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="expenseForm">
-          <input type="hidden" id="editId">
-          <div class="form-group">
-            <label for="title">عنوان وام / هزینه *</label>
-            <input type="text" id="title" required placeholder="مثلا وام مسکن ملی">
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="amount">مبلغ هر قسط (تومان) *</label>
-              <input type="text" id="amount" required placeholder="مثلا ۵,۰۰۰,۰۰۰">
-            </div>
-            <div class="form-group">
-              <label for="bankName">بانک عامل *</label>
-              <input type="text" id="bankName" required placeholder="مثلا ملی">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="installmentCount">تعداد کل اقساط *</label>
-              <input type="number" id="installmentCount" min="1" required placeholder="۱۲">
-            </div>
-            <div class="form-group">
-              <label for="paidCount">تعداد اقساط پرداخت‌شده *</label>
-              <input type="number" id="paidCount" min="0" value="0" required placeholder="۰">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="startDate">تاریخ اولین قسط (شمسی) *</label>
-              <input type="text" id="startDate" required placeholder="۱۴۰۲/۰۶/۱۵">
-            </div>
-            <div class="form-group">
-              <label for="dueDateDay">روز سررسید هر ماه (۱ تا ۳۱) *</label>
-              <input type="number" id="dueDateDay" min="1" max="31" required placeholder="۱۵">
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="category">دسته‌بندی</label>
-            <select id="category">
-              <option value="وام مسکن">وام مسکن</option>
-              <option value="وام خودرو">وام خودرو</option>
-              <option value="وام ازدواج">وام ازدواج</option>
-              <option value="قسط خرید">قسط خرید کالا</option>
-              <option value="بیمه">بیمه</option>
-              <option value="اجاره">اجاره خانه</option>
-              <option value="سایر">سایر موارد</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="incomeSource">منبع تأمین هزینه (حساب/کارت)</label>
-            <input type="text" id="incomeSource" placeholder="مثلا کارت سپهر صادرات">
-          </div>
-          <div class="form-group">
-            <label for="description">توضیحات</label>
-            <textarea id="description" rows="2" placeholder="جزئیات بیشتر یا ضامن‌ها..."></textarea>
-          </div>
-          <div class="form-row" style="margin-top: 20px;">
-            <button type="submit" class="btn btn-primary" id="saveExpenseBtn">ذخیره اطلاعات</button>
-            <button type="button" class="btn btn-secondary" id="cancelAddEdit">انصراف</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
+</div>
 
-  <!-- Add/Edit Debt Modal -->
-  <div id="addEditDebtModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="addEditDebtModalTitle">ثبت طلب / بدهی جدید</h2>
-        <button class="close-btn" id="closeAddEditDebtModal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="debtForm">
-          <input type="hidden" id="editDebtId">
-          <div class="form-group">
-            <label for="debtPerson">نام طرف حساب (شخص/سازمان) *</label>
-            <input type="text" id="debtPerson" required placeholder="مثلا علی محمدی">
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="debtType">نوع حساب *</label>
-              <select id="debtType" required>
-                <option value="creditor">طلب من از او (طلبکارم)</option>
-                <option value="debtor">بدهی من به او (بدهکارم)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="debtAmount">مبلغ کل بدهی/طلب (تومان) *</label>
-              <input type="text" id="debtAmount" required placeholder="مثلا ۱۰,۰۰۰,۰۰۰">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="debtDueDate">تاریخ سررسید تسویه (شمسی)</label>
-              <input type="text" id="debtDueDate" placeholder="۱۴۰۳/۱۲/۲۵">
-            </div>
-            <div class="form-group">
-              <label for="debtStatus">وضعیت تسویه *</label>
-              <select id="debtStatus" required>
-                <option value="unpaid">تسویه نشده</option>
-                <option value="paid">کاملاً تسویه شده</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="debtDescription">توضیحات / بابت چه چیزی</label>
-            <textarea id="debtDescription" rows="2" placeholder="مثلا بابت خرید لپ‌تاپ یا قرض‌الحسنه..."></textarea>
-          </div>
-          <div class="form-row" style="margin-top: 20px;">
-            <button type="submit" class="btn btn-primary" id="saveDebtBtn">ذخیره اطلاعات</button>
-            <button type="button" class="btn btn-secondary" id="cancelAddEditDebt">انصراف</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
+</article>
 
-  <!-- Pay Modal (Multiple Installments) -->
-  <div id="payModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>ثبت پرداخت قسط</h2>
-        <button class="close-btn" id="closePayModal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="payForm">
-          <input type="hidden" id="payExpenseId">
-          <div class="form-group" id="payExpenseInfo" style="font-weight: bold; margin-bottom: 15px;"></div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="payInstallmentNum">شماره قسط در حال پرداخت *</label>
-              <input type="number" id="payInstallmentNum" min="1" required>
-            </div>
-            <div class="form-group">
-              <label for="payDate">تاریخ واقعی پرداخت (شمسی) *</label>
-              <input type="text" id="payDate" required placeholder="۱۴۰۲/۰۶/۱۵">
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="paySource">منبع پرداخت (کارت / حساب)</label>
-            <input type="text" id="paySource" placeholder="مثلا کارت بانک ملی">
-          </div>
-          <div class="form-row" style="margin-top: 20px;">
-            <button type="submit" class="btn btn-primary" id="submitPayBtn">تأیید و ثبت پرداخت</button>
-            <button type="button" class="btn btn-secondary" id="cancelPay">انصراف</button>
-          </div>
-        </form>
-      </div>
-    </div>
+</section>
+
+<!-- ================= تنظیمات ================= -->
+
+<section class="page" id="settingsPage">
+<div class="home-section">
+
+<div class="section-title">
+🔐 قفل کل اپلیکیشن
+</div>
+
+<label class="field settings-switch-row">
+<span>فعال‌سازی قفل ورود به اپلیکیشن</span>
+<input type="checkbox" id="appLockEnabledToggle">
+</label>
+
+<label class="field">
+<span>رمز عبور جدید اپلیکیشن</span>
+<input type="password" id="newAppLockPassword" autocomplete="new-password" inputmode="numeric" placeholder="رمز عبور را وارد کنید">
+</label>
+
+<button class="primary-button" id="saveAppLockPasswordButton" type="button">
+ذخیره رمز عبور
+</button>
+
+<p class="settings-hint">
+رمز پیش‌فرض فعلی: 1234 — پیشنهاد می‌شود آن را تغییر دهید.
+</p>
+
+</div>
+
+<div class="home-section">
+
+<div class="section-title">
+🔒 قفل تنظیمات با رمز عبور
+</div>
+
+<label class="field settings-switch-row">
+<span>فعال‌سازی قفل رمز عبور</span>
+<input type="checkbox" id="settingsLockEnabled">
+</label>
+
+<label class="field">
+<span>رمز عبور جدید</span>
+<input type="password" id="newSettingsPassword" autocomplete="new-password" placeholder="رمز عبور را وارد کنید">
+</label>
+
+<button class="primary-button" id="saveSettingsPasswordButton" type="button">
+ذخیره رمز عبور
+</button>
+
+</div>
+
+<div class="home-section">
+
+<div class="section-title">
+🎨 تم برنامه
+</div>
+
+<div class="theme-selector">
+
+<button type="button" class="theme-btn" data-theme="dark">
+🌙 تیره
+</button>
+
+<button type="button" class="theme-btn" data-theme="light">
+☀️ روشن
+</button>
+
+</div>
+
+</div>
+
+<div class="home-section">
+
+<div class="section-title">
+🖼 آیکون برنامه (PWA)
+</div>
+
+<p class="settings-hint">
+تصویری انتخاب کنید تا به‌عنوان آیکون برنامه هنگام افزودن به صفحه اصلی گوشی استفاده شود. برای اعمال کامل روی گوشی، ممکن است لازم باشد برنامه را دوباره به صفحه اصلی اضافه کنید.
+</p>
+
+<input type="file" id="appIconInput" accept="image/*">
+
+<div class="app-icon-preview-row">
+<img id="appIconPreview" src="assets/book.png" alt="آیکون برنامه">
+<button type="button" class="edit-expense app-icon-reset" id="resetAppIconButton">
+بازگردانی پیش‌فرض
+</button>
+</div>
+<div class="settings-card">
+  <h3>مدیریت بانک‌ها</h3>
+  <div id="banksList"></div>
+  <div class="row" style="gap:8px;margin-top:8px">
+    <input id="bankNameInput" class="bnk-inp" type="text" placeholder="نام بانک جدید" style="flex:1">
+    <button id="addBankButton" class="btn-primary">افزودن</button>
   </div>
+</div>
+
+</div>
+
+
+<div class="home-section">
+
+<div class="section-title">
+ℹ️ درباره برنامه
+</div>
+
+  <p class="settings-hint" id="updateStatusText">بروزرسانی آماده است</p>
+
+
+</div>
+
+</section>
+
+</main>
+<!-- ================= منوی پایین ================= -->
+
+<nav class="bottom-nav">
+
+<button 
+class="nav-button nav-item"
+data-page="duePage"
+data-title="⏰ سررسیدها"
+type="button">
+
+<img 
+class="img-btn1"
+src="assets/book.png"
+alt="">
+
+<small>
+سررسیدها
+</small>
+
+</button>
+
+<button 
+class="home-button nav-button"
+data-page="homePage"
+data-title="🏠 داشبورد"
+type="button">
+
+<img
+class="img-btn"
+src="assets/home.png"
+alt="صفحه اصلی">
+
+</button>
+
+<button
+class="nav-button nav-item"
+data-page="allPage"
+data-title="📋 همه اقساط"
+type="button">
+
+<img
+class="img-btn1"
+src="assets/vam.png"
+alt="">
+
+<small>
+اقساط
+</small>
+
+</button>
+
+<button
+class="nav-button nav-item"
+data-page="reportPage"
+data-title="📊 گزارش‌ها"
+type="button">
+
+<img
+class="img-btn1"
+src="assets/fin.png"
+alt="">
+
+<small>
+گزارش
+</small>
+
+</button>
+
+</nav>
+
+<!-- ================= FAB یکتا ================= -->
+
+<div id="fabContainer">
+
+<div 
+id="fabMenu"
+class="fab-menu hidden">
+
+<button
+class="fab-option"
+id="fabTransfer"
+type="button">
+
+<span class="fab-icon">
+🔄
+</span>
+
+<span>
+انتقالی
+</span>
+
+</button>
+
+<button
+class="fab-option"
+id="fabPayment"
+type="button">
+
+<span class="fab-icon">
+💳
+</span>
+
+<span>
+پرداخت / دریافت
+</span>
+
+</button>
+
+<button
+class="fab-option"
+id="fabCreate"
+type="button">
+
+<span class="fab-icon">
+✨
+</span>
+
+<span>
+ایجاد
+</span>
+
+</button>
+
+</div>
+
+<button
+id="addExpenseButton"
+class="insz"
+type="button"
+aria-label="ثبت مورد جدید">
+
++
+
+</button>
+
+</div>
+
+<!-- ================= مودال جزئیات گزارش ================= -->
+
+<div 
+class="modal"
+id="reportDetailsModal">
+
+<div class="modal-backdrop"></div>
+
+<div class="modal-sheet">
+
+<div class="modal-handle"></div>
+
+<div class="modal-header">
+
+<h2 id="reportDetailsTitle">
+جزئیات گزارش
+</h2>
+
+<button
+class="close-modal"
+id="closeReportDetails"
+type="button">
+
+✕
+
+</button>
+
+</div>
+
+<div 
+class="report-details-list"
+id="reportDetailsList">
+
+</div>
+
+</div>
+
+</div>
+
+<!-- ================= مودال جزئیات قرض و دین ================= -->
+
+<div class="modal" id="debtDetailsModal">
+  <div class="modal-backdrop"></div>
+
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+
+    <div class="modal-header">
+      <h2 id="debtDetailsTitle">جزئیات قرض / دین</h2>
+
+      <button
+        class="close-modal"
+        id="closeDebtDetailsModal"
+        type="button"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="debt-details-body" id="debtDetailsBody"></div>
+
+<div class="debt-details-actions">
+  <button id="editDebtDetailsBtn" type="button" class="edit-btn">ویرایش</button>
+  <button id="deleteDebtDetailsBtn" type="button" class="delete-btn">حذف</button>
+</div>
+
+  </div>
+</div>
+
+
+<!-----------------dsadsasda================= -->
+<div 
+class="modal"
+id="expenseModal">
+
+<div class="modal-backdrop"></div>
+
+<div class="modal-sheet">
+
+<div class="modal-handle"></div>
+
+<div class="modal-header">
+
+<h2 id="expenseModalTitle">
+ثبت مورد جدید
+</h2>
+
+<button
+class="close-modal"
+id="closeExpenseModal"
+type="button">
+
+✕
+
+</button>
+
+</div>
+
+<form id="expenseForm">
+
+<input 
+id="editExpenseId"
+type="hidden">
+
+<!-- نوع ثبت -->
+
+<div class="field">
+
+<span>
+نوع مورد
+</span>
+
+<div class="expense-type-selector">
+
+<button
+id="installmentTypeButton"
+data-type="installment"
+type="button">
+
+💳 قسط
+
+</button>
+
+<button
+id="expenseTypeButton"
+data-type="expense"
+type="button">
+
+🧾 هزینه
+
+</button>
+
+<button
+id="incomeTypeButton"
+data-type="income"
+type="button">
+
+💰 درآمد
+
+</button>
+<button
+id="debtTypeButton"
+data-type="debt"
+type="button">
+🤝 قرض و دین
+</button>
+
+</div>
+
+<input 
+id="expenseType"
+type="hidden"
+value="installment">
+
+</div>
+
+<label class="field">
+
+<span id="expenseTitleLabel">
+عنوان قسط
+</span>
+
+<input
+id="expenseTitle"
+type="text"
+required>
+
+<select 
+id="expenseTitleSelect"
+class="hidden">
+
+<option value="">
+انتخاب کنید
+</option>
+
+</select>
+
+</label>
+
+<label class="field">
+
+<span>
+مبلغ
+</span>
+
+<input
+id="expenseAmount"
+type="number"
+inputmode="numeric"
+min="0"
+>
+
+</label>
+
+<!-- اطلاعات قسط -->
+
+<div
+id="installmentFields"
+class="field-grid">
+
+<label class="field">
+
+<span>
+روز سررسید
+</span>
+
+<input
+id="expenseDueDay"
+type="number"
+min="1"
+max="31">
+
+</label>
+
+<label class="field">
+
+<span>
+تعداد اقساط
+</span>
+
+<input
+id="expenseInstallments"
+type="number"
+min="1">
+
+</label>
+
+</div>
+
+<!-- ================= قرض و دیون================= -->
+<div id="debtFields" class="hidden">
+
+<div class="field">
+<span>نوع تراکنش</span>
+<div class="expense-type-selector">
+<button type="button" class="debt-direction-btn active" data-direction="lent">💸 دادم (طلبکارم)</button>
+<button type="button" class="debt-direction-btn" data-direction="borrowed">🙏 گرفتم (بدهکارم)</button>
+</div>
+<input type="hidden" id="debtDirection" value="lent">
+</div>
+
+<label class="field">
+<span>طرف حساب</span>
+<input type="text" id="debtCounterparty" placeholder="مثلا علی رضایی">
+</label>
+
+<div class="field">
+<span>موعد تسویه</span>
+<div class="field-grid" style="grid-template-columns:1fr 1.4fr 1fr">
+<select id="debtDueDay"></select>
+<select id="debtDueMonth"></select>
+<input type="number" id="debtDueYear" placeholder="۱۴۰۵" inputmode="numeric">
+</div>
+</div>
+
+</div>
+<!-- ================= هزینه ================= -->
+
+<div 
+id="expenseFields"
+class="hidden">
+
+</div>
+
+<!-- ================= درآمد ================= -->
+
+<div id="incomeFields" class="hidden">
+
+</div>
+
+<!-- ================= انتقال ================= -->
+
+<label class="field">
+
+<span id="startMonthLabel">
+ماه شروع
+</span>
+
+<select id="expenseStartMonth">
+
+<option value="farvardin">فروردین</option>
+<option value="ordibehesht">اردیبهشت</option>
+<option value="khordad">خرداد</option>
+<option value="tir">تیر</option>
+<option value="mordad">مرداد</option>
+<option value="shahrivar">شهریور</option>
+<option value="mehr">مهر</option>
+<option value="aban">آبان</option>
+<option value="azar">آذر</option>
+<option value="dey">دی</option>
+<option value="bahman">بهمن</option>
+<option value="esfand">اسفند</option>
+
+</select>
+
+</label>
+
+<label class="field">
+
+<span>
+یادداشت
+</span>
+
+<textarea
+id="expenseNote"
+placeholder="اختیاری"></textarea>
+
+</label>
+
+<section
+class="months-editor hidden"
+id="monthsEditor">
+
+<div class="section-title">
+وضعیت ماه‌ها
+</div>
+
+<div id="monthFields"></div>
+
+</section>
+
+<input
+id="transferFrom"
+type="hidden">
+
+<input
+id="transferTo"
+type="hidden">
+
+<button
+class="primary-button"
+id="saveExpenseButton"
+type="submit">
+
+ثبت مورد
+
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+<!-- ================= مودال پرداخت / دریافت ================= -->
+
+<div 
+class="modal"
+id="paymentModal">
+
+<div class="modal-backdrop"></div>
+
+<div class="modal-sheet">
+
+<div class="modal-handle"></div>
+
+<div class="modal-header">
+
+<h2 id="paymentModalTitle">
+ثبت پرداخت / دریافت
+</h2>
+
+<button
+class="close-modal"
+id="closePaymentModal"
+type="button">
+
+✕
+
+</button>
+
+</div>
+
+<form id="paymentForm">
+
+<div class="field">
+
+<span>
+نوع عملیات
+</span>
+
+<div class="expense-type-selector">
+
+<button
+type="button"
+class="payment-type-btn active"
+data-type="payment">
+
+💳 پرداخت
+
+</button>
+
+<button
+type="button"
+class="payment-type-btn"
+data-type="income">
+
+💰 دریافت
+
+</button>
+
+</div>
+
+</div>
+<label class="field">
+  <span id="paymentItemLabel">انتخاب حساب هزینه</span>
+  <select id="paymentItemSelect">
+    <option value="">انتخاب کنید</option>
+  </select>
+</label>
+
+<label class="field">
+
+<span>
+مبلغ
+</span>
+
+<input
+id="paymentAmount"
+type="number"
+inputmode="numeric"
+required>
+
+</label>
+
+<div class="field">
+
+<span>
+حساب
+</span>
+
+<div class="quick-tags" id="paymentBanksContainer">
+
+
+
+
+</div>
+
+</div>
+
+<label class="field">
+
+<span>
+تاریخ
+</span>
+
+<input
+id="paymentDate"
+type="text">
+
+</label>
+
+<label class="field">
+
+<span>
+یادداشت
+</span>
+
+<textarea
+id="paymentNote"></textarea>
+
+</label>
+
+<input
+id="paymentType"
+type="hidden"
+value="payment">
+
+<button
+class="primary-button"
+type="submit">
+
+ثبت
+
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+<!-- ================= مودال انتقال ================= -->
+
+<div 
+class="modal"
+id="transferModal">
+
+<div class="modal-backdrop"></div>
+
+<div class="modal-sheet">
+
+<div class="modal-handle"></div>
+
+<div class="modal-header">
+
+<h2>
+ثبت انتقال وجه
+</h2>
+
+<button
+class="close-modal"
+id="closeTransferModal"
+type="button">
+
+✕
+
+</button>
+
+</div>
+
+<form id="transferForm">
+
+<label class="field">
+
+<span>
+مبلغ
+</span>
+
+<input
+id="transferAmount"
+type="number"
+inputmode="numeric"
+required>
+
+</label>
+
+<!-- خطوط ۱۲۶۵ تا ۱۳۴۵ را با این جایگزین کن -->
+<div class="form-group">
+  <label>از حساب</label>
+  <div id="transferFromContainer" class="quick-tags"></div>
+  <input type="hidden" id="transferFromModal" required>
+</div>
+<div class="form-group">
+  <label>به حساب</label>
+  <div id="transferToContainer" class="quick-tags"></div>
+  <input type="hidden" id="transferToModal" required>
+</div>
+
+<label class="field">
+
+<span>
+توضیح
+</span>
+
+<textarea
+id="transferNote"
+placeholder="اختیاری"></textarea>
+
+</label>
+
+<button
+class="primary-button"
+type="submit">
+
+ثبت انتقال
+
+</button>
+
+</form>
+
+</div>
+
+</div>
+<!-- ================= مودال قفل تنظیمات ================= -->
+
+<div 
+class="modal"
+id="settingsLockModal">
+
+<div class="modal-backdrop"></div>
+
+<div class="modal-sheet">
+
+<div class="modal-handle"></div>
+
+<div class="modal-header">
+
+<h2>
+ورود به تنظیمات
+</h2>
+
+<button
+class="close-modal"
+id="closeSettingsLockModal"
+type="button">
+
+✕
+
+</button>
+
+</div>
+
+<form id="settingsLockForm">
+
+<label class="field">
+
+<span>
+رمز عبور
+</span>
+
+<input
+id="settingsLockInput"
+type="password"
+autocomplete="off"
+required>
+
+</label>
+
+<button
+class="primary-button"
+type="submit">
+
+ورود
+
+</button>
+
+</form>
+
+</div>
+
+</div>
+<div id="toast" class="toast hidden"></div>
+
+<script src="./app.js"></script>
+
 </body>
 </html>
