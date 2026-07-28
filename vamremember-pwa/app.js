@@ -1975,7 +1975,7 @@ if ("serviceWorker" in navigator) {
 
 async function fetchGithubVersion() {
   try {
-    const res = await fetch("https://api.github.com/repos/OWNER/REPO/commits/main", {
+    const res = await fetch("https://api.github.com/repos/ahooraboy43/vamremember/commits/main", {
       cache: "no-store"
     });
     if (!res.ok) return null;
