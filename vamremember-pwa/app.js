@@ -878,6 +878,7 @@ fabPayment.onclick = ()=>{
 
     fabMenu.classList.add("hidden");
     addExpenseButton.classList.remove("open");
+    addExpenseButton.classList.remove("active");
 
     paymentModal.classList.add("open");
     fillPaymentItems($("paymentType").value || "payment");
@@ -897,6 +898,7 @@ fabTransfer.onclick = ()=>{
 
     fabMenu.classList.add("hidden");
     addExpenseButton.classList.remove("open");
+    addExpenseButton.classList.remove("active");
 
     transferModal.classList.add("open");
     document.body.style.overflow="hidden";
@@ -1799,6 +1801,7 @@ function loadIncomeOptions(){
 function openWithType(type) {
   fabMenu.classList.add("hidden");
   addExpenseButton.classList.remove("open");
+  addExpenseButton.classList.remove("active");
   resetExpenseForm();
   setExpenseType(type);
   openModal();
@@ -1812,6 +1815,7 @@ document.addEventListener("click", e => {
   if (!$("fabContainer").contains(e.target)) {
     fabMenu.classList.add("hidden");
     addExpenseButton.classList.remove("open");
+    addExpenseButton.classList.remove("active");
   }
 });
 
