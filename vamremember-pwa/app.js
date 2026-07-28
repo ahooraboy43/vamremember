@@ -52,6 +52,10 @@ const cards = $("cards"),
     statusBox = $("status"),
     refreshButton = $("refresh"),
     todayElement = $("today");
+    
+let swRegistration = null;
+let currentAppVersionText = "در حال بررسی نسخه…";
+
 
 const pages = document.querySelectorAll(".page"),
     navButtons = document.querySelectorAll(".nav-button"),
@@ -1968,6 +1972,7 @@ if ("serviceWorker" in navigator) {
       .catch((err) => console.error("Service Worker registration failed:", err));
   });
 }
+
 async function fetchGithubVersion() {
   try {
     const res = await fetch("https://api.github.com/repos/OWNER/REPO/commits/main", {
@@ -1982,35 +1987,59 @@ async function fetchGithubVersion() {
   }
 }
 
-async function performFullAppUpdate() {
-  if (refreshButton) refreshButton.disabled = true;
+function updateAppVersionText(text) {
+  currentAppVersionText = text;
+  const el = $("appVersionText");
+  if (el) el.textContent = text;
+}
 
-  if (statusBox) statusBox.textContent = "در حال بروزرسانی برنامه…";
-  if (allStatus) allStatus.textContent = "در حال بروزرسانی برنامه…";
+async function performFullAppUpdate() {
+  if (refreshButton) {
+    refreshButton.disabled = true;
+    refreshButton.textContent = "⏳";
+  }
+
+  if (statusBox) statusBox.textContent = "در حال بررسی بروزرسانی…";
+  if (allStatus) allStatus.textContent = "در حال بررسی بروزرسانی…";
+  showToast("در حال بررسی بروزرسانی", "info");
 
   try {
+    const versionDate = await fetchGithubVersion();
+
+    if (!versionDate) {
+      showToast("نسخه جدیدی یافت نشد", "info");
+      updateAppVersionText("نسخه جدیدی یافت نشد");
+      if (statusBox) statusBox.textContent = "نسخه جدیدی یافت نشد";
+      if (allStatus) allStatus.textContent = "نسخه جدیدی یافت نشد";
+      return;
+    }
+
+    const faDate = new Date(versionDate).toLocaleString("fa-IR");
+
     await loadData();
+
+    updateAppVersionText(`نسخه جدید دریافت شد: ${faDate}`);
+    showToast(`نسخه جدید ${faDate} دریافت شد`, "success");
+
+    if (statusBox) statusBox.textContent = `نسخه جدید ${faDate} دریافت شد`;
+    if (allStatus) allStatus.textContent = `نسخه جدید ${faDate} دریافت شد`;
 
     if (swRegistration) {
       await swRegistration.update();
-
-      if (swRegistration.waiting) {
-        swRegistration.waiting.postMessage({ type: "SKIP_WAITING" });
-      }
-    }
-
-    const versionDate = await fetchGithubVersion();
-    if (versionDate && statusBox) {
-      statusBox.textContent = `آخرین بروزرسانی: ${new Date(versionDate).toLocaleString("fa-IR")}`;
     }
   } catch (e) {
     console.error(e);
+    showToast(`خطا در بروزرسانی: ${e.message}`, "error");
     if (statusBox) statusBox.textContent = `خطا در بروزرسانی: ${e.message}`;
     if (allStatus) allStatus.textContent = `خطا در بروزرسانی: ${e.message}`;
   } finally {
-    if (refreshButton) refreshButton.disabled = false;
+    if (refreshButton) {
+      refreshButton.disabled = false;
+      refreshButton.textContent = "🔄";
+    }
   }
 }
+
 
 
 // ================= تنظیمات (Settings) =================
@@ -2124,7 +2153,10 @@ function initSettingsUI(){
   const lockToggle = $("settingsLockEnabled");
   if(lockToggle) lockToggle.checked = !!appSettings.lockEnabled;
 
+  const versionEl = $("appVersionText");
+  if(versionEl) versionEl.textContent = currentAppVersionText;
 }
+
 
 document.querySelectorAll(".theme-btn").forEach(btn=>{
   btn.addEventListener("click", ()=>{
