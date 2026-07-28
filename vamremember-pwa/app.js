@@ -1749,7 +1749,7 @@ function openPage(id,title){
 
   window.scrollTo({top:0,behavior:"smooth"})
 }
-refreshButton.addEventListener("click",loadData);
+refreshButton.addEventListener("click", performFullAppUpdate);
 navButtons.forEach(b=>b.addEventListener("click",()=>openPage(b.dataset.page,b.dataset.title)));
 searchInput.addEventListener("input",()=>{visibleCount=PAGE_SIZE;renderAllCards()});
 function updateStatusFilterLabels(filter){
@@ -1951,20 +1951,71 @@ function addSwipeToClose(modalId) {
 }
 
 ["expenseModal", "transferModal", "paymentModal", "settingsLockModal"].forEach(addSwipeToClose);
+let swRegistration = null;
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("./sw.js")
-      .then((reg) => console.log("Service Worker registered:", reg.scope))
+      .then((reg) => {
+        swRegistration = reg;
+        console.log("Service Worker registered:", reg.scope);
+
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          window.location.reload();
+        });
+      })
       .catch((err) => console.error("Service Worker registration failed:", err));
   });
 }
+async function fetchGithubVersion() {
+  try {
+    const res = await fetch("https://api.github.com/repos/OWNER/REPO/commits/main", {
+      cache: "no-store"
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.commit?.committer?.date || null;
+  } catch (e) {
+    console.error("خطا در دریافت نسخه گیت‌هاب", e);
+    return null;
+  }
+}
+
+async function performFullAppUpdate() {
+  if (refreshButton) refreshButton.disabled = true;
+
+  if (statusBox) statusBox.textContent = "در حال بروزرسانی برنامه…";
+  if (allStatus) allStatus.textContent = "در حال بروزرسانی برنامه…";
+
+  try {
+    await loadData();
+
+    if (swRegistration) {
+      await swRegistration.update();
+
+      if (swRegistration.waiting) {
+        swRegistration.waiting.postMessage({ type: "SKIP_WAITING" });
+      }
+    }
+
+    const versionDate = await fetchGithubVersion();
+    if (versionDate && statusBox) {
+      statusBox.textContent = `آخرین بروزرسانی: ${new Date(versionDate).toLocaleString("fa-IR")}`;
+    }
+  } catch (e) {
+    console.error(e);
+    if (statusBox) statusBox.textContent = `خطا در بروزرسانی: ${e.message}`;
+    if (allStatus) allStatus.textContent = `خطا در بروزرسانی: ${e.message}`;
+  } finally {
+    if (refreshButton) refreshButton.disabled = false;
+  }
+}
+
 
 // ================= تنظیمات (Settings) =================
 
 const SETTINGS_KEY = "appSettingsV1";
-const APP_VERSION = "1.0.0";
 
 function loadSettings(){
   try{
@@ -2073,8 +2124,6 @@ function initSettingsUI(){
   const lockToggle = $("settingsLockEnabled");
   if(lockToggle) lockToggle.checked = !!appSettings.lockEnabled;
 
-  const versionEl = $("appVersion");
-  if(versionEl) versionEl.textContent = toPersianDigits(APP_VERSION);
 }
 
 document.querySelectorAll(".theme-btn").forEach(btn=>{
