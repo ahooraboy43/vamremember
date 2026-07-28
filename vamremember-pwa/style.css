@@ -29,7 +29,7 @@ html {
   overflow-y: scroll;
   scrollbar-gutter: stable;
 }
-body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sans-serif;min-height:100vh;-webkit-tap-highlight-color:transparent}button,input,textarea,select{font-family:inherit}button{cursor:pointer}.app{max-width:620px;margin:auto;padding:calc(18px + env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom))}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sans-serif;min-height:100vh;-webkit-tap-highlight-color:transparent}button,input,textarea,select{font-family:inherit}button{cursor:pointer}.app{calc(20px + env(safe-area-inset-top)) 3px calc(110px + env(safe-area-inset-bottom));}
 .h1{font-size:22px;margin:0 0 7px}.app-header p{margin:0;color:var(--muted);font-size:13px}.icon-button,#refresh{border:0;border-radius:14px;background:var(--surface-2);color:#fff;width:46px;height:46px;font-size:25px}.page{display:none}.page.active{display:block}.status{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:14px;color:#cbd5e1;font-size:14px}.cards{display:grid;gap:10px}.card{  position: relative;
   transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);background:var(--surface);border:1px solid var(--border);border-right: 5px solid var(--warning);border-radius:18px;overflow:hidden}.card.overdue{border-right-color:var(--danger)}.card.soon{border-right-color:var(--warning)}.card.paid-card{border-right-color:var(--primary-light)}.card.expense-card{border-right-color:var(--expense)}.card.income-card{border-right-color:var(--income);background:linear-gradient(90deg,rgba(34,197,94,.08),transparent 60%)}.card-main{padding:16px}
 .top{    display: grid;
@@ -170,7 +170,7 @@ height: 35px;
 .modal-sheet{    background: var(--surface-2);
     backdrop-filter: var(--blur);
     box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.5);
-    animation: sheetUp 0.35s var(--ease);
+    /*animation: sheetUp 0.35s var(--ease);*/
     position: absolute;
     left: 50%;
     bottom: 0;
@@ -187,7 +187,7 @@ height: 35px;
   position: fixed;
   z-index: 60;
   left: max(20px, calc((100vw - 620px) / 2 + 20px));
-  bottom: calc(82px + env(safe-area-inset-bottom));
+  bottom: calc(103px + env(safe-area-inset-bottom));
   width: 56px;
   height: 56px;
   border: 0;
@@ -197,9 +197,21 @@ height: 35px;
   font-size: 34px;
   line-height: 1;
   box-shadow: 0 10px 30px rgba(2, 132, 199, 0.4);
+   transition: transform .25s;
 }
 /* ================= HOME DASHBOARD ================= */
+@keyframes sheetUp{
+    from{
+        transform: translateY(100%) scaleY(.96);
+        transform-origin: bottom;
+        opacity: 0;
+    }
 
+    to{
+        transform: translateY(0) scaleY(1);
+        opacity: 1;
+    }
+}
 .home-balance-card{
   background:linear-gradient(135deg,#0284c7,#0369a1);
   border-radius:24px;
@@ -311,6 +323,9 @@ height: 35px;
   border:1px solid var(--border);
   border-radius:20px;
   margin-bottom:14px;
+  display: flex;
+    flex-direction: column;
+    max-height: 380px;
 }
 
 
@@ -412,13 +427,7 @@ label{
   bottom: calc(82px + env(safe-area-inset-bottom));
 }
 
-.insz {
-  position: relative;
-  z-index: 1;
-  left: unset;
-  bottom: unset;
-  transition: transform .25s;
-}
+
 
 .insz.open { transform: rotate(45deg); }
 
@@ -712,6 +721,9 @@ label{
   display:flex;
   flex-direction:column;
   gap:12px;
+  flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 .debt-row:hover{
   transform:translateY(-2px);
@@ -951,7 +963,7 @@ body {
 /* ============ HEADER ============ */
 .app-header {
   position: sticky;
-  top: -15px;
+  top: 0;
   z-index: 40;
   display: flex;
   align-items: center;
@@ -961,6 +973,7 @@ body {
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
   border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
 
 #pageTitle {
@@ -990,7 +1003,7 @@ body {
 /* ============ PAGES ============ */
 .page {
   display: none;
-  padding: 16px 16px 120px;
+  padding: 16px 25px 100px;
   animation: fadeUp 0.35s var(--ease);
 }
 .page.active { display: block; }
@@ -1070,16 +1083,6 @@ body {
 
 /* ============ FAB ============ */
 #fabContainer { position: fixed; bottom: 90px; left: 20px; z-index: 45; }
-.insz {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--primary);
-  box-shadow: 0 14px 30px rgba(2,132,199,0.5);
-  color: #fff;
-  font-size: 24px;
-  transition: transform 0.3s var(--ease);
-}
 .fab-menu {
   display: flex;
   flex-direction: column;
@@ -1150,4 +1153,91 @@ input:focus, select:focus {
   height: 12px;
   border-radius: 6px;
   transition: width 0.6s var(--ease);
+}
+#addExpenseButton{
+    position: fixed;
+    z-index: 1000;
+    left: max(20px, calc((100vw - 620px) / 2 + 20px));
+    bottom: calc(100px + env(safe-area-inset-bottom));
+
+    width: 62px;
+    height: 62px;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 38px;
+    font-weight: 300;
+    color: #fff;
+    cursor: pointer;
+
+  
+
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+
+    box-shadow:
+        0 12px 30px rgba(37,99,235,.35),
+        inset 0 1px 1px rgba(255,255,255,.45),
+        inset 0 -8px 16px rgba(0,0,0,.12);
+
+    transition:
+        transform .35s cubic-bezier(.22,1,.36,1),
+        box-shadow .25s,
+        filter .25s;
+}
+
+#addExpenseButton::before{
+    content:"";
+    position:absolute;
+    inset:2px;
+    border-radius:50%;
+    background:linear-gradient(
+        180deg,
+        rgba(255,255,255,.28),
+        rgba(255,255,255,.03)
+    );
+    pointer-events:none;
+}
+
+#addExpenseButton::after{
+    content:"";
+    position:absolute;
+    width:120%;
+    height:120%;
+    border-radius:50%;
+    border:2px solid rgba(59,130,246,.25);
+    animation:pulseFab 2.5s infinite;
+}
+
+#addExpenseButton:hover{
+    transform:translateY(-5px) scale(1.08);
+    box-shadow:
+        0 20px 45px rgba(37,99,235,.45),
+        inset 0 1px 1px rgba(255,255,255,.5);
+}
+
+#addExpenseButton.active{
+    transform: rotate(45deg) scale(1.08);
+    box-shadow:
+        0 20px 45px rgba(37,99,235,.45),
+        inset 0 1px 1px rgba(255,255,255,.5);
+}
+
+@keyframes pulseFab{
+    0%{
+        transform:scale(.85);
+        opacity:.8;
+    }
+    70%{
+        transform:scale(1.35);
+        opacity:0;
+    }
+    100%{
+        transform:scale(1.35);
+        opacity:0;
+    }
 }

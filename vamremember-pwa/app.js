@@ -1769,17 +1769,21 @@ closeReportDetails.addEventListener("click",closeReportModal);reportDetailsModal
 const fabMenu = $("fabMenu");
 
 addExpenseButton.addEventListener("click", () => {
-  const isOpen = !fabMenu.classList.contains("hidden");
-  if (isOpen) {
-    fabMenu.classList.add("hidden");
-    addExpenseButton.classList.remove("open");
-  } else {
-    fabMenu.classList.remove("hidden");
-    fabMenu.classList.remove("animating");
-    void fabMenu.offsetWidth; // reflow
-    fabMenu.classList.add("animating");
-    addExpenseButton.classList.add("open");
-  }
+    const isOpen = !fabMenu.classList.contains("hidden");
+
+    if (isOpen) {
+        fabMenu.classList.add("hidden");
+        addExpenseButton.classList.remove("open");
+        addExpenseButton.classList.remove("active");
+    } else {
+        fabMenu.classList.remove("hidden");
+        fabMenu.classList.remove("animating");
+        void fabMenu.offsetWidth;
+        fabMenu.classList.add("animating");
+
+        addExpenseButton.classList.add("open");
+        addExpenseButton.classList.add("active");
+    }
 });
 function openModal(){
 
