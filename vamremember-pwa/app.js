@@ -1955,7 +1955,7 @@ function addSwipeToClose(modalId) {
 }
 
 ["expenseModal", "transferModal", "paymentModal", "settingsLockModal"].forEach(addSwipeToClose);
-let swRegistration = null;
+
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
