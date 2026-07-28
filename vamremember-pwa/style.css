@@ -65,7 +65,7 @@ box-shadow: 0 11px 36px rgb(3 122 185);
  width:min(100%,620px);
  display:grid;
  grid-template-columns:repeat(4,1fr);
- padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+ padding:0px 10px calc(8px + env(safe-area-inset-bottom));
  border-top:1px solid var(--border);
   position: fixed;
   bottom: 0;
@@ -319,7 +319,7 @@ height: 35px;
 }
 
 .home-gharz{
-  background:linear-gradient(42deg, #4743441a, #000000f5);
+  /*background:linear-gradient(42deg, #4743441a, #000000f5);*/
   border:1px solid var(--border);
   border-radius:20px;
   margin-bottom:14px;
@@ -433,7 +433,7 @@ label{
 
 .fab-menu {    position: absolute;
     bottom: 64px;
-    left: 43px;
+    left: 70px;
     display: flex;
     flex-direction: column-reverse;
     gap: 25px;
