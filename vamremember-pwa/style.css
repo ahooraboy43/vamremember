@@ -438,6 +438,7 @@ label{
     flex-direction: column-reverse;
     gap: 25px;
     align-items: flex-end;
+    transition: opacity 0.25s, transform 0.25s var(--ease);
 }
 
 .fab-menu.hidden { display: none; }
@@ -1056,7 +1057,7 @@ body {
   gap: 2px;
   color: var(--muted);
   font-size: 10px;
-  padding: 6px 10px;
+  /*padding: 6px 10px;*/
   border-radius: 16px;
   transition: color 0.25s, background 0.25s var(--ease);
 }
@@ -1066,30 +1067,23 @@ body {
 }
 
 .home-button {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--primary);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: -22px;
-  box-shadow: 0 10px 25px rgba(2,132,199,0.5);
-  transition: transform 0.3s var(--ease);
-  justify-self: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: -78px;
+    box-shadow: 0 10px 25px rgba(2, 132, 199, 0.5);
+    transition: transform 0.3s var(--ease);
+    justify-self: center;
 }
 .home-button.active { transform: scale(1.06); }
 
 /* ============ FAB ============ */
 #fabContainer { position: fixed; bottom: 90px; left: 20px; z-index: 45; }
-.fab-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 12px;
-  transition: opacity 0.25s, transform 0.25s var(--ease);
-}
 .fab-menu.hidden { opacity: 0; pointer-events: none; transform: translateY(8px); }
 .fab-option {
   background: var(--surface);
