@@ -52,6 +52,10 @@ const cards = $("cards"),
     statusBox = $("status"),
     refreshButton = $("refresh"),
     todayElement = $("today");
+    
+let swRegistration = null;
+let currentAppVersionText = "در حال بررسی نسخه…";
+
 
 const pages = document.querySelectorAll(".page"),
     navButtons = document.querySelectorAll(".nav-button"),
@@ -878,6 +882,7 @@ fabPayment.onclick = ()=>{
 
     fabMenu.classList.add("hidden");
     addExpenseButton.classList.remove("open");
+    addExpenseButton.classList.remove("active");
 
     paymentModal.classList.add("open");
     fillPaymentItems($("paymentType").value || "payment");
@@ -897,6 +902,7 @@ fabTransfer.onclick = ()=>{
 
     fabMenu.classList.add("hidden");
     addExpenseButton.classList.remove("open");
+    addExpenseButton.classList.remove("active");
 
     transferModal.classList.add("open");
     document.body.style.overflow="hidden";
@@ -1747,7 +1753,7 @@ function openPage(id,title){
 
   window.scrollTo({top:0,behavior:"smooth"})
 }
-refreshButton.addEventListener("click",loadData);
+refreshButton.addEventListener("click", performFullAppUpdate);
 navButtons.forEach(b=>b.addEventListener("click",()=>openPage(b.dataset.page,b.dataset.title)));
 searchInput.addEventListener("input",()=>{visibleCount=PAGE_SIZE;renderAllCards()});
 function updateStatusFilterLabels(filter){
@@ -1769,17 +1775,21 @@ closeReportDetails.addEventListener("click",closeReportModal);reportDetailsModal
 const fabMenu = $("fabMenu");
 
 addExpenseButton.addEventListener("click", () => {
-  const isOpen = !fabMenu.classList.contains("hidden");
-  if (isOpen) {
-    fabMenu.classList.add("hidden");
-    addExpenseButton.classList.remove("open");
-  } else {
-    fabMenu.classList.remove("hidden");
-    fabMenu.classList.remove("animating");
-    void fabMenu.offsetWidth; // reflow
-    fabMenu.classList.add("animating");
-    addExpenseButton.classList.add("open");
-  }
+    const isOpen = !fabMenu.classList.contains("hidden");
+
+    if (isOpen) {
+        fabMenu.classList.add("hidden");
+        addExpenseButton.classList.remove("open");
+        addExpenseButton.classList.remove("active");
+    } else {
+        fabMenu.classList.remove("hidden");
+        fabMenu.classList.remove("animating");
+        void fabMenu.offsetWidth;
+        fabMenu.classList.add("animating");
+
+        addExpenseButton.classList.add("open");
+        addExpenseButton.classList.add("active");
+    }
 });
 function openModal(){
 
@@ -1795,6 +1805,7 @@ function loadIncomeOptions(){
 function openWithType(type) {
   fabMenu.classList.add("hidden");
   addExpenseButton.classList.remove("open");
+  addExpenseButton.classList.remove("active");
   resetExpenseForm();
   setExpenseType(type);
   openModal();
@@ -1808,6 +1819,7 @@ document.addEventListener("click", e => {
   if (!$("fabContainer").contains(e.target)) {
     fabMenu.classList.add("hidden");
     addExpenseButton.classList.remove("open");
+    addExpenseButton.classList.remove("active");
   }
 });
 
@@ -1944,19 +1956,95 @@ function addSwipeToClose(modalId) {
 
 ["expenseModal", "transferModal", "paymentModal", "settingsLockModal"].forEach(addSwipeToClose);
 
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("./sw.js")
-      .then((reg) => console.log("Service Worker registered:", reg.scope))
+      .then((reg) => {
+        swRegistration = reg;
+        console.log("Service Worker registered:", reg.scope);
+
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          window.location.reload();
+        });
+      })
       .catch((err) => console.error("Service Worker registration failed:", err));
   });
 }
 
+async function fetchGithubVersion() {
+  try {
+    const res = await fetch("https://api.github.com/repos/ahooraboy43/vamremember/commits/main", {
+      cache: "no-store"
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.commit?.committer?.date || null;
+  } catch (e) {
+    console.error("خطا در دریافت نسخه گیت‌هاب", e);
+    return null;
+  }
+}
+
+function updateAppVersionText(text) {
+  currentAppVersionText = text;
+  const el = $("appVersionText");
+  if (el) el.textContent = text;
+}
+
+async function performFullAppUpdate() {
+  if (refreshButton) {
+    refreshButton.disabled = true;
+    refreshButton.textContent = "⏳";
+  }
+
+  if (statusBox) statusBox.textContent = "در حال بررسی بروزرسانی…";
+  if (allStatus) allStatus.textContent = "در حال بررسی بروزرسانی…";
+  showToast("در حال بررسی بروزرسانی", "info");
+
+  try {
+    const versionDate = await fetchGithubVersion();
+
+    if (!versionDate) {
+      showToast("نسخه جدیدی یافت نشد", "info");
+      updateAppVersionText("نسخه جدیدی یافت نشد");
+      if (statusBox) statusBox.textContent = "نسخه جدیدی یافت نشد";
+      if (allStatus) allStatus.textContent = "نسخه جدیدی یافت نشد";
+      return;
+    }
+
+    const faDate = new Date(versionDate).toLocaleString("fa-IR");
+
+    await loadData();
+
+    updateAppVersionText(`نسخه جدید دریافت شد: ${faDate}`);
+    showToast(`نسخه جدید ${faDate} دریافت شد`, "success");
+
+    if (statusBox) statusBox.textContent = `نسخه جدید ${faDate} دریافت شد`;
+    if (allStatus) allStatus.textContent = `نسخه جدید ${faDate} دریافت شد`;
+
+    if (swRegistration) {
+      await swRegistration.update();
+    }
+  } catch (e) {
+    console.error(e);
+    showToast(`خطا در بروزرسانی: ${e.message}`, "error");
+    if (statusBox) statusBox.textContent = `خطا در بروزرسانی: ${e.message}`;
+    if (allStatus) allStatus.textContent = `خطا در بروزرسانی: ${e.message}`;
+  } finally {
+    if (refreshButton) {
+      refreshButton.disabled = false;
+      refreshButton.textContent = "🔄";
+    }
+  }
+}
+
+
+
 // ================= تنظیمات (Settings) =================
 
 const SETTINGS_KEY = "appSettingsV1";
-const APP_VERSION = "1.0.0";
 
 function loadSettings(){
   try{
@@ -2065,9 +2153,10 @@ function initSettingsUI(){
   const lockToggle = $("settingsLockEnabled");
   if(lockToggle) lockToggle.checked = !!appSettings.lockEnabled;
 
-  const versionEl = $("appVersion");
-  if(versionEl) versionEl.textContent = toPersianDigits(APP_VERSION);
+  const versionEl = $("appVersionText");
+  if(versionEl) versionEl.textContent = currentAppVersionText;
 }
+
 
 document.querySelectorAll(".theme-btn").forEach(btn=>{
   btn.addEventListener("click", ()=>{
@@ -2194,6 +2283,28 @@ function ensureDefaultAppLock(){
     appSettings.appLockPasswordHash = simpleHash("83242433");
     saveSettings(appSettings);
   }
+}
+function setAppHeight() {
+  const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+  document.documentElement.style.setProperty('--app-vh', `${vh}px`);
+}
+setAppHeight();
+window.addEventListener('resize', setAppHeight);
+window.addEventListener('orientationchange', setAppHeight);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', setAppHeight);
+  window.visualViewport.addEventListener('scroll', setAppHeight);
+}
+function setAppHeight(){
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.documentElement.style.setProperty('--app-vh', vh + 'px');
+}
+setAppHeight();
+window.addEventListener('resize', setAppHeight);
+window.addEventListener('orientationchange', setAppHeight);
+if (window.visualViewport){
+  window.visualViewport.addEventListener('resize', setAppHeight);
+  window.visualViewport.addEventListener('scroll', setAppHeight);
 }
 
 function isAppLocked(){
