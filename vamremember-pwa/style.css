@@ -219,15 +219,15 @@ img{
 .icon-button,
 #refresh,
 #settingsButton{
-  width:40px;
-  height:40px;
+  width:55px;
+  height:55px;
 
   border:1px solid var(--border);
   border-radius:50%;
 
   background:var(--surface-2);
   color:var(--text);
-
+  font-size: x-large;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -2344,7 +2344,7 @@ label{
 }
 
 .btn-primary{
-  width:100%;
+  width:93px;
   height:45px;
 
   border:0;
