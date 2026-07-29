@@ -350,9 +350,10 @@ img{
 
 .top{
   display:flex;
-  align-items:flex-start;
+  align-items: flex-end;
   justify-content:space-between;
   gap:10px;
+  flex-direction: column;
 }
 
 .name{
@@ -378,7 +379,7 @@ img{
 }
 
 .amount{
-  margin-top:8px;
+  margin-top:-40px;
   font-size:18px;
   font-weight:700;
 }
@@ -1095,8 +1096,8 @@ img{
    .img-btn / .img-btn1 در بقیه صفحه دست‌نخورده می‌ماند */
 .nav-button .img-btn1,
 .nav-button .img-btn{
-  width:var(--nav-icon-size);
-  height:var(--nav-icon-size);
+  /*width:var(--nav-icon-size);
+  height:var(--nav-icon-size);*/
 }
 
 .nav-button small{
