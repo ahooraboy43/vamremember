@@ -2,105 +2,161 @@ const SUPABASE_URL = "https://yfgyauzuzznlhradsrbo.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmZ3lhdXp1enpubGhyYWRzcmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NDIxOTMsImV4cCI6MjA5OTQxODE5M30.Mshjl3p-fJtkTuRSKP_3DhNe9IW7D6jv1C9pD_bv39A";
 const TABLE_NAME="expenses";
 const TRANSACTION_TABLE = "transactions";
-const MONTHS=[{key:"farvardin",name:"فروردین"},{key:"ordibehesht",name:"اردیبهشت"},{key:"khordad",name:"خرداد"},{key:"tir",name:"تیر"},{key:"mordad",name:"مرداد"},{key:"shahrivar",name:"شهریور"},{key:"mehr",name:"مهر"},{key:"aban",name:"آبان"},{key:"azar",name:"آذر"},{key:"dey",name:"دی"},{key:"bahman",name:"بهمن"},{key:"esfand",name:"اسفند"}];
-const PAGE_SIZE=10;
-
-// ================= رفع باگ فاصله bottom-nav از کف صفحه =================
-function setAppHeight(){
-  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  document.documentElement.style.setProperty('--app-vh', vh + 'px');
-}
-setAppHeight();
-window.addEventListener('resize', setAppHeight);
-window.addEventListener('orientationchange', setAppHeight);
-window.addEventListener('pageshow', setAppHeight);
-window.addEventListener('load', ()=>{ setAppHeight(); setTimeout(setAppHeight, 300); });
-if(window.visualViewport){
-  window.visualViewport.addEventListener('resize', setAppHeight);
-  window.visualViewport.addEventListener('scroll', setAppHeight);
-}
-let allExpenses=[],visibleCount=PAGE_SIZE,activeFilter="all",activeStatusFilter="all",currentMonthKey=null,currentMonthIndex=0;
-let reportMode="monthly",reportTargetMonthKey=null,reportDayValue=null,reportDayMonthKey=null,reportDayYear=null,reportYearValue=null,monthsCompareOpen=false;
-const $=id=>document.getElementById(id);
-const cards=$("cards"),statusBox=$("status"),refreshButton=$("refresh"),todayElement=$("today");
-const pages=document.querySelectorAll(".page"),navButtons=document.querySelectorAll(".nav-button"),pageTitle=$("pageTitle");
-const allCards=$("allCards"),allStatus=$("allStatus"),searchInput=$("searchInput"),loadMoreButton=$("loadMore");
-const typeFilters=document.querySelectorAll(".type-filter"),statusFilters=document.querySelectorAll(".status-filter"),addExpenseButton=$("addExpenseButton");
-const expenseModal = document.getElementById("expenseModal");
-const closeExpenseModal = document.getElementById("closeExpenseModal");
-const accounts = [
-    {
-        id:1,
-        title:"بانک ملی",
-        type:"bank"
-    },
-    {
-        id:2,
-        title:"بانک رفاه",
-        type:"bank"
-    },
-    {
-        id:3,
-        title:"ویپاد",
-        type:"bank"
-    },
-    {
-        id:4,
-        title:"بلو بانک",
-        type:"bank"
-    },
-    {
-        id:5,
-        title:"وجه نقد",
-        type:"cash"
-    }
+const MONTHS = [
+    { key: "farvardin", name: "فروردین" },
+    { key: "ordibehesht", name: "اردیبهشت" },
+    { key: "khordad", name: "خرداد" },
+    { key: "tir", name: "تیر" },
+    { key: "mordad", name: "مرداد" },
+    { key: "shahrivar", name: "شهریور" },
+    { key: "mehr", name: "مهر" },
+    { key: "aban", name: "آبان" },
+    { key: "azar", name: "آذر" },
+    { key: "dey", name: "دی" },
+    { key: "bahman", name: "بهمن" },
+    { key: "esfand", name: "اسفند" }
 ];
+const DEBT_TABLE = "debts";
+let allDebts = [];
+let editingDebtId = null;
 
-const editExpenseId=$("editExpenseId"),expenseType=$("expenseType"),installmentTypeButton=$("installmentTypeButton"),expenseTypeButton=$("expenseTypeButton");
-const expenseTitleLabel=$("expenseTitleLabel"),expenseTitle=$("expenseTitle"),expenseAmount=$("expenseAmount"),expenseTitleSelect=$("expenseTitleSelect"),expenseDueDay=$("expenseDueDay"),expenseInstallments=$("expenseInstallments"),installmentFields=$("installmentFields"),startMonthLabel=$("startMonthLabel"),expenseStartMonth=$("expenseStartMonth"),expenseNote=$("expenseNote"),monthsEditor=$("monthsEditor"),monthFields=$("monthFields"),saveExpenseButton=$("saveExpenseButton");
-const reportMonthTotal=$("reportMonthTotal"),reportPaidTotal=$("reportPaidTotal"),reportRemainingTotal=$("reportRemainingTotal"),reportExpensesTotal=$("reportExpensesTotal"),reportAllTotal=$("reportAllTotal"),paidPercent=$("paidPercent"),remainingPercent=$("remainingPercent"),paidBar=$("paidBar"),remainingBar=$("remainingBar");
+function fillDebtDateSelects(){
+  const daySel = $("debtDueDay"), monthSel = $("debtDueMonth");
+  if(daySel && !daySel.options.length){
+    for(let d=1; d<=31; d++){
+      const op = document.createElement("option");
+      op.value = d; op.textContent = d.toLocaleString("fa-IR");
+      daySel.appendChild(op);
+    }
+  }
+  if(monthSel && !monthSel.options.length){
+    MONTHS.forEach(m=>{
+      const op = document.createElement("option");
+      op.value = m.key; op.textContent = m.name;
+      monthSel.appendChild(op);
+    });
+  }
+}
+const PAGE_SIZE = 10;
+
+let allExpenses = [],
+    visibleCount = PAGE_SIZE,
+    activeFilter = "all",
+    activeStatusFilter = "all",
+    currentMonthKey = null,
+    currentMonthIndex = 0;
+
+const $ = id => document.getElementById(id);
+
+const cards = $("cards"),
+    statusBox = $("status"),
+    refreshButton = $("refresh"),
+    todayElement = $("today");
+    
+let swRegistration = null;
+let currentAppVersionText = "در حال بررسی نسخه…";
+
+
+const pages = document.querySelectorAll(".page"),
+    navButtons = document.querySelectorAll(".nav-button"),
+    pageTitle = $("pageTitle");
+
+const allCards = $("allCards"),
+    allStatus = $("allStatus"),
+    searchInput = $("searchInput"),
+    loadMoreButton = $("loadMore");
+
+const typeFilters = document.querySelectorAll(".type-filter"),
+    statusFilters = document.querySelectorAll(".status-filter"),
+    addExpenseButton = $("addExpenseButton");
+
+const expenseModal = $("expenseModal");
+const closeExpenseModal = $("closeExpenseModal");
+
+const editExpenseId = $("editExpenseId"),
+    expenseType = $("expenseType"),
+    installmentTypeButton = $("installmentTypeButton"),
+    expenseTypeButton = $("expenseTypeButton");
+
+const expenseTitleLabel = $("expenseTitleLabel"),
+    expenseTitle = $("expenseTitle"),
+    expenseAmount = $("expenseAmount"),
+    expenseTitleSelect = $("expenseTitleSelect"),
+    expenseDueDay = $("expenseDueDay"),
+    expenseInstallments = $("expenseInstallments"),
+    installmentFields = $("installmentFields"),
+    startMonthLabel = $("startMonthLabel"),
+    expenseStartMonth = $("expenseStartMonth"),
+    expenseNote = $("expenseNote"),
+    monthsEditor = $("monthsEditor"),
+    monthFields = $("monthFields"),
+    saveExpenseButton = $("saveExpenseButton");
+
+const reportMonthTotal = $("reportMonthTotal"),
+    reportPaidTotal = $("reportPaidTotal"),
+    reportRemainingTotal = $("reportRemainingTotal"),
+    reportExpensesTotal = $("reportExpensesTotal"),
+    reportAllTotal = $("reportAllTotal"),
+    paidPercent = $("paidPercent"),
+    remainingPercent = $("remainingPercent"),
+    paidBar = $("paidBar"),
+    remainingBar = $("remainingBar");
+
+const reportIncomeTotal = $("reportIncomeTotal"),
+    reportBalanceTotal = $("reportBalanceTotal"),
+    incomePercent = $("incomePercent"),
+    paymentPercent = $("paymentPercent"),
+    incomeBar = $("incomeBar"),
+    paymentBar = $("paymentBar");
+
 const transferTypeButton = $("transferTypeButton");
 const transferFrom = $("transferFrom");
 const transferTo = $("transferTo");
 const expenseFields = $("expenseFields");
 const transferFields = $("transferFields");
 const incomeTypeButton = $("incomeTypeButton");
-let selectedIncomeBank = null;let selectedExpenseBank = null;
+let selectedIncomeBank = null;
 const incomeFields = $("incomeFields");
 const transferModal = $("transferModal");
 const closeTransferModal = $("closeTransferModal");
 const transferForm = $("transferForm");
-let transferFromAccount = null;
-let transferToAccount = null;
-const incomeBankButtons = document.querySelectorAll(".income-bank");
-const reportDetailsModal=$("reportDetailsModal"),reportDetailsTitle=$("reportDetailsTitle"),reportDetailsList=$("reportDetailsList"),closeReportDetails=$("closeReportDetails");
+const reportDetailsModal = $("reportDetailsModal"),
+    reportDetailsTitle = $("reportDetailsTitle"),
+    reportDetailsList = $("reportDetailsList"),
+    closeReportDetails = $("closeReportDetails");
+let _toastTimer;
+function showToast(msg, type = 'info') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast ${type}`;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.add('hidden'), 3000);
+}
 
-closeExpenseModal.addEventListener("click", closeModal);
-closeTransferModal.addEventListener("click",()=>{
+function closeModalEl(modalEl){
+    modalEl.classList.remove("open");
+    document.body.style.overflow="";
+}
 
-transferModal.classList.remove("open");
-document.body.style.overflow="";
+closeExpenseModal?.addEventListener("click", closeModal);
 
+closeTransferModal?.addEventListener("click", () => {
+  if (transferModal) {
+    closeModalEl(transferModal);
+  }
 });
 
+transferModal
+  ?.querySelector(".modal-backdrop")
+  ?.addEventListener("click", () => {
+    closeModalEl(transferModal);
+  });
 
-transferModal.querySelector(".modal-backdrop")
-.addEventListener("click",()=>{
-
-transferModal.classList.remove("open");
-document.body.style.overflow="";
-
-});
-
-
-expenseModal.querySelector(".modal-backdrop")
-.addEventListener("click", () => {
-    closeModal();
-});
+expenseModal
+  ?.querySelector(".modal-backdrop")
+  ?.addEventListener("click", closeModal);
 
 async function addTransaction(data){
-    console.log("SENDING TRANSACTION:", data);
-
     return await supabaseRequest(
         TRANSACTION_TABLE,
         {
@@ -112,32 +168,6 @@ async function addTransaction(data){
         }
     );
 }
-async function getTransactions(){
-    return await supabaseRequest(
-        `${TRANSACTION_TABLE}?select=*&order=id.desc`,
-        {
-            method:"GET"
-        }
-    );
-}
-
-function setupActiveButtons(selector){
-
-    document.querySelectorAll(selector).forEach(btn=>{
-
-        btn.addEventListener("click",()=>{
-
-            btn.parentElement
-                .querySelectorAll(selector)
-                .forEach(b=>b.classList.remove("active"));
-
-            btn.classList.add("active");
-
-        });
-
-    });
-
-}
 function getHeaders(){return{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`,"Content-Type":"application/json"}}
 async function supabaseRequest(path,options={}){const response=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,headers:{...getHeaders(),...(options.headers||{})}});const text=await response.text();if(!response.ok)throw new Error(text||`HTTP ${response.status}`);return text?JSON.parse(text):null}
 function toEnglishDigits(value){return String(value).replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d))}
@@ -146,13 +176,87 @@ function updatePersianDate(){todayElement.textContent=new Intl.DateTimeFormat("f
 function isInstallment(i){
     return i.type==="installment" || Number(i.id)<10000;
 }
+const DEFAULT_BANKS = ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
 
+let banks;
+try {
+  const saved = localStorage.getItem("banks");
+  banks = saved ? JSON.parse(saved) : [...DEFAULT_BANKS];
+} catch {
+  banks = [...DEFAULT_BANKS];
+}
+
+
+function saveBanks() {
+  localStorage.setItem("banks", JSON.stringify(banks));
+}
+
+function renderBanks() {
+  const list = document.getElementById("banksList");
+  if (!list) return;
+  list.innerHTML = banks.map((b, i) => `
+    <div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span>${b}</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn-sm" onclick="editBank(${i})">ویرایش</button>
+        <button class="btn-sm btn-danger" onclick="deleteBank(${i})">حذف</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function editBank(i) {
+  const name = prompt("نام جدید:", banks[i]);
+  if (name && name.trim()) {
+    banks[i] = name.trim();
+    saveBanks();
+    renderBanks();
+    renderPaymentBanks();
+  }
+}
+
+function deleteBank(i) {
+  if (!confirm(`حذف "${banks[i]}"؟`)) return;
+  banks.splice(i, 1);
+  saveBanks();
+  renderBanks();
+  renderPaymentBanks();
+}
+
+function renderPaymentBanks() {
+  const container = document.getElementById("paymentBanksContainer");
+  if (!container) return;
+  container.innerHTML = banks.map(b =>
+    `<button type="button" class="tag-btn payment-bank" data-bank="${b}">${b}</button>`
+  ).join("");
+  container.querySelectorAll(".payment-bank").forEach(btn => {
+    btn.addEventListener("click", () => {
+      container.querySelectorAll(".payment-bank").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedIncomeBank = btn.dataset.bank;
+    });
+  });
+}
+
+
+document.getElementById("addBankButton")?.addEventListener("click", () => {
+  const input = document.getElementById("bankNameInput");
+  const name = input.value.trim();
+  if (!name) return;
+  banks.push(name);
+  saveBanks();
+  renderBanks();
+  renderPaymentBanks();
+  input.value = "";
+});
+
+renderBanks();
+renderPaymentBanks();
 
 function isExpense(i){
     const id=Number(i.id);
     return i.type==="expense" || (id>=10000 && id<20000);
 }
-
 
 function isIncome(i){
     const id=Number(i.id);
@@ -203,7 +307,6 @@ async function loadData(){
         renderReports();
         renderHome();
 
-
         statusBox.textContent =
         `${allExpenses.length.toLocaleString("fa-IR")} مورد دریافت شد`;
 
@@ -227,50 +330,6 @@ async function loadData(){
         refreshButton.disabled=false;
 
     }
-}
-function fillExpenseTitles(type){
-
-    if(!expenseTitleSelect) return;
-
-
-    expenseTitleSelect.innerHTML =
-    `<option value="">انتخاب کنید</option>`;
-
-
-    let items=[];
-
-
-    if(type==="expense"){
-
-        items = allExpenses.filter(i=>{
-            let id=Number(i.id);
-            return id>=10000 && id<20000;
-        });
-
-    }
-
-
-    if(type==="income"){
-
-        items = allExpenses.filter(i=>{
-            let id=Number(i.id);
-            return id>=20000 && id<30000;
-        });
-
-    }
-
-
-    items.forEach(item=>{
-
-        const op=document.createElement("option");
-
-        op.value=item.title;
-        op.textContent=item.title;
-
-        expenseTitleSelect.appendChild(op);
-
-    });
-
 }
 function getDaysInPersianMonth(monthIndex){
     if(monthIndex <= 5) return 31;   // فروردین تا شهریور
@@ -322,8 +381,8 @@ function setupPaymentPanel(card, item){
     setupButtonGroup(card, ".bank-tag", btn => {
         selectedBank = btn.dataset.bank;
         let text = noteBox.value;
-        ["بانک ملی","بانک رفاه","ویپاد","بلو بانک","بانک ملت"]
-            .forEach(b => { text = text.replace(b, ""); });
+        (JSON.parse(localStorage.getItem('banks')||'[]'))
+        .forEach(b => { text = text.replace(b, ""); });
         text = text.replace(/^\s*-\s*/, "").trim();
         noteBox.value = btn.dataset.bank + (text ? " - " + text : "-");
     });
@@ -364,7 +423,6 @@ function setupPaymentPanel(card, item){
     }
 });
 
-
 }
 
 function setupButtonGroup(parent, selector, callback){
@@ -388,22 +446,6 @@ function setupButtonGroup(parent, selector, callback){
 
 }
 function createDueCard(item){const card=document.createElement("article");card.className="card "+(item.daysRemaining<0?"overdue":"soon");const dayText=item.daysRemaining<0?`${Math.abs(item.daysRemaining).toLocaleString("fa-IR")} روز گذشته`:item.daysRemaining===0?"امروز":`${item.daysRemaining.toLocaleString("fa-IR")} روز مانده`;card.innerHTML=`<div class="card-main"><div class="name">${escapeHtml(item.title)}</div><div class="top"><div class="days">${dayText}</div><div class="installment-badge">${getRemainingInstallments(item).toLocaleString("fa-IR")} قسط باقی مانده</div></div><div class="amount">${formatMoney(item.amount)}</div><div class="meta">سررسید: روز ${Number(item.due_day).toLocaleString("fa-IR")}ام</div></div>${createPaymentPanelHtml()}`;card.querySelector(".card-main").addEventListener("click",()=>{document.querySelectorAll("#cards .card.open").forEach(c=>{if(c!==card)c.classList.remove("open")});card.classList.toggle("open")});setupPaymentPanel(card,item);return card}
-function extractBank(text){
-
-    const banks=[
-        "بانک ملی",
-        "بانک رفاه",
-        "ویپاد",
-        "بلو بانک",
-        "بانک ملت"
-    ];
-
-
-    return banks.find(
-        b=>String(text).includes(b)
-    ) || null;
-
-}
 function createPaymentPanelHtml(){
   
 return`
@@ -411,36 +453,26 @@ return`
 
 <div class="payment-title">ثبت پرداخت</div>
 
-
 <textarea class="payment-note" placeholder="توضیح پرداخت..."></textarea>
 
 <div class="quick-tags">
-<button type="button" class="tag-btn bank-tag" data-bank="بانک ملی">بانک ملی</button>
-<button type="button" class="tag-btn bank-tag" data-bank="بانک رفاه">بانک رفاه</button>
-<button type="button" class="tag-btn bank-tag" data-bank="ویپاد">ویپاد</button>
-<button type="button" class="tag-btn bank-tag" data-bank="بلو بانک">بلو بانک</button>
-<button type="button" class="tag-btn bank-tag" data-bank=" بانک ملت">بانک ملت </button>
-
+  ${(JSON.parse(localStorage.getItem('banks')||'[]')).map(b=>`<button type="button" class="tag-btn bank-tag" data-bank="${b}">${b}</button>`).join('')}
 </div>
-
 
 <label class="date-option">
 <input type="checkbox" class="add-date" checked>
 افزودن تاریخ پرداخت
 </label>
 
-
 <label class="confirm-option">
 <input type="checkbox" class="confirm-payment">
 پرداخت این قسط را تأیید می‌کنم
 </label>
 
-
 <div class="payment-actions">
 <button type="button" class="cancel-payment">انصراف</button>
 <button type="button" class="save-payment">ثبت پرداخت</button>
 </div>
-
 
 </div>
 `;
@@ -462,42 +494,30 @@ async function registerPaymentTransaction(item, note, account, date){
     return await addTransaction(data);
 }
 
-function setupTransferButtons(){
+function setupTransferButtons() {
+  const fromContainer = document.getElementById("transferFromContainer");
+  const toContainer = document.getElementById("transferToContainer");
+  const transferFrom = document.getElementById("transferFromModal");  
+  const transferTo = document.getElementById("transferToModal"); 
+  if (!fromContainer || !toContainer) return;
 
-    document.querySelectorAll(".from-bank")
-    .forEach(btn=>{
-
-        btn.addEventListener("click",()=>{
-
-            document.querySelectorAll(".from-bank")
-            .forEach(b=>b.classList.remove("active"));
-
-            btn.classList.add("active");
-
-            transferFrom.value=btn.dataset.bank;
-
-        });
-
+  function renderBtns(container, hiddenInput, activeClass) {
+    container.innerHTML = banks.map(b =>
+      `<button type="button" class="tag-btn ${activeClass}" data-bank="${b}">${b}</button>`
+    ).join('');
+    container.querySelectorAll(`.${activeClass}`).forEach(btn => {
+      btn.addEventListener("click", () => {
+        container.querySelectorAll(`.${activeClass}`).forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        hiddenInput.value = btn.dataset.bank;
+      });
     });
+  }
 
-
-    document.querySelectorAll(".to-bank")
-    .forEach(btn=>{
-
-        btn.addEventListener("click",()=>{
-
-            document.querySelectorAll(".to-bank")
-            .forEach(b=>b.classList.remove("active"));
-
-            btn.classList.add("active");
-
-            transferTo.value=btn.dataset.bank;
-
-        });
-
-    });
-
+  renderBtns(fromContainer, transferFrom, "from-bank");
+  renderBtns(toContainer, transferTo, "to-bank");
 }
+
 function getFilteredItems() {
   const s = searchInput.value.trim().toLowerCase();
 
@@ -518,8 +538,7 @@ function getFilteredItems() {
       return false;
     }
 
-    if(activeStatusFilter==="unpaid" &&
-       (!isInstallment(i) || !isNullValue(i[currentMonthKey]))){
+    if(activeStatusFilter==="unpaid" && !isNullValue(i[currentMonthKey])){
       return false;
     }
 
@@ -539,14 +558,17 @@ function getFilteredItems() {
 function createAllItemCard(item){
  const expense=isExpense(item);
 const income=isIncome(item);
+const usesMonthlyAmounts=expense||income;
 const card=document.createElement("article");
 const v=item[currentMonthKey];
-  card.className=`card compact-card ${expense?"expense-card":""} ${!expense&&isPaidValue(v)?"paid-card":""}`;
-  const mainAmount=expense?getLatestExpenseAmount(item):Number(item.amount||0);
-  const secondary=expense?`جمع کل: ${formatMoney(getExpenseTotal(item))}`:`${getRemainingInstallments(item).toLocaleString("fa-IR")} مانده`;
-  const counter=expense?`${getPaidCount(item).toLocaleString("fa-IR")} پرداخت`:`${getRemainingInstallments(item).toLocaleString("fa-IR")} قسط باقی‌مانده`;
+  const cardTypeClass=expense?"expense-card":income?"income-card":(isPaidValue(v)?"paid-card":"");
+  card.className=`card compact-card ${cardTypeClass}`;
+  const mainAmount=usesMonthlyAmounts?getLatestExpenseAmount(item):Number(item.amount||0);
+  const secondary=usesMonthlyAmounts?`جمع کل: ${formatMoney(getExpenseTotal(item))}`:`${getRemainingInstallments(item).toLocaleString("fa-IR")} مانده`;
+  const counter=usesMonthlyAmounts?`${getPaidCount(item).toLocaleString("fa-IR")} ${income?"دریافت":"پرداخت"}`:`${getRemainingInstallments(item).toLocaleString("fa-IR")} قسط باقی‌مانده`;
+  const amountPrefix=income?"+ ":"";
   card.innerHTML=`<div class="card-main compact-main">
-    <div class="compact-head"><div class="compact-amount-wrap"><div class="amount compact-amount">${formatMoney(mainAmount)}</div></div><div class="compact-side">${counter}</div><div class="id-badge">ID ${Number(item.id).toLocaleString("fa-IR")}</div></div>
+    <div class="compact-head"><div class="compact-amount-wrap"><div class="amount compact-amount ${income?"income-amount":""}">${amountPrefix}${formatMoney(mainAmount)}</div></div><div class="compact-side">${counter}</div><div class="id-badge">ID ${Number(item.id).toLocaleString("fa-IR")}</div></div>
     <div class="compact-foot"><div class="compact-title">${escapeHtml(item.title)}</div><div class="badge-row">
     <span class="${
 expense
@@ -563,35 +585,12 @@ expense
 :"💳 قسط"
 }
 </span>
-    <span class="status-badge">${currentStatus(item)}</span></div></div>
+    <span class="status-badge">${income?(isPaidValue(v)?"دریافت‌شده":"دریافت‌نشده"):currentStatus(item)}</span></div></div>
     <div class="all-card-actions"><button type="button" class="edit-expense">ویرایش</button></div>
   </div>`;
   card.querySelector(".edit-expense").addEventListener("click",e=>{e.stopPropagation();openEditModal(item)});return card
 }
 function getExpenseAmount(item){return getLatestExpenseAmount(item)}
-function updateExpenseFormType(type){
-
-    const titleInput = document.getElementById("expenseTitle");
-    const titleLabel = document.getElementById("expenseTitleLabel");
-
-    titleInput.classList.remove("hidden");
-
-    if(type==="installment"){
-        titleLabel.textContent="عنوان قسط";
-        titleInput.placeholder="مثلا وام بانک ملی";
-    }
-
-    if(type==="expense"){
-        titleLabel.textContent="عنوان هزینه";
-        titleInput.placeholder="مثلا خرید، قبض، بنزین";
-    }
-
-    if(type==="income"){
-        titleLabel.textContent="عنوان درآمد";
-        titleInput.placeholder="مثلا حقوق، فروش";
-    }
-
-}
 function setExpenseType(type){
 
     expenseType.value = type;
@@ -610,8 +609,6 @@ function setExpenseType(type){
         type === "installment"
     );
 
-
-
     expenseTypeButton?.classList.toggle(
         "active",
         type === "expense"
@@ -627,7 +624,6 @@ function setExpenseType(type){
         type === "transfer"
     );
 
-
     // نمایش فرم مربوطه
     installmentFields?.classList.toggle(
         "hidden",
@@ -638,7 +634,8 @@ function setExpenseType(type){
     "hidden",
     type !== "expense"
 );
-
+$("debtTypeButton")?.classList.toggle("active", type === "debt");
+$("debtFields")?.classList.toggle("hidden", type !== "debt");
 incomeFields?.classList.toggle(
     "hidden",
     type !== "income"
@@ -648,8 +645,6 @@ incomeFields?.classList.toggle(
         "hidden",
         type !== "transfer"
     );
-
-
 
     // عنوان‌ها
     switch(type){
@@ -664,8 +659,16 @@ expenseTitleSelect.classList.add("hidden");
 startMonthLabel.textContent="ماه شروع";
 
 break;
-
-
+case "debt":
+    fillDebtDateSelects();
+    expenseTitleLabel.textContent = "توضیح (اختیاری)";
+    expenseTitle.placeholder = "توضیح دلخواه";
+    if(!editExpenseId.value && !editingDebtId){
+        $("debtDueDay").value = getCurrentPersianDay();
+        $("debtDueMonth").value = currentMonthKey;
+        $("debtDueYear").value = getPersianDateParts().year;
+    }
+    break;
 case "expense":
 
 expenseTitleLabel.textContent="عنوان هزینه";
@@ -676,15 +679,12 @@ startMonthLabel.textContent="ماه هزینه";
 
 break;
 
-
-
 case "income":
 
     expenseTitleLabel.textContent="عنوان درآمد";
     expenseTitle.placeholder="مثلا حقوق، فروش، سود";
     startMonthLabel.textContent="ماه درآمد";
     break;
-
 
 case "transfer":
 
@@ -696,13 +696,8 @@ case "transfer":
     }
 
     // اجباری بودن فیلدهای قسط
-    expenseDueDay.required =
-        type === "installment";
-
-    expenseInstallments.required =
-        type === "installment";
-
-
+    expenseDueDay.required = false;
+expenseInstallments.required = false;
 
     // متن دکمه ثبت
     if(editExpenseId.value){
@@ -717,6 +712,9 @@ case "transfer":
             case "installment":
                 saveExpenseButton.textContent="ثبت قسط";
                 break;
+                case "debt":
+    saveExpenseButton.textContent = "ثبت قرض/دین";
+    break;
 
             case "expense":
                 saveExpenseButton.textContent="ثبت هزینه";
@@ -746,7 +744,6 @@ case "transfer":
             "form-transfer"
         );
 
-
         sheet.classList.add(
             "form-" + type
         );
@@ -758,7 +755,6 @@ fabCreate.onclick = ()=>{
     openWithType("expense");
 
 };
-
 
 const paymentModal = $("paymentModal");
 const closePaymentModal = $("closePaymentModal");
@@ -886,11 +882,11 @@ fabPayment.onclick = ()=>{
 
     fabMenu.classList.add("hidden");
     addExpenseButton.classList.remove("open");
+    addExpenseButton.classList.remove("active");
 
     paymentModal.classList.add("open");
     fillPaymentItems($("paymentType").value || "payment");
     document.body.style.overflow="hidden";
-   /// $("paymentDate").value = <تابع تاریخ امروز به فرمت YYYY/MM/DD>;
 
     const p = getPersianDateParts();
     $("paymentDate").value =
@@ -898,36 +894,22 @@ fabPayment.onclick = ()=>{
 
 };
 
+closePaymentModal.onclick = ()=>closeModalEl(paymentModal);
 
-closePaymentModal.onclick = ()=>{
-
-    paymentModal.classList.remove("open");
-    document.body.style.overflow="";
-    
-
-};
-
-
-paymentModal.querySelector(".modal-backdrop")
-.addEventListener("click",()=>{
-
-    paymentModal.classList.remove("open");
-    document.body.style.overflow="";
-
-});
-
+paymentModal.querySelector(".modal-backdrop").addEventListener("click", ()=>closeModalEl(paymentModal));
 
 fabTransfer.onclick = ()=>{
 
     fabMenu.classList.add("hidden");
     addExpenseButton.classList.remove("open");
+    addExpenseButton.classList.remove("active");
 
     transferModal.classList.add("open");
     document.body.style.overflow="hidden";
 
 };
 function closeModal(){expenseModal.classList.remove("open");document.body.style.overflow=""}
-function resetExpenseForm(){expenseForm.reset();editExpenseId.value="";monthsEditor.classList.add("hidden");monthFields.innerHTML="";expenseStartMonth.value=currentMonthKey;expenseModalTitle.textContent="ثبت مورد جدید";setExpenseType("installment")}
+function resetExpenseForm(){editingDebtId = null;expenseForm.reset();editExpenseId.value="";monthsEditor.classList.add("hidden");monthFields.innerHTML="";expenseStartMonth.value=currentMonthKey;expenseModalTitle.textContent="ثبت مورد جدید";setExpenseType("installment")}
 function openNewModal(){resetExpenseForm();openModal()}
 function openEditModal(item){
   resetExpenseForm();
@@ -997,11 +979,9 @@ function getNextId(type){
             return null;
     }
 
-
     const ids = allExpenses
         .map(x=>Number(x.id))
         .filter(id=>id>=min && id<=max);
-
 
     return ids.length
         ? Math.max(...ids)+1
@@ -1033,6 +1013,69 @@ async function saveExpense(e){
     e.preventDefault();
 
     const type = expenseType.value;
+    if(type === "debt"){
+    const counterparty = $("debtCounterparty").value.trim();
+    const amount = Number(expenseAmount.value);
+    const day = Number($("debtDueDay").value);
+    const month = $("debtDueMonth").value;
+    const year = Number($("debtDueYear").value);
+    const direction = $("debtDirection").value || "lent";
+
+    if(!counterparty){ alert("نام طرف حساب را وارد کنید."); return; }
+    if(!Number.isFinite(amount) || amount <= 0){ alert("مبلغ معتبر نیست."); return; }
+    if(!Number.isFinite(day) || day < 1 || day > 31){ alert("روز موعد تسویه معتبر نیست."); return; }
+    if(!month){ alert("ماه موعد تسویه را انتخاب کنید."); return; }
+    if(!Number.isFinite(year) || year < 1300){ alert("سال معتبر نیست."); return; }
+
+    const body = {
+        direction, counterparty, amount,
+        due_day: day, due_month: month, due_year: year,
+        note: expenseTitle.value.trim() || null
+    };
+
+    saveExpenseButton.disabled = true;
+    try{
+        const debtPath = editingDebtId
+  ? `${DEBT_TABLE}?id=eq.${encodeURIComponent(editingDebtId)}`
+  : DEBT_TABLE;
+
+console.log("Saving debt:", {
+  editingDebtId,
+  method: editingDebtId ? "PATCH" : "POST",
+  path: debtPath,
+  body
+});
+
+const result = await supabaseRequest(
+  debtPath,
+  {
+    method: editingDebtId ? "PATCH" : "POST",
+    headers: {
+      Prefer: "return=representation"
+    },
+    body: JSON.stringify(body)
+  }
+);
+
+console.log("Save debt result:", result);
+
+if(editingDebtId && Array.isArray(result) && result.length === 0){
+  alert("ویرایش انجام نشد؛ رکوردی با این شناسه پیدا نشد.");
+  console.error("PATCH بدون نتیجه:", editingDebtId, result);
+  return;
+}
+
+closeModal();
+await loadDebts();
+
+    }catch(err){
+        alert("خطا:\n"+err.message);
+    }finally{
+        saveExpenseButton.disabled = false;
+        
+    }
+    return;
+}
 
     // انتقال وجه
     if(type==="transfer"){
@@ -1089,7 +1132,6 @@ if(type !== "expense" && type !== "income"){
         return;
     }
 
-
     const editingId =
         editExpenseId.value
         ? Number(editExpenseId.value)
@@ -1112,23 +1154,20 @@ if(type !== "expense" && type !== "income"){
     }
 }
 
+   if (type === "installment") {
+  const d = Number(expenseDueDay.value);
+  const c = Number(expenseInstallments.value);
 
-    if(type==="installment"){
+  if (expenseDueDay.value !== "" && (!Number.isFinite(d) || d < 1 || d > 31)) {
+    alert("روز سررسید معتبر نیست.");
+    return;
+  }
+  if (expenseInstallments.value !== "" && (!Number.isFinite(c) || c < 0)) {
+    alert("تعداد اقساط معتبر نیست.");
+    return;
+  }
+}
 
-        const d=Number(expenseDueDay.value);
-        const c=Number(expenseInstallments.value);
-
-        if(!Number.isFinite(d)||d<1||d>31){
-            alert("روز سررسید معتبر نیست.");
-            return;
-        }
-
-        if(!Number.isFinite(c)||c<1){
-            alert("تعداد اقساط معتبر نیست.");
-            return;
-        }
-
-    }
 
     saveExpenseButton.disabled=true;
     saveExpenseButton.textContent="در حال ذخیره...";
@@ -1169,7 +1208,6 @@ if(type !== "expense" && type !== "income"){
         note: expenseNote.value.trim() || null
     });
 }
-
 
         closeModal();
 
@@ -1243,19 +1281,18 @@ function buildEditBody(type){
   return body;
 }
 function getReportItems(kind){
-  const mk=reportTargetMonthKey||currentMonthKey;
-  const installments=allExpenses.filter(isInstallment),expenses=allExpenses.filter(isExpense);
-  if(kind==="month")return installments.filter(i=>!isClosedValue(i[mk]));
-  if(kind==="paid")return installments.filter(i=>isPaidValue(i[mk]));
-  if(kind==="remaining")return installments.filter(i=>isNullValue(i[mk]));
-  if(kind==="expenses")return expenses.filter(i=>parseMoney(i[mk])!==null);
-  if(kind==="all")return [...installments.filter(i=>isPaidValue(i[mk])),...expenses.filter(i=>isPaidValue(i[mk]))];
+  const installments=allExpenses.filter(isInstallment),expenses=allExpenses.filter(isExpense),incomes=allExpenses.filter(isIncome);
+  if(kind==="month")return installments.filter(i=>!isClosedValue(i[currentMonthKey]));
+  if(kind==="paid")return installments.filter(i=>isPaidValue(i[currentMonthKey]));
+  if(kind==="remaining")return installments.filter(i=>isNullValue(i[currentMonthKey]));
+  if(kind==="expenses")return expenses.filter(i=>parseMoney(i[currentMonthKey])!==null);
+  if(kind==="income")return incomes.filter(i=>parseMoney(i[currentMonthKey])!==null);
+  if(kind==="all")return [...installments.filter(i=>isPaidValue(i[currentMonthKey])),...expenses.filter(i=>isPaidValue(i[currentMonthKey]))];
   return[];
 }
 function renderHome(){
 
 const today=getCurrentPersianDay();
-
 
 const overdue =
 allExpenses.filter(i=>
@@ -1266,19 +1303,12 @@ allExpenses.filter(i=>
     Number(i.due_day)<today
 ).length;
 
-
-
 const soon=getDueItems().length;
-
-
 
 let paid=0;
 let expense=0;
 
-
-
 allExpenses.forEach(i=>{
-
 
 // پرداخت اقساط این ماه
 if(
@@ -1288,7 +1318,6 @@ if(
 ){
     paid += Number(i.amount)||0;
 }
-
 
 // هزینه های ماه
 if(isExpense(i)){
@@ -1301,38 +1330,30 @@ if(isExpense(i)){
 
 }
 
-
 });
-
-
 
 $("homeOverdue").textContent=
 overdue.toLocaleString("fa-IR");
 
-
 $("homeSoon").textContent=
 soon.toLocaleString("fa-IR");
-
 
 $("homePaid").textContent=
 formatMoney(paid);
 
-
 $("homeExpense").textContent=
 formatMoney(expense);
 
-
 }
 function openReportDetails(kind){
-  const mk=reportTargetMonthKey||currentMonthKey;
-  const titles={month:"اقساط این ماه",paid:"اقساط پرداخت‌شده",remaining:"اقساط باقی‌مانده",expenses:"هزینه‌های این ماه",all:"جمع کل پرداختی"};
+  const titles={month:"اقساط این ماه",paid:"اقساط پرداخت‌شده",remaining:"اقساط باقی‌مانده",expenses:"هزینه‌های این ماه",income:"درآمدهای این ماه",all:"جمع کل پرداختی"};
   const items=getReportItems(kind);reportDetailsTitle.textContent=titles[kind]||"جزئیات گزارش";reportDetailsList.innerHTML="";
   if(!items.length){reportDetailsList.innerHTML='<div class="empty">موردی وجود ندارد</div>'}
   items.forEach(item=>{
-    const expense=isExpense(item),paid=isPaidValue(item[mk]),row=document.createElement("article");row.className="report-detail-item";
+    const expense=isExpense(item),income=isIncome(item),paid=isPaidValue(item[currentMonthKey]),row=document.createElement("article");row.className="report-detail-item";
     let detail="";
-    if(expense)detail=`<span>${formatMoney(parseMoney(item[mk])||0)}</span><span>پرداخت شده</span>`;
-    else if(paid)detail=`<span>${formatMoney(item.amount)}</span><span>تاریخ پرداخت: ${escapeHtml(extractPaymentDate(item[mk]))}</span>`;
+    if(expense||income)detail=`<span>${formatMoney(parseMoney(item[currentMonthKey])||0)}</span><span>${income?"دریافت شده":"پرداخت شده"}</span>`;
+    else if(paid)detail=`<span>${formatMoney(item.amount)}</span><span>تاریخ پرداخت: ${escapeHtml(extractPaymentDate(item[currentMonthKey]))}</span>`;
     else detail=`<span>${formatMoney(item.amount)}</span><span>سررسید: روز ${Number(item.due_day||0).toLocaleString("fa-IR")}ام</span>`;
     row.innerHTML=`<div class="report-detail-title">${escapeHtml(item.title)}</div><div class="report-detail-meta">${detail}</div>`;reportDetailsList.appendChild(row)
   });
@@ -1340,277 +1361,387 @@ function openReportDetails(kind){
 }
 function closeReportModal(){reportDetailsModal.classList.remove("open");document.body.style.overflow=""}
 
-function getMonthTotals(monthKey){
-  const installments=allExpenses.filter(isInstallment),expenses=allExpenses.filter(isExpense);
-  let monthInstallmentTotal=0,paidInstallmentTotal=0,remainingInstallmentTotal=0,monthExpenseTotal=0;
-  for(const item of installments){const currentValue=item[monthKey],amount=Number(item.amount||0);if(isClosedValue(currentValue))continue;monthInstallmentTotal+=amount;if(isPaidValue(currentValue))paidInstallmentTotal+=amount;if(isNullValue(currentValue))remainingInstallmentTotal+=amount}
-  for(const item of expenses){const amount=parseMoney(item[monthKey]);if(amount!==null)monthExpenseTotal+=amount}
-  return{monthInstallmentTotal,paidInstallmentTotal,remainingInstallmentTotal,monthExpenseTotal,allPaidTotal:paidInstallmentTotal+monthExpenseTotal}
-}
-
 function renderReports(){
-  const mk=reportTargetMonthKey||currentMonthKey;
-  const t=getMonthTotals(mk);
-  reportMonthTotal.textContent=formatMoney(t.monthInstallmentTotal);reportPaidTotal.textContent=formatMoney(t.paidInstallmentTotal);reportRemainingTotal.textContent=formatMoney(t.remainingInstallmentTotal);reportExpensesTotal.textContent=formatMoney(t.monthExpenseTotal);reportAllTotal.textContent=formatMoney(t.allPaidTotal);
-  const chartTotal=t.paidInstallmentTotal+t.remainingInstallmentTotal;const paidPercentage=chartTotal?Math.round(t.paidInstallmentTotal/chartTotal*100):0,remainingPercentage=chartTotal?Math.round(t.remainingInstallmentTotal/chartTotal*100):0;
-  paidPercent.textContent=`${paidPercentage.toLocaleString("fa-IR")}٪`;remainingPercent.textContent=`${remainingPercentage.toLocaleString("fa-IR")}٪`;paidBar.style.width=`${paidPercentage}%`;remainingBar.style.width=`${remainingPercentage}%`
-  if(monthsCompareOpen)renderMonthsCompare();
+  const installments=allExpenses.filter(isInstallment),
+        expenses=allExpenses.filter(isExpense),
+        incomes=allExpenses.filter(isIncome);
+
+  let monthInstallmentTotal=0,
+      paidInstallmentTotal=0,
+      remainingInstallmentTotal=0,
+      monthExpenseTotal=0,
+      monthIncomeTotal=0;
+
+  for(const item of installments){
+    const currentValue=item[currentMonthKey],
+          amount=Number(item.amount||0);
+
+    if(isClosedValue(currentValue))continue;
+
+    monthInstallmentTotal+=amount;
+
+    if(isPaidValue(currentValue))paidInstallmentTotal+=amount;
+    if(isNullValue(currentValue))remainingInstallmentTotal+=amount;
+  }
+
+  for(const item of expenses){
+    const amount=parseMoney(item[currentMonthKey]);
+    if(amount!==null)monthExpenseTotal+=amount;
+  }
+
+  for(const item of incomes){
+    const amount=parseMoney(item[currentMonthKey]);
+    if(amount!==null)monthIncomeTotal+=amount;
+  }
+
+  const allPaidTotal=paidInstallmentTotal+monthExpenseTotal;
+  const balanceTotal=monthIncomeTotal-allPaidTotal;
+
+  reportMonthTotal.textContent=formatMoney(monthInstallmentTotal);
+  reportPaidTotal.textContent=formatMoney(paidInstallmentTotal);
+  reportRemainingTotal.textContent=formatMoney(remainingInstallmentTotal);
+  reportExpensesTotal.textContent=formatMoney(monthExpenseTotal);
+  reportAllTotal.textContent=formatMoney(allPaidTotal);
+
+  if(reportIncomeTotal)reportIncomeTotal.textContent=formatMoney(monthIncomeTotal);
+
+  if(reportBalanceTotal){
+    reportBalanceTotal.textContent=(balanceTotal<0?"− ":"")+formatMoney(Math.abs(balanceTotal));
+    reportBalanceTotal.style.color=balanceTotal<0?"var(--danger)":"var(--success)";
+  }
+
+  // نمودار اقساط پرداخت‌شده / باقی‌مانده
+  const chartTotal=paidInstallmentTotal+remainingInstallmentTotal;
+
+  const paidPercentage=chartTotal
+    ? Math.round(paidInstallmentTotal/chartTotal*100)
+    : 0;
+
+  const remainingPercentage=chartTotal
+    ? Math.round(remainingInstallmentTotal/chartTotal*100)
+    : 0;
+
+ if (paidPercent) {
+  paidPercent.textContent =
+    `${paidPercentage.toLocaleString("fa-IR")}٪`;
 }
 
-function renderMonthsCompare(){
-  const wrap=$("monthsCompareChart");
-  if(!wrap)return;
-  const totals=MONTHS.map(m=>getMonthTotals(m.key).allPaidTotal);
-  const max=Math.max(1,...totals);
-  wrap.innerHTML=`<div class="months-compare-list">${MONTHS.map((m,i)=>`
-    <div class="months-compare-row">
-      <span>${m.name}</span>
-      <div class="months-compare-track"><div class="months-compare-bar" style="width:${Math.round(totals[i]/max*100)}%"></div></div>
-      <span class="months-compare-value">${formatMoney(totals[i])}</span>
-    </div>`).join("")}</div>`;
+if (remainingPercent) {
+  remainingPercent.textContent =
+    `${remainingPercentage.toLocaleString("fa-IR")}٪`;
 }
 
-function toggleMonthsCompare(){
-  monthsCompareOpen=!monthsCompareOpen;
-  const card=$("monthsCompareCard");
-  if(card)card.classList.toggle("hidden",!monthsCompareOpen);
-  if(monthsCompareOpen)renderMonthsCompare();
+if (paidBar) {
+  paidBar.style.width = `${paidPercentage}%`;
 }
 
-// ================= گزارش روزانه =================
-function cellDayMatches(cellValue,day){
-  if(!isPaidValue(cellValue))return false;
-  const s=toEnglishDigits(String(cellValue));
-  const m=s.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-  if(!m)return false;
-  return Number(m[3])===day;
+if (remainingBar) {
+  remainingBar.style.width = `${remainingPercentage}%`;
 }
 
-function renderDailyReport(){
-  const day=reportDayValue,mk=reportDayMonthKey;
-  const paidEl=$("dailyPaidTotal"),expEl=$("dailyExpenseTotal"),dueEl=$("dailyDueTotal"),list=$("dailyReportList");
-  if(!day||!mk||!paidEl)return;
+  // نمودار درآمد / قسط پرداخت‌شده / هزینه / قسط پرداخت‌نشده
+  const incomeChartTotal =
+    monthIncomeTotal +
+    paidInstallmentTotal +
+    monthExpenseTotal +
+    remainingInstallmentTotal;
 
-  const installments=allExpenses.filter(isInstallment);
-  const expenses=allExpenses.filter(isExpense);
-  let paidTotal=0,dueTotal=0,expenseTotal=0;
-  const rows=[];
+  const incomePercentage = incomeChartTotal
+    ? Math.round((monthIncomeTotal / incomeChartTotal) * 100)
+    : 0;
 
-  installments.forEach(item=>{
-    if(Number(item.due_day)===day){
-      dueTotal+=Number(item.amount||0);
-      rows.push({title:item.title,type:"سررسید قسط",amount:Number(item.amount||0)});
+  const paidInstallmentPercentage = incomeChartTotal
+    ? Math.round((paidInstallmentTotal / incomeChartTotal) * 100)
+    : 0;
+
+  const expensePercentage = incomeChartTotal
+    ? Math.round((monthExpenseTotal / incomeChartTotal) * 100)
+    : 0;
+
+  const unpaidInstallmentPercentage = incomeChartTotal
+    ? Math.max(0, 100 - incomePercentage - paidInstallmentPercentage - expensePercentage)
+    : 0;
+
+  if(incomePercent){
+    incomePercent.textContent=`${incomePercentage.toLocaleString("fa-IR")}٪`;
+  }
+
+  if($("paidInstallmentPercent")){
+    $("paidInstallmentPercent").textContent=`${paidInstallmentPercentage.toLocaleString("fa-IR")}٪`;
+  }
+
+  if($("expensePercent")){
+    $("expensePercent").textContent=`${expensePercentage.toLocaleString("fa-IR")}٪`;
+  }
+
+  if($("unpaidInstallmentPercent")){
+    $("unpaidInstallmentPercent").textContent=`${unpaidInstallmentPercentage.toLocaleString("fa-IR")}٪`;
+  }
+
+  if(incomeBar){
+    incomeBar.style.width=`${incomePercentage}%`;
+  }
+
+  if($("paidInstallmentBar")){
+    $("paidInstallmentBar").style.width=`${paidInstallmentPercentage}%`;
+  }
+
+  if($("expenseBar")){
+    $("expenseBar").style.width=`${expensePercentage}%`;
+  }
+
+  if($("unpaidInstallmentBar")){
+    $("unpaidInstallmentBar").style.width=`${unpaidInstallmentPercentage}%`;
+  }
+}
+async function loadDebts(){
+  try{
+    const data = await supabaseRequest(`${DEBT_TABLE}?select=*&order=due_year.asc`);
+    allDebts = Array.isArray(data) ? data : [];
+  }catch(e){
+    console.error("خطا در دریافت قرض و دیون", e);
+    allDebts = [];
+  }
+  renderDebtsPanel();
+}
+
+function renderDebtsPanel(){
+    
+  const container = $("debtsPanel");
+  if(!container) return;
+
+  if(!allDebts.length){
+    container.innerHTML = '<div class="empty">قرض یا دینی ثبت نشده</div>';
+    return;
+  }
+  
+
+  const sorted = [...allDebts].sort((a,b)=>{
+    const am = MONTHS.findIndex(m=>m.key === a.due_month);
+    const bm = MONTHS.findIndex(m=>m.key === b.due_month);
+    return (Number(a.due_year) - Number(b.due_year)) ||
+           (am - bm) ||
+           (Number(a.due_day) - Number(b.due_day));
+  });
+
+  container.innerHTML = "";
+
+  sorted.forEach(d=>{
+    const monthName = MONTHS.find(m=>m.key === d.due_month)?.name || "";
+
+    const row = document.createElement("article");
+    row.className = `debt-row ${d.direction === "lent" ? "debt-lent" : "debt-borrowed"}`;
+    row.setAttribute("tabindex", "0");
+    row.setAttribute("role", "button");
+
+    row.innerHTML = `
+      <div class="debt-card-summary">
+        <div class="debt-card-top">
+          <div class="debt-title">${escapeHtml(d.counterparty || "بدون نام")}</div>
+          <div class="debt-amount">${formatMoney(d.amount)}</div>
+        </div>
+
+        <div class="debt-card-bottom">
+          سررسید: ${Number(d.due_day || 0).toLocaleString("fa-IR")} ${monthName} ${Number(d.due_year || 0).toLocaleString("fa-IR")}
+        </div>
+      </div>
+    `;
+
+    row.addEventListener("click", ()=>openDebtDetailsModal(d));
+
+    row.addEventListener("keydown", (e)=>{
+      if(e.key === "Enter" || e.key === " "){
+        e.preventDefault();
+        openDebtDetailsModal(d);
+      }
+    });
+
+    container.appendChild(row);
+  });
+}
+let activeDebtDetails = null;
+
+function openDebtDetailsModal(d){
+  activeDebtDetails = d;
+
+  const modal = $("debtDetailsModal");
+  const body = $("debtDetailsBody");
+  const title = $("debtDetailsTitle");
+
+  // پشتیبانی از هر دو مدل ID برای جلوگیری از خراب شدن
+  const editBtn =
+    $("editDebtDetailsBtn") ||
+    $("debtDetailsEditBtn");
+
+  const deleteBtn =
+    $("deleteDebtDetailsBtn") ||
+    $("debtDetailsDeleteBtn");
+
+  if(!modal){
+    console.error("debtDetailsModal پیدا نشد");
+    return;
+  }
+
+  if(!body){
+    console.error("debtDetailsBody پیدا نشد");
+    return;
+  }
+
+  if(title){
+    title.textContent = d.counterparty || "جزئیات قرض / دین";
+  }
+
+  const monthName = MONTHS.find(m => m.key === d.due_month)?.name || "";
+  const directionText = d.direction === "lent" ? "طلب از او" : "بدهی به او";
+
+  body.innerHTML = `
+    <div class="debt-detail-list">
+
+      <div class="debt-detail-item">
+        <span>طرف حساب</span>
+        <strong>${escapeHtml(d.counterparty || "-")}</strong>
+      </div>
+
+      <div class="debt-detail-item">
+        <span>نوع</span>
+        <strong>${directionText}</strong>
+      </div>
+
+      <div class="debt-detail-item">
+        <span>مبلغ</span>
+        <strong>${formatMoney(d.amount)}</strong>
+      </div>
+
+      <div class="debt-detail-item">
+        <span>سررسید</span>
+        <strong>
+          ${Number(d.due_day || 0).toLocaleString("fa-IR")}
+          ${monthName}
+          ${Number(d.due_year || 0).toLocaleString("fa-IR")}
+        </strong>
+      </div>
+
+      <div class="debt-detail-item">
+        <span>عنوان / توضیح</span>
+        <strong>${escapeHtml(d.note || "-")}</strong>
+      </div>
+
+    </div>
+  `;
+
+  if(editBtn){
+    editBtn.onclick = (event)=>{
+      event.preventDefault();
+      event.stopPropagation();
+
+      closeDebtDetailsModal();
+      openEditDebtModal(d);
+    };
+  } else {
+    console.error("دکمه ویرایش مودال جزئیات پیدا نشد");
+  }
+
+  if(deleteBtn){
+   deleteBtn.onclick = async event => {
+  event.preventDefault();
+  event.stopPropagation();
+
+  console.log("Debt selected for delete:", d);
+
+  await deleteDebt(d.id);
+};
+
+  } else {
+    console.error("دکمه حذف مودال جزئیات پیدا نشد");
+  }
+
+  modal.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeDebtDetailsModal(){
+  const modal = $("debtDetailsModal");
+  if(!modal) return;
+  modal.classList.remove("open");
+  document.body.style.overflow = "";
+  activeDebtDetails = null;
+}
+
+
+async function deleteDebt(id) {
+  if (id === null || id === undefined || id === "") {
+    alert("شناسه قرض پیدا نشد.");
+    return;
+  }
+
+  if (!confirm("این مورد حذف شود؟")) return;
+
+  try {
+    console.log("Deleting debt:", id);
+
+    const result = await supabaseRequest(
+      `${DEBT_TABLE}?id=eq.${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+        headers: {
+          Prefer: "return=representation"
+        }
+      }
+    );
+
+    console.log("Delete debt result:", result);
+
+    if (!Array.isArray(result) || result.length === 0) {
+      throw new Error(
+        `رکورد با شناسه ${id} حذف نشد. Policy مربوط به DELETE را بررسی کنید.`
+      );
     }
-    if(cellDayMatches(item[mk],day)){
-      paidTotal+=Number(item.amount||0);
-      rows.push({title:item.title,type:"پرداخت قسط",amount:Number(item.amount||0)});
-    }
+
+    closeDebtDetailsModal();
+    await loadDebts();
+
+  } catch (err) {
+    console.error("Delete debt failed:", err);
+    alert("خطا در حذف:\n" + err.message);
+  }
+}
+
+
+
+function openEditDebtModal(d){
+  if(!d || !d.id){
+    alert("شناسه این مورد برای ویرایش پیدا نشد.");
+    console.error("openEditDebtModal بدون id:", d);
+    return;
+  }
+
+  resetExpenseForm();
+  fillDebtDateSelects();
+
+  editingDebtId = d.id;
+
+  setExpenseType("debt");
+
+  expenseTitle.value = d.note || "";
+  expenseAmount.value = d.amount ?? "";
+
+  $("debtCounterparty").value = d.counterparty || "";
+  $("debtDueDay").value = d.due_day || "";
+  $("debtDueMonth").value = d.due_month || currentMonthKey;
+  $("debtDueYear").value = d.due_year || "";
+
+  document.querySelectorAll(".debt-direction-btn").forEach(b=>{
+    b.classList.toggle("active", b.dataset.direction === d.direction);
   });
 
-  expenses.forEach(item=>{
-    if(cellDayMatches(item[mk],day)){
-      const amt=parseMoney(item[mk])||0;
-      expenseTotal+=amt;
-      rows.push({title:item.title,type:"هزینه",amount:amt});
-    }
-  });
+  $("debtDirection").value = d.direction || "lent";
 
-  paidEl.textContent=formatMoney(paidTotal);
-  expEl.textContent=formatMoney(expenseTotal);
-  dueEl.textContent=formatMoney(dueTotal);
+  expenseModalTitle.textContent = "ویرایش قرض/دین";
+  saveExpenseButton.textContent = "ذخیره تغییرات";
 
-  if(!rows.length){
-    list.innerHTML='<div class="empty">موردی برای این روز ثبت نشده است</div>';
-  }else{
-    list.innerHTML=rows.map(r=>`<article class="report-detail-item"><div class="report-detail-title">${escapeHtml(r.title)}</div><div class="report-detail-meta"><span>${r.type}</span><span>${formatMoney(r.amount)}</span></div></article>`).join("");
-  }
+  openModal();
 }
 
-// ================= گزارش سالانه (نمودارها) =================
-function getYearlySeries(){
-  return MONTHS.map(m=>{
-    const t=getMonthTotals(m.key);
-    return{name:m.name,spent:t.allPaidTotal,paid:t.paidInstallmentTotal,expense:t.monthExpenseTotal};
-  });
-}
-
-function buildBarChartSVG(labels,values){
-  const w=700,h=260,padL=30,padR=10,padT=10,padB=40;
-  const max=Math.max(1,...values);
-  const bw=(w-padL-padR)/values.length;
-  const bars=values.map((v,i)=>{
-    const bh=(h-padT-padB)*(v/max);
-    const x=padL+i*bw+bw*0.15;
-    const y=h-padB-bh;
-    const bwActual=bw*0.7;
-    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bwActual.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" style="fill:var(--primary-light)"></rect><text x="${(x+bwActual/2).toFixed(1)}" y="${h-padB+16}" font-size="10" text-anchor="middle" style="fill:var(--muted)">${labels[i]}</text>`;
-  }).join("");
-  return `<div class="svg-chart-wrap"><svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg"><line x1="${padL}" y1="${h-padB}" x2="${w-padR}" y2="${h-padB}" style="stroke:var(--border-light)" stroke-width="1"></line>${bars}</svg></div>`;
-}
-
-function buildLineChartSVG(labels,values){
-  const w=700,h=260,padL=30,padR=10,padT=20,padB=40;
-  const max=Math.max(1,...values);
-  const min=Math.min(0,...values);
-  const range=(max-min)||1;
-  const stepX=(w-padL-padR)/((values.length-1)||1);
-  const pts=values.map((v,i)=>{
-    const x=padL+i*stepX;
-    const y=padT+(h-padT-padB)*(1-(v-min)/range);
-    return[x.toFixed(1),y.toFixed(1)];
-  });
-  const path=pts.map(p=>p.join(",")).join(" ");
-  const dots=pts.map(([x,y])=>`<circle cx="${x}" cy="${y}" r="3.5" style="fill:var(--primary-light)"></circle>`).join("");
-  const labelsSvg=labels.map((l,i)=>`<text x="${(padL+i*stepX).toFixed(1)}" y="${h-padB+16}" font-size="10" text-anchor="middle" style="fill:var(--muted)">${l}</text>`).join("");
-  return `<div class="svg-chart-wrap"><svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg"><line x1="${padL}" y1="${h-padB}" x2="${w-padR}" y2="${h-padB}" style="stroke:var(--border-light)" stroke-width="1"></line><polyline points="${path}" fill="none" style="stroke:var(--primary-light)" stroke-width="2"></polyline>${dots}${labelsSvg}</svg></div>`;
-}
-
-function buildRadarChartSVG(labels,values){
-  const size=320,cx=size/2,cy=size/2,r=size/2-46;
-  const max=Math.max(1,...values);
-  const n=values.length;
-  const angleFor=i=>(Math.PI*2*i/n)-Math.PI/2;
-  const pts=values.map((v,i)=>{
-    const a=angleFor(i),rr=r*(v/max);
-    return`${(cx+rr*Math.cos(a)).toFixed(1)},${(cy+rr*Math.sin(a)).toFixed(1)}`;
-  }).join(" ");
-  const rings=[0.33,0.66,1].map(f=>{
-    const ringPts=Array.from({length:n},(_,i)=>{
-      const a=angleFor(i);
-      return`${(cx+r*f*Math.cos(a)).toFixed(1)},${(cy+r*f*Math.sin(a)).toFixed(1)}`;
-    }).join(" ");
-    return`<polygon points="${ringPts}" fill="none" style="stroke:var(--border-light)" stroke-width="1"></polygon>`;
-  }).join("");
-  const axisLines=Array.from({length:n},(_,i)=>{
-    const a=angleFor(i);
-    return`<line x1="${cx}" y1="${cy}" x2="${(cx+r*Math.cos(a)).toFixed(1)}" y2="${(cy+r*Math.sin(a)).toFixed(1)}" style="stroke:var(--border-light)" stroke-width="1"></line>`;
-  }).join("");
-  const labelsSvg=labels.map((l,i)=>{
-    const a=angleFor(i),lx=cx+(r+18)*Math.cos(a),ly=cy+(r+18)*Math.sin(a);
-    return`<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" font-size="9" text-anchor="middle" style="fill:var(--muted)">${l}</text>`;
-  }).join("");
-  return `<div class="svg-chart-wrap"><svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">${rings}${axisLines}<polygon points="${pts}" style="fill:rgba(56,189,248,.25);stroke:var(--primary-light)" stroke-width="2"></polygon>${labelsSvg}</svg></div>`;
-}
-
-function renderYearlyReport(){
-  const series=getYearlySeries();
-  const labels=series.map(s=>s.name);
-  const spentValues=series.map(s=>s.spent);
-  const barWrap=$("yearlyBarChart");if(barWrap)barWrap.innerHTML=buildBarChartSVG(labels,spentValues);
-  const radarWrap=$("yearlyRadarChart");if(radarWrap)radarWrap.innerHTML=buildRadarChartSVG(labels,spentValues);
-  const lineWrap=$("yearlyLineChart");if(lineWrap)lineWrap.innerHTML=buildLineChartSVG(labels,spentValues);
-}
-
-// ================= کنترل تب‌های گزارش =================
-function populateReportDaySelect(){
-  const sel=$("reportDaySelect");
-  if(!sel)return;
-  const monthIdx=MONTHS.findIndex(m=>m.key===reportDayMonthKey);
-  const days=getDaysInPersianMonth(monthIdx<0?0:monthIdx);
-  const current=sel.value;
-  sel.innerHTML=Array.from({length:days},(_,i)=>`<option value="${i+1}">${(i+1).toLocaleString("fa-IR")}</option>`).join("");
-  if(current&&Number(current)<=days)sel.value=current;
-}
-
-function renderCurrentReportView(){
-  if(reportMode==="monthly")renderReports();
-  else if(reportMode==="daily")renderDailyReport();
-  else if(reportMode==="yearly")renderYearlyReport();
-}
-
-function setupReportControls(){
-  const p=getPersianDateParts();
-  reportTargetMonthKey=currentMonthKey;
-  reportDayMonthKey=currentMonthKey;
-  reportDayValue=p.day;
-  reportDayYear=p.year;
-  reportYearValue=p.year;
-
-  const monthSelect=$("reportMonthSelect");
-  if(monthSelect)monthSelect.value=reportTargetMonthKey;
-
-  const dayMonthSelect=$("reportDayMonthSelect");
-  if(dayMonthSelect)dayMonthSelect.value=reportDayMonthKey;
-
-  populateReportDaySelect();
-  const daySelect=$("reportDaySelect");
-  if(daySelect)daySelect.value=String(reportDayValue);
-
-  const yearInput=$("reportDayYearInput");
-  if(yearInput)yearInput.value=reportDayYear;
-
-  const yearlyYearInput=$("reportYearInput");
-  if(yearlyYearInput)yearlyYearInput.value=reportYearValue;
-
-  document.querySelectorAll(".report-mode-btn").forEach(btn=>{
-    btn.addEventListener("click",()=>{
-      document.querySelectorAll(".report-mode-btn").forEach(b=>b.classList.remove("active"));
-      btn.classList.add("active");
-      reportMode=btn.dataset.mode;
-      $("monthlyControls").classList.toggle("hidden",reportMode!=="monthly");
-      $("dailyControls").classList.toggle("hidden",reportMode!=="daily");
-      $("yearlyControls").classList.toggle("hidden",reportMode!=="yearly");
-      $("monthlyReportView").classList.toggle("hidden",reportMode!=="monthly");
-      $("dailyReportView").classList.toggle("hidden",reportMode!=="daily");
-      $("yearlyReportView").classList.toggle("hidden",reportMode!=="yearly");
-      renderCurrentReportView();
-    });
-  });
-
-  if(monthSelect){
-    monthSelect.addEventListener("change",()=>{
-      reportTargetMonthKey=monthSelect.value;
-      renderReports();
-    });
-  }
-
-  const compareBtn=$("compareMonthsButton");
-  if(compareBtn)compareBtn.addEventListener("click",toggleMonthsCompare);
-
-  if(dayMonthSelect){
-    dayMonthSelect.addEventListener("change",()=>{
-      reportDayMonthKey=dayMonthSelect.value;
-      populateReportDaySelect();
-      if(daySelect)reportDayValue=Number(daySelect.value);
-      renderDailyReport();
-    });
-  }
-
-  if(daySelect){
-    daySelect.addEventListener("change",()=>{
-      reportDayValue=Number(daySelect.value);
-      renderDailyReport();
-    });
-  }
-
-  if(yearInput){
-    yearInput.addEventListener("change",()=>{
-      reportDayYear=Number(yearInput.value)||reportDayYear;
-    });
-  }
-
-  if(yearlyYearInput){
-    yearlyYearInput.addEventListener("change",()=>{
-      reportYearValue=Number(yearlyYearInput.value)||reportYearValue;
-      renderYearlyReport();
-    });
-  }
-
-  const calendarBtn=$("reportDayCalendarButton");
-  if(calendarBtn){
-    calendarBtn.addEventListener("click",()=>{
-      const p2=getPersianDateParts();
-      reportDayMonthKey=MONTHS[p2.month-1].key;
-      if(dayMonthSelect)dayMonthSelect.value=reportDayMonthKey;
-      populateReportDaySelect();
-      reportDayValue=p2.day;
-      if(daySelect)daySelect.value=String(p2.day);
-      reportDayYear=p2.year;
-      if(yearInput)yearInput.value=p2.year;
-      renderDailyReport();
-    });
-  }
-}
 function openPage(id,title){
   pages.forEach(p=>p.classList.toggle("active",p.id===id));
   navButtons.forEach(b=>b.classList.toggle("active",b.dataset.page===id));
@@ -1618,35 +1749,47 @@ function openPage(id,title){
 
   if(id==="homePage") renderHome();
   if(id==="allPage") renderAllCards();
-  if(id==="reportPage") renderCurrentReportView();
+  if(id==="reportPage") renderReports();
 
   window.scrollTo({top:0,behavior:"smooth"})
 }
-refreshButton.addEventListener("click",loadData);
+refreshButton.addEventListener("click", performFullAppUpdate);
 navButtons.forEach(b=>b.addEventListener("click",()=>openPage(b.dataset.page,b.dataset.title)));
 searchInput.addEventListener("input",()=>{visibleCount=PAGE_SIZE;renderAllCards()});
-typeFilters.forEach(b=>b.addEventListener("click",()=>{typeFilters.forEach(x=>x.classList.remove("active"));b.classList.add("active");activeFilter=b.dataset.filter;visibleCount=PAGE_SIZE;renderAllCards()}));
+function updateStatusFilterLabels(filter){
+  const paidBtn=$("statusFilterPaid"),unpaidBtn=$("statusFilterUnpaid");
+  if(!paidBtn||!unpaidBtn)return;
+  if(filter==="income"){
+    paidBtn.textContent="دریافت‌شده این ماه";
+    unpaidBtn.textContent="دریافت‌نشده این ماه";
+  }else{
+    paidBtn.textContent="پرداخت‌شده این ماه";
+    unpaidBtn.textContent="پرداخت‌نشده این ماه";
+  }
+}
+typeFilters.forEach(b=>b.addEventListener("click",()=>{typeFilters.forEach(x=>x.classList.remove("active"));b.classList.add("active");activeFilter=b.dataset.filter;updateStatusFilterLabels(activeFilter);visibleCount=PAGE_SIZE;renderAllCards()}));
 statusFilters.forEach(b=>b.addEventListener("click",()=>{statusFilters.forEach(x=>x.classList.remove("active"));b.classList.add("active");activeStatusFilter=b.dataset.status;visibleCount=PAGE_SIZE;renderAllCards()}));
 loadMoreButton.addEventListener("click",()=>{visibleCount+=PAGE_SIZE;renderAllCards()});
 document.querySelectorAll(".report-card[data-report]").forEach(c=>c.addEventListener("click",()=>openReportDetails(c.dataset.report)));
 closeReportDetails.addEventListener("click",closeReportModal);reportDetailsModal.querySelector(".modal-backdrop").addEventListener("click",closeReportModal);
-// جایگزین خط 893:
-// addExpenseButton.addEventListener("click",openNewModal);
-
 const fabMenu = $("fabMenu");
 
 addExpenseButton.addEventListener("click", () => {
-  const isOpen = !fabMenu.classList.contains("hidden");
-  if (isOpen) {
-    fabMenu.classList.add("hidden");
-    addExpenseButton.classList.remove("open");
-  } else {
-    fabMenu.classList.remove("hidden");
-    fabMenu.classList.remove("animating");
-    void fabMenu.offsetWidth; // reflow
-    fabMenu.classList.add("animating");
-    addExpenseButton.classList.add("open");
-  }
+    const isOpen = !fabMenu.classList.contains("hidden");
+
+    if (isOpen) {
+        fabMenu.classList.add("hidden");
+        addExpenseButton.classList.remove("open");
+        addExpenseButton.classList.remove("active");
+    } else {
+        fabMenu.classList.remove("hidden");
+        fabMenu.classList.remove("animating");
+        void fabMenu.offsetWidth;
+        fabMenu.classList.add("animating");
+
+        addExpenseButton.classList.add("open");
+        addExpenseButton.classList.add("active");
+    }
 });
 function openModal(){
 
@@ -1662,10 +1805,13 @@ function loadIncomeOptions(){
 function openWithType(type) {
   fabMenu.classList.add("hidden");
   addExpenseButton.classList.remove("open");
+  addExpenseButton.classList.remove("active");
   resetExpenseForm();
   setExpenseType(type);
   openModal();
 }
+$("closeDebtDetailsModal")?.addEventListener("click", closeDebtDetailsModal);
+$("debtDetailsModal")?.querySelector(".modal-backdrop")?.addEventListener("click", closeDebtDetailsModal);
 
 
 // بستن منو با کلیک خارج از آن
@@ -1673,14 +1819,17 @@ document.addEventListener("click", e => {
   if (!$("fabContainer").contains(e.target)) {
     fabMenu.classList.add("hidden");
     addExpenseButton.classList.remove("open");
+    addExpenseButton.classList.remove("active");
   }
 });
- 
 
-///addExpenseButton.addEventListener("click",openNewModal);closeExpenseModalButton.addEventListener("click",closeModal);expenseModal.querySelector(".modal-backdrop").addEventListener("click",closeModal);
 
 installmentTypeButton.addEventListener("click",()=>setExpenseType("installment"));
 setupTransferButtons();
+$("debtTypeButton")?.addEventListener("click", ()=>setExpenseType("debt"));
+setupButtonGroup(document, ".debt-direction-btn", btn=>{
+    $("debtDirection").value = btn.dataset.direction;
+});
 expenseTypeButton.addEventListener("click",()=>setExpenseType("expense"));
 if(transferTypeButton){
     transferTypeButton.addEventListener(
@@ -1750,24 +1899,19 @@ $("transferForm").addEventListener("submit", async e=>{
 
 e.preventDefault();
 
-
 const from=$("transferFromModal").value;
 const to=$("transferToModal").value;
 const amount=Number($("transferAmount").value);
-
 
 if(!from || !to){
     alert("حساب مبدا و مقصد را انتخاب کنید");
     return;
 }
 
-
 if(from===to){
     alert("مبدا و مقصد یکسان است");
     return;
 }
-
-
 
 await addTransaction({
 
@@ -1783,18 +1927,16 @@ note:$("transferNote").value || null
 
 });
 
-
 transferModal.classList.remove("open");
 
 document.body.style.overflow="";
 
-
 alert("انتقال ثبت شد");
 
 });
-setupReportControls();
 loadData().then(()=>{
     openPage("duePage","⏰ سررسید اقساط");
+    loadDebts();
 });
 function addSwipeToClose(modalId) {
   const modal = document.getElementById(modalId);
@@ -1812,13 +1954,443 @@ function addSwipeToClose(modalId) {
   }, { passive: true });
 }
 
-["expenseModal", "transferModal", "paymentModal"].forEach(addSwipeToClose);
+["expenseModal", "transferModal", "paymentModal", "settingsLockModal"].forEach(addSwipeToClose);
+
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("./sw.js")
-      .then((reg) => console.log("Service Worker registered:", reg.scope))
+      .then((reg) => {
+        swRegistration = reg;
+        console.log("Service Worker registered:", reg.scope);
+
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          window.location.reload();
+        });
+      })
       .catch((err) => console.error("Service Worker registration failed:", err));
   });
 }
+
+async function fetchGithubVersion() {
+  try {
+    const res = await fetch("https://api.github.com/repos/ahooraboy43/vamremember/commits/main", {
+      cache: "no-store"
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.commit?.committer?.date || null;
+  } catch (e) {
+    console.error("خطا در دریافت نسخه گیت‌هاب", e);
+    return null;
+  }
+}
+
+function updateAppVersionText(text) {
+  currentAppVersionText = text;
+  const el = $("appVersionText");
+  if (el) el.textContent = text;
+}
+
+async function performFullAppUpdate() {
+  if (refreshButton) {
+    refreshButton.disabled = true;
+    refreshButton.textContent = "⏳";
+  }
+
+  if (statusBox) statusBox.textContent = "در حال بررسی بروزرسانی…";
+  if (allStatus) allStatus.textContent = "در حال بررسی بروزرسانی…";
+  showToast("در حال بررسی بروزرسانی", "info");
+
+  try {
+    const versionDate = await fetchGithubVersion();
+
+    if (!versionDate) {
+      showToast("نسخه جدیدی یافت نشد", "info");
+      updateAppVersionText("نسخه جدیدی یافت نشد");
+      if (statusBox) statusBox.textContent = "نسخه جدیدی یافت نشد";
+      if (allStatus) allStatus.textContent = "نسخه جدیدی یافت نشد";
+      return;
+    }
+
+    const faDate = new Date(versionDate).toLocaleString("fa-IR");
+
+    await loadData();
+
+    updateAppVersionText(`نسخه جدید دریافت شد: ${faDate}`);
+    showToast(`نسخه جدید ${faDate} دریافت شد`, "success");
+
+    if (statusBox) statusBox.textContent = `نسخه جدید ${faDate} دریافت شد`;
+    if (allStatus) allStatus.textContent = `نسخه جدید ${faDate} دریافت شد`;
+
+    if (swRegistration) {
+      await swRegistration.update();
+    }
+  } catch (e) {
+    console.error(e);
+    showToast(`خطا در بروزرسانی: ${e.message}`, "error");
+    if (statusBox) statusBox.textContent = `خطا در بروزرسانی: ${e.message}`;
+    if (allStatus) allStatus.textContent = `خطا در بروزرسانی: ${e.message}`;
+  } finally {
+    if (refreshButton) {
+      refreshButton.disabled = false;
+      refreshButton.textContent = "🔄";
+    }
+  }
+}
+
+
+
+// ================= تنظیمات (Settings) =================
+
+const SETTINGS_KEY = "appSettingsV1";
+
+function loadSettings(){
+  try{
+    return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
+  }catch(e){
+    return {};
+  }
+}
+
+function saveSettings(settings){
+  try{
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  }catch(e){
+    console.error("خطا در ذخیره تنظیمات", e);
+  }
+}
+
+let appSettings = loadSettings();
+
+// هش ساده برای رمز عبور (فقط جهت جلوگیری از دیدن ساده رمز، امنیت بالا نیست)
+function simpleHash(str){
+  let hash = 0;
+  const s = String(str || "");
+  for(let i=0; i<s.length; i++){
+    hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+  }
+  return String(hash);
+}
+
+function toPersianDigits(str){
+  return String(str).replace(/[0-9]/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]);
+}
+
+function applyTheme(theme){
+  const finalTheme = theme === "light" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", finalTheme);
+  document.querySelectorAll(".theme-btn").forEach(b=>{
+    b.classList.toggle("active", b.dataset.theme === finalTheme);
+  });
+}
+
+function applyAppIcon(dataUrl){
+  if(!dataUrl) return;
+
+  let touchIcon = document.querySelector('link[rel="apple-touch-icon"]');
+  if(!touchIcon){
+    touchIcon = document.createElement("link");
+    touchIcon.rel = "apple-touch-icon";
+    document.head.appendChild(touchIcon);
+  }
+  touchIcon.href = dataUrl;
+
+  let favicon = document.querySelector('link[rel="icon"]');
+  if(!favicon){
+    favicon = document.createElement("link");
+    favicon.rel = "icon";
+    document.head.appendChild(favicon);
+  }
+  favicon.href = dataUrl;
+
+  fetch("./manifest.json")
+    .then(r => r.json())
+    .then(manifest => {
+      const updated = {
+        ...manifest,
+        icons: [
+          { src: dataUrl, sizes: "192x192", type: "image/png" },
+          { src: dataUrl, sizes: "512x512", type: "image/png" }
+        ]
+      };
+      const blob = new Blob([JSON.stringify(updated)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const manifestLink = document.querySelector('link[rel="manifest"]');
+      if(manifestLink) manifestLink.href = url;
+    })
+    .catch(() => {});
+
+  const preview = $("appIconPreview");
+  if(preview) preview.src = dataUrl;
+}
+
+function resetAppIcon(){
+  delete appSettings.icon;
+  saveSettings(appSettings);
+
+  const preview = $("appIconPreview");
+  if(preview) preview.src = "assets/book.png";
+
+  const touchIcon = document.querySelector('link[rel="apple-touch-icon"]');
+  if(touchIcon) touchIcon.remove();
+
+  const favicon = document.querySelector('link[rel="icon"]');
+  if(favicon) favicon.remove();
+
+  const manifestLink = document.querySelector('link[rel="manifest"]');
+  if(manifestLink) manifestLink.href = "./manifest.json";
+}
+
+function initSettingsUI(){
+  applyTheme(appSettings.theme || "dark");
+
+  if(appSettings.icon){
+    applyAppIcon(appSettings.icon);
+  }
+
+  const lockToggle = $("settingsLockEnabled");
+  if(lockToggle) lockToggle.checked = !!appSettings.lockEnabled;
+
+  const versionEl = $("appVersionText");
+  if(versionEl) versionEl.textContent = currentAppVersionText;
+}
+
+
+document.querySelectorAll(".theme-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    appSettings.theme = btn.dataset.theme;
+    saveSettings(appSettings);
+    applyTheme(appSettings.theme);
+  });
+});
+
+const settingsButton = $("settingsButton");
+const settingsLockModal = $("settingsLockModal");
+const settingsLockForm = $("settingsLockForm");
+const settingsLockInput = $("settingsLockInput");
+const closeSettingsLockModal = $("closeSettingsLockModal");
+
+function openSettingsPage(){
+  openPage("settingsPage", "⚙️ تنظیمات");
+}
+
+function openSettingsLockModal(){
+  if(!settingsLockModal) return;
+  settingsLockModal.classList.add("open");
+  document.body.style.overflow = "hidden";
+  if(settingsLockInput){
+    settingsLockInput.value = "";
+    setTimeout(()=>settingsLockInput.focus(), 100);
+  }
+}
+
+function closeSettingsLockModalFn(){
+  if(!settingsLockModal) return;
+  settingsLockModal.classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+if(settingsButton){
+  settingsButton.addEventListener("click", ()=>{
+    if(appSettings.lockEnabled && appSettings.passwordHash){
+      openSettingsLockModal();
+    }else{
+      openSettingsPage();
+    }
+  });
+}
+
+if(settingsLockForm){
+  settingsLockForm.addEventListener("submit", e=>{
+    e.preventDefault();
+    const val = settingsLockInput ? settingsLockInput.value : "";
+    if(simpleHash(val) === appSettings.passwordHash){
+      closeSettingsLockModalFn();
+      openSettingsPage();
+    }else{
+      alert("رمز عبور اشتباه است");
+    }
+  });
+}
+
+if(closeSettingsLockModal){
+  closeSettingsLockModal.addEventListener("click", closeSettingsLockModalFn);
+}
+if(settingsLockModal){
+  settingsLockModal.querySelector(".modal-backdrop")?.addEventListener("click", closeSettingsLockModalFn);
+}
+
+const saveSettingsPasswordButton = $("saveSettingsPasswordButton");
+if(saveSettingsPasswordButton){
+  saveSettingsPasswordButton.addEventListener("click", ()=>{
+    const input = $("newSettingsPassword");
+    const val = input ? input.value : "";
+    if(!val){
+      alert("رمز عبور را وارد کنید");
+      return;
+    }
+    appSettings.passwordHash = simpleHash(val);
+    saveSettings(appSettings);
+    if(input) input.value = "";
+    alert("رمز عبور ذخیره شد");
+  });
+}
+
+const settingsLockEnabledInput = $("settingsLockEnabled");
+if(settingsLockEnabledInput){
+  settingsLockEnabledInput.addEventListener("change", ()=>{
+    if(settingsLockEnabledInput.checked && !appSettings.passwordHash){
+      alert("ابتدا یک رمز عبور تنظیم و ذخیره کنید");
+      settingsLockEnabledInput.checked = false;
+      return;
+    }
+    appSettings.lockEnabled = settingsLockEnabledInput.checked;
+    saveSettings(appSettings);
+  });
+}
+
+const appIconInput = $("appIconInput");
+if(appIconInput){
+  appIconInput.addEventListener("change", ()=>{
+    const file = appIconInput.files && appIconInput.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      appSettings.icon = reader.result;
+      saveSettings(appSettings);
+      applyAppIcon(appSettings.icon);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+const resetAppIconButton = $("resetAppIconButton");
+if(resetAppIconButton){
+  resetAppIconButton.addEventListener("click", resetAppIcon);
+}
+
+updateStatusFilterLabels(activeFilter);
+
+// ================= قفل کل اپلیکیشن (App Lock) =================
+
+const APP_LOCK_SESSION_KEY = "appUnlockedV1";
+
+function ensureDefaultAppLock(){
+  if(appSettings.appLockEnabled === undefined){
+    appSettings.appLockEnabled = true;
+    appSettings.appLockPasswordHash = simpleHash("83242433");
+    saveSettings(appSettings);
+  }
+}
+function setAppHeight() {
+  const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+  document.documentElement.style.setProperty('--app-vh', `${vh}px`);
+}
+setAppHeight();
+window.addEventListener('resize', setAppHeight);
+window.addEventListener('orientationchange', setAppHeight);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', setAppHeight);
+  window.visualViewport.addEventListener('scroll', setAppHeight);
+}
+function setAppHeight(){
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.documentElement.style.setProperty('--app-vh', vh + 'px');
+}
+setAppHeight();
+window.addEventListener('resize', setAppHeight);
+window.addEventListener('orientationchange', setAppHeight);
+if (window.visualViewport){
+  window.visualViewport.addEventListener('resize', setAppHeight);
+  window.visualViewport.addEventListener('scroll', setAppHeight);
+}
+
+function isAppLocked(){
+  return !!(
+    appSettings.appLockEnabled &&
+    appSettings.appLockPasswordHash &&
+    !sessionStorage.getItem(APP_LOCK_SESSION_KEY)
+  );
+}
+
+function showAppLockScreen(){
+  const el = $("appLockScreen");
+  if(el) el.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+  const input = $("appLockInput");
+  if(input){
+    input.value = "";
+    setTimeout(()=>input.focus(), 150);
+  }
+}
+
+function hideAppLockScreen(){
+  const el = $("appLockScreen");
+  if(el) el.classList.add("hidden");
+  document.body.style.overflow = "";
+}
+
+function initAppLock(){
+  ensureDefaultAppLock();
+  const toggle = $("appLockEnabledToggle");
+  if(toggle) toggle.checked = !!appSettings.appLockEnabled;
+
+  if(isAppLocked()){
+    showAppLockScreen();
+  }else{
+    hideAppLockScreen();
+  }
+}
+
+const appLockForm = $("appLockForm");
+if(appLockForm){
+  appLockForm.addEventListener("submit", e=>{
+    e.preventDefault();
+    const input = $("appLockInput");
+    const val = input ? input.value : "";
+    const errEl = $("appLockError");
+    if(simpleHash(val) === appSettings.appLockPasswordHash){
+      sessionStorage.setItem(APP_LOCK_SESSION_KEY, "1");
+      if(errEl) errEl.classList.add("hidden");
+      hideAppLockScreen();
+    }else{
+      if(errEl) errEl.classList.remove("hidden");
+      if(input){
+        input.value = "";
+        input.focus();
+      }
+    }
+  });
+}
+
+const appLockEnabledToggle = $("appLockEnabledToggle");
+if(appLockEnabledToggle){
+  appLockEnabledToggle.addEventListener("change", ()=>{
+    if(appLockEnabledToggle.checked && !appSettings.appLockPasswordHash){
+      appSettings.appLockPasswordHash = simpleHash("83242433");
+    }
+    appSettings.appLockEnabled = appLockEnabledToggle.checked;
+    saveSettings(appSettings);
+  });
+}
+
+const saveAppLockPasswordButton = $("saveAppLockPasswordButton");
+if(saveAppLockPasswordButton){
+  saveAppLockPasswordButton.addEventListener("click", ()=>{
+    const input = $("newAppLockPassword");
+    const val = input ? input.value : "";
+    if(!val){
+      alert("رمز عبور را وارد کنید");
+      return;
+    }
+    appSettings.appLockPasswordHash = simpleHash(val);
+    saveSettings(appSettings);
+    if(input) input.value = "";
+    alert("رمز عبور اپلیکیشن ذخیره شد");
+  });
+}
+
+initAppLock();
+initSettingsUI();

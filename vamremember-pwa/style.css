@@ -689,101 +689,6 @@ img{
 }
 
 /* =========================================================
-   REPORTS — MODE TOGGLE + CONTROLS
-========================================================= */
-
-.report-mode-toggle{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:8px;
-  margin-bottom:14px;
-}
-
-.report-mode-btn{
-  min-height:44px;
-  border:1px solid var(--border-light);
-  border-radius:13px;
-  background:var(--surface);
-  color:var(--muted);
-  font-size:13px;
-}
-
-.report-mode-btn.active{
-  background:rgba(56,189,248,.12);
-  border-color:var(--primary-light);
-  color:#7dd3fc;
-}
-
-.report-controls{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:16px;
-  margin-bottom:14px;
-}
-
-.report-controls.hidden{
-  display:none;
-}
-
-.field-grid.three-col{
-  grid-template-columns:1fr 1fr 1fr;
-}
-
-.report-extra-button{
-  width:100%;
-  margin-top:6px;
-}
-
-/* =========================================================
-   REPORTS — SVG CHARTS (yearly bar/radar/line + compare)
-========================================================= */
-
-.svg-chart-wrap{
-  width:100%;
-}
-
-.svg-chart-wrap svg{
-  width:100%;
-  height:auto;
-  display:block;
-}
-
-.months-compare-list{
-  display:grid;
-  gap:10px;
-}
-
-.months-compare-row{
-  display:grid;
-  grid-template-columns:56px 1fr 90px;
-  align-items:center;
-  gap:10px;
-  font-size:12px;
-  color:#cbd5e1;
-}
-
-.months-compare-track{
-  height:10px;
-  background:var(--surface-2);
-  border-radius:20px;
-  overflow:hidden;
-}
-
-.months-compare-bar{
-  height:100%;
-  background:var(--primary-light);
-  border-radius:20px;
-  transition:width .5s;
-}
-
-.months-compare-value{
-  text-align:left;
-  font-size:11px;
-  color:var(--muted);
-}
-
-/* =========================================================
    REPORTS — TOTALS GRID
 ========================================================= */
 
@@ -973,8 +878,7 @@ img{
   margin-bottom:9px;
 }
 
-:root[data-theme="light"] .chart-info,
-:root[data-theme="light"] .months-compare-row{
+:root[data-theme="light"] .chart-info{
   color:var(--text);
 }
 
@@ -1135,7 +1039,6 @@ img{
 
   left:50%;
   bottom:0;
-  top:calc(var(--app-vh) - (var(--nav-height) + env(safe-area-inset-bottom)));
   transform:translateX(-50%);
 
   width:min(100%,620px);
