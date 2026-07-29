@@ -31,6 +31,20 @@ self.addEventListener("activate", (event) => {
   );
   self.clients.claim();
 });
+self.addEventListener('push', e => {
+  self.registration.showNotification('یادآوری هزینه‌ها', {
+    body: 'هزینه‌های امروز رو ثبت کردی؟',
+    icon: 'assets/danger.png',
+    badge: 'assets/danger.png',
+    dir: 'rtl',
+    lang: 'fa'
+  });
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.openWindow('./'));
+});
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
