@@ -1084,7 +1084,7 @@ img{
   font-size:10px;
 
   border-radius:16px;
-
+  margin-top: 12px;
   transition:color .25s, background .25s var(--ease), transform .25s var(--ease);
 }
 
