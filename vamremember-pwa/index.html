@@ -9,7 +9,34 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="اقساط">
+<script>
+(function () {
+  function setAppHeight() {
+    var vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    document.documentElement.style.setProperty('--app-vh', vh + 'px');
+  }
 
+  // اجرای فوری + چند بار در لحظات بعدی برای اطمینان از مقدار درست
+  setAppHeight();
+  window.addEventListener('load', setAppHeight);
+  window.addEventListener('pageshow', setAppHeight);
+  window.addEventListener('resize', setAppHeight);
+  window.addEventListener('orientationchange', function () {
+    setTimeout(setAppHeight, 50);
+    setTimeout(setAppHeight, 300);
+  });
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', setAppHeight);
+    window.visualViewport.addEventListener('scroll', setAppHeight);
+  }
+
+  // چند تلاش اضافه در همون ثانیه‌های اول (رفع مشکل مقدار اشتباه اولیه در PWA)
+  setTimeout(setAppHeight, 100);
+  setTimeout(setAppHeight, 500);
+  setTimeout(setAppHeight, 1000);
+})();
+</script>
 <link rel="manifest" href="./manifest.json">
 <link rel="stylesheet" href="./style.css">
 
