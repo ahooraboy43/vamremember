@@ -1045,8 +1045,10 @@ img{
   z-index:50;
 
   left:50%;
-  bottom:0;
-  transform:translateX(-50%);
+  top:var(--app-vh);
+  transform:translate(-50%, -100%) translateZ(0);
+  -webkit-transform:translate(-50%, -100%) translateZ(0);
+  will-change:transform;
 
   width:min(100%,620px);
   height:calc(var(--nav-height) + env(safe-area-inset-bottom));

@@ -2319,35 +2319,73 @@ function ensureDefaultAppLock(){
     );
   }
 
+  /* رفع باگ فاصله نوار پایین (bottom-nav) از کف صفحه در اولین
+     لود در iOS Safari: نوار fixed تا وقتی صفحه یک اسکرول
+     نخورده باشد نسبت به viewport اشتباه (بزرگ‌تر از واقعی،
+     قبل از جمع‌شدن نوار آدرس) رندر می‌شود. این تابع همان
+     اسکرول را به‌صورت یک‌پیکسلی و کاملاً نامرئی شبیه‌سازی
+     می‌کند تا وبکیت موقعیت را فوراً دوباره محاسبه کند. */
+  function nudgeScroll() {
+    const y = window.scrollY || window.pageYOffset || 0;
+    window.scrollTo(0, y + 1);
+    requestAnimationFrame(() => window.scrollTo(0, y));
+  }
+
+  function refresh() {
+    setAppHeight();
+    nudgeScroll();
+  }
+
   // اجرای اولیه
-  setAppHeight();
+  refresh();
 
   // مخصوص اولین اجرای PWA / Standalone
   requestAnimationFrame(() => {
-    setAppHeight();
+    refresh();
 
     requestAnimationFrame(() => {
-      setAppHeight();
+      refresh();
     });
   });
 
-  setTimeout(setAppHeight, 150);
-  setTimeout(setAppHeight, 500);
+  setTimeout(refresh, 150);
+  setTimeout(refresh, 500);
+  setTimeout(refresh, 1000);
+
+  window.addEventListener('load', function () {
+    setTimeout(refresh, 50);
+    setTimeout(refresh, 400);
+    setTimeout(refresh, 1000);
+  }, { passive: true });
+
+  // مخصوص باز شدن اپ از حالت PWA/Standalone (Home Screen)
+  window.addEventListener('pageshow', function () {
+    refresh();
+    setTimeout(refresh, 300);
+    setTimeout(refresh, 800);
+  }, { passive: true });
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') {
+      refresh();
+      setTimeout(refresh, 300);
+    }
+  }, { passive: true });
 
   // تغییر اندازه صفحه
   window.addEventListener('resize', setAppHeight, { passive: true });
 
   // چرخش گوشی
   window.addEventListener('orientationchange', function () {
-    requestAnimationFrame(setAppHeight);
-    setTimeout(setAppHeight, 100);
+    requestAnimationFrame(refresh);
+    setTimeout(refresh, 100);
   }, { passive: true });
 
   // مخصوص Safari / iOS
   if (window.visualViewport) {
     window.visualViewport.addEventListener(
       'resize',
-      setAppHeight,
+      refresh,
       { passive: true }
     );
   }
