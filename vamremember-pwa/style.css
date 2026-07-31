@@ -2566,11 +2566,15 @@ label{
     transform:none;
   }
 }
-
-/* حتی هنگام ورود صفحه، هیچ transform روی page اعمال نمی‌شود. */
-.page{
-  transform:none;
+.bottom-nav{
+    height:calc(
+      var(--nav-height) +
+      env(safe-area-inset-bottom)
+    );
+  }
 }
+/* حتی هنگام ورود صفحه، هیچ transform روی page اعمال نمی‌شود. */
+
 
 /* انیمیشن ورود فقط fade است تا fixed elements در iOS containing block
    اشتباه نگیرند. */
