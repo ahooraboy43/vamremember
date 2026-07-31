@@ -152,17 +152,17 @@ img{
     padding-right:8px;
   }
 }
-@media (max-width:375px) {
+@media (max-width: 375px){
+:root{
+--nav-height:56px;
 
-: root{
-nav-height:56px;
-nav-icon-size:20px;
-home-btn-size:56px;
+--nav-icon-size:20px;
 
-home-btn-icon-size:26px;
-home-btn-lift:30px;
+--home-btn-size:56px;
 
-}
+--home-btn-icon-size:26px;
+
+--home-btn-lift:30px;
 }
 @media (max-width: 620px){
 .page{
