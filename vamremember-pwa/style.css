@@ -3191,3 +3191,32 @@ label{
     width: 260px;
   }
 }
+/* =========================================================
+   رفع باگ فاصله منوی پایین از کف صفحه
+========================================================= */
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(100%, 620px);
+  height: calc(64px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  /* بقیه استایل‌ها */
+}
+
+/* اطمینان از اینکه منو پایین صفحه قرار میگیره */
+.app {
+  padding-bottom: calc(64px + 28px + env(safe-area-inset-bottom));
+}
+
+/* برای گوشی‌های کوچک */
+@media(max-width: 480px) {
+  .bottom-nav {
+    height: calc(60px + env(safe-area-inset-bottom));
+  }
+  .app {
+    padding-bottom: calc(60px + 28px + env(safe-area-inset-bottom));
+  }
+}
