@@ -250,10 +250,15 @@ img{
   width:100%;
   padding:14px 16px 24px;
   animation:fadeUp .35s var(--ease);
+  min-height:0;
+  height:auto;
+  box-sizing:border-box;
 }
 
 .page.active{
   display:block;
+  min-height:0;
+  height:auto
 }
 
 @media(max-width:620px){
