@@ -28,6 +28,7 @@
      اندازه آیکون‌ها *فقط داخل نوار پایین* (بدون دست‌کاری
      کلاس عمومی .img-btn / .img-btn1 که جای دیگر هم استفاده
      می‌شود) رفع شده است.
+*/
 *{
   box-sizing:border-box;
   -webkit-tap-highlight-color:transparent;
@@ -348,10 +349,10 @@ img{
 
 .top{
   display:flex;
-  align-items: flex-end;
+  align-items:center;
   justify-content:space-between;
   gap:10px;
-  flex-direction: column;
+  flex-direction:row;
 }
 
 .name{
@@ -377,7 +378,7 @@ img{
 }
 
 .amount{
-  margin-top:-40px;
+  margin-top:9px;
   font-size:18px;
   font-weight:700;
 }
@@ -1082,7 +1083,6 @@ img{
   font-size:10px;
 
   border-radius:16px;
-  margin-top: 12px;
   transition:color .25s, background .25s var(--ease), transform .25s var(--ease);
 }
 
@@ -1094,8 +1094,10 @@ img{
    .img-btn / .img-btn1 در بقیه صفحه دست‌نخورده می‌ماند */
 .nav-button .img-btn1,
 .nav-button .img-btn{
-  /*width:var(--nav-icon-size);
-  height:var(--nav-icon-size);*/
+  width:var(--nav-icon-size);
+  height:var(--nav-icon-size);
+  object-fit:contain;
+  flex-shrink:0;
 }
 
 .nav-button small{
