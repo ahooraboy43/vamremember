@@ -2476,6 +2476,467 @@ if(saveAppLockPasswordButton){
     alert("رمز عبور اپلیکیشن ذخیره شد");
   });
 }
+// =========================================================
+// ================= بخش جدید: کارت‌های بانکی =================
+// =========================================================
 
+const BANK_CARDS_KEY = "bankCardsV1";
+let bankCards = [];
+let currentCardIndex = 0;
+let touchStartX = 0;
+let touchEndX = 0;
+
+// بارگذاری کارت‌ها از لوکال استوریج
+function loadBankCards() {
+  try {
+    const data = localStorage.getItem(BANK_CARDS_KEY);
+    bankCards = data ? JSON.parse(data) : [];
+  } catch (e) {
+    bankCards = [];
+  }
+  renderBankCards();
+}
+
+// ذخیره کارت‌ها در لوکال استوریج
+function saveBankCards() {
+  localStorage.setItem(BANK_CARDS_KEY, JSON.stringify(bankCards));
+  renderBankCards();
+}
+
+// نمایش کارت‌ها با افکت چرخ فلک
+function renderBankCards() {
+  const container = document.getElementById("bankCarousel");
+  const dotsContainer = document.getElementById("carouselDots");
+  if (!container) return;
+
+  if (bankCards.length === 0) {
+    container.innerHTML = `
+      <div class="empty-bank-state">
+        <div class="empty-icon">💳</div>
+        <p>هیچ کارت بانکی ثبت نشده است</p>
+        <button class="primary-button" id="emptyAddBankBtn" type="button">افزودن کارت</button>
+      </div>
+    `;
+    if (dotsContainer) dotsContainer.innerHTML = "";
+    const emptyBtn = document.getElementById("emptyAddBankBtn");
+    if (emptyBtn) emptyBtn.addEventListener("click", openBankCardModal);
+    return;
+  }
+
+  if (currentCardIndex >= bankCards.length) currentCardIndex = 0;
+  if (currentCardIndex < 0) currentCardIndex = 0;
+
+  const total = bankCards.length;
+  const centerIndex = currentCardIndex;
+
+  let cardsHtml = '';
+  for (let i = 0; i < total; i++) {
+    let offset = i - centerIndex;
+    if (offset > total / 2) offset -= total;
+    if (offset < -total / 2) offset += total;
+    
+    const card = bankCards[i];
+    const isCenter = i === centerIndex;
+    
+    const translateX = offset * 120;
+    const scale = 1 - Math.abs(offset) * 0.08;
+    const opacity = 1 - Math.abs(offset) * 0.3;
+    const zIndex = isCenter ? 10 : 10 - Math.abs(offset);
+    
+    const maskedNumber = card.cardNumber ? '****' + card.cardNumber.slice(-4) : '•••• •••• •••• ••••';
+    const maskedCvv = card.cvv ? '•••' : '•••';
+    const maskedExpiry = card.expiry || '••/••';
+    
+    cardsHtml += `
+      <div class="bank-card-item" 
+           data-index="${i}"
+           style="
+             transform: translateX(${translateX}px) scale(${scale});
+             opacity: ${opacity};
+             z-index: ${zIndex};
+             background: ${card.color || '#1a2332'};
+             pointer-events: ${isCenter ? 'auto' : 'none'};
+           ">
+        <div class="bank-card-inner">
+          <div class="bank-card-top">
+            <span class="bank-card-chip">💳</span>
+            <span class="bank-card-type">${card.bankName || 'بانک'}</span>
+          </div>
+          <div class="bank-card-number" data-field="number">
+            <span>${isCenter ? card.cardNumber || '•••• •••• •••• ••••' : maskedNumber}</span>
+            <button class="copy-btn" data-field="number" data-value="${card.cardNumber || ''}" type="button">📋</button>
+          </div>
+          <div class="bank-card-bottom">
+            <div class="bank-card-expiry" data-field="expiry">
+              <span>${isCenter ? card.expiry || '••/••' : maskedExpiry}</span>
+              <button class="copy-btn" data-field="expiry" data-value="${card.expiry || ''}" type="button">📋</button>
+            </div>
+            <div class="bank-card-cvv" data-field="cvv">
+              <span>${isCenter ? card.cvv || '•••' : maskedCvv}</span>
+              <button class="copy-btn" data-field="cvv" data-value="${card.cvv || ''}" type="button">📋</button>
+            </div>
+          </div>
+          <div class="bank-card-iban" data-field="iban">
+            <span>${isCenter ? card.iban || 'شبا ثبت نشده' : '•••• •••• •••• ••••'}</span>
+            <button class="copy-btn" data-field="iban" data-value="${card.iban || ''}" type="button">📋</button>
+          </div>
+          <div class="bank-card-balance">
+            ${card.balance ? Number(card.balance).toLocaleString('fa-IR') + ' ریال' : 'موجودی: ۰ ریال'}
+          </div>
+          <button class="bank-card-edit-btn" data-id="${card.id || i}" type="button">✎</button>
+        </div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = cardsHtml;
+
+  // دکمه‌های کپی
+  container.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const value = btn.dataset.value;
+      if (value) {
+        navigator.clipboard?.writeText(value).then(() => {
+          showToast('کپی شد!', 'success');
+        }).catch(() => {
+          const input = document.createElement('input');
+          input.value = value;
+          document.body.appendChild(input);
+          input.select();
+          document.execCommand('copy');
+          input.remove();
+          showToast('کپی شد!', 'success');
+        });
+      }
+    });
+  });
+
+  // دکمه‌های ویرایش
+  container.querySelectorAll('.bank-card-edit-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const card = bankCards.find(c => c.id == id);
+      if (card) openBankCardModal(card);
+    });
+  });
+
+  // دایره‌های ناوبری
+  if (dotsContainer) {
+    dotsContainer.innerHTML = bankCards.map((_, i) => 
+      `<span class="dot ${i === currentCardIndex ? 'active' : ''}" data-index="${i}"></span>`
+    ).join('');
+    
+    dotsContainer.querySelectorAll('.dot').forEach(dot => {
+      dot.addEventListener('click', () => {
+        currentCardIndex = parseInt(dot.dataset.index);
+        renderBankCards();
+      });
+    });
+  }
+}
+
+// پشتیبانی از لمس برای چرخش کارت‌ها
+function initCarouselTouch() {
+  const container = document.getElementById("bankCarousel");
+  if (!container) return;
+
+  container.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+
+  container.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    const diff = touchEndX - touchStartX;
+    
+    if (Math.abs(diff) > 50) {
+      if (diff < 0 && currentCardIndex < bankCards.length - 1) {
+        currentCardIndex++;
+        renderBankCards();
+      } else if (diff > 0 && currentCardIndex > 0) {
+        currentCardIndex--;
+        renderBankCards();
+      } else if (diff < 0 && currentCardIndex === bankCards.length - 1) {
+        currentCardIndex = 0;
+        renderBankCards();
+      } else if (diff > 0 && currentCardIndex === 0) {
+        currentCardIndex = bankCards.length - 1;
+        renderBankCards();
+      }
+    }
+  }, { passive: true });
+
+  // پشتیبانی از ماوس
+  let mouseDown = false;
+  let mouseStartX = 0;
+
+  container.addEventListener('mousedown', (e) => {
+    mouseDown = true;
+    mouseStartX = e.screenX;
+    e.preventDefault();
+  });
+
+  container.addEventListener('mouseup', (e) => {
+    if (!mouseDown) return;
+    mouseDown = false;
+    const diff = e.screenX - mouseStartX;
+    if (Math.abs(diff) > 50) {
+      if (diff < 0 && currentCardIndex < bankCards.length - 1) {
+        currentCardIndex++;
+        renderBankCards();
+      } else if (diff > 0 && currentCardIndex > 0) {
+        currentCardIndex--;
+        renderBankCards();
+      } else if (diff < 0 && currentCardIndex === bankCards.length - 1) {
+        currentCardIndex = 0;
+        renderBankCards();
+      } else if (diff > 0 && currentCardIndex === 0) {
+        currentCardIndex = bankCards.length - 1;
+        renderBankCards();
+      }
+    }
+  });
+
+  container.addEventListener('mouseleave', () => {
+    mouseDown = false;
+  });
+}
+
+// باز کردن مودال کارت بانکی
+function openBankCardModal(card = null) {
+  const modal = document.getElementById("bankCardModal");
+  const form = document.getElementById("bankCardForm");
+  const title = document.getElementById("bankCardModalTitle");
+  const idField = document.getElementById("editBankCardId");
+  const nameField = document.getElementById("bankCardName");
+  const numberField = document.getElementById("bankCardNumber");
+  const ibanField = document.getElementById("bankCardIban");
+  const expiryField = document.getElementById("bankCardExpiry");
+  const cvvField = document.getElementById("bankCardCvv");
+  const balanceField = document.getElementById("bankCardBalance");
+  const colorField = document.getElementById("bankCardColor");
+
+  if (!modal) return;
+  form.reset();
+  idField.value = "";
+
+  if (card) {
+    title.textContent = "ویرایش کارت بانکی";
+    idField.value = card.id || "";
+    nameField.value = card.bankName || "";
+    numberField.value = card.cardNumber || "";
+    ibanField.value = card.iban || "";
+    expiryField.value = card.expiry || "";
+    cvvField.value = card.cvv || "";
+    balanceField.value = card.balance || "";
+    colorField.value = card.color || "#1a2332";
+  } else {
+    title.textContent = "ثبت کارت بانکی جدید";
+  }
+
+  modal.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+// بستن مودال کارت بانکی
+function closeBankCardModal() {
+  const modal = document.getElementById("bankCardModal");
+  if (!modal) return;
+  modal.classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+// ذخیره کارت بانکی
+document.getElementById("bankCardForm")?.addEventListener("submit", function(e) {
+  e.preventDefault();
+  
+  const idField = document.getElementById("editBankCardId");
+  const nameField = document.getElementById("bankCardName");
+  const numberField = document.getElementById("bankCardNumber");
+  const ibanField = document.getElementById("bankCardIban");
+  const expiryField = document.getElementById("bankCardExpiry");
+  const cvvField = document.getElementById("bankCardCvv");
+  const balanceField = document.getElementById("bankCardBalance");
+  const colorField = document.getElementById("bankCardColor");
+
+  const cardData = {
+    id: idField.value || Date.now().toString(),
+    bankName: nameField.value.trim(),
+    cardNumber: numberField.value.trim(),
+    iban: ibanField.value.trim(),
+    expiry: expiryField.value.trim(),
+    cvv: cvvField.value.trim(),
+    balance: parseFloat(balanceField.value) || 0,
+    color: colorField.value || "#1a2332",
+    createdAt: new Date().toISOString()
+  };
+
+  if (!cardData.bankName) {
+    showToast("نام بانک را وارد کنید", "error");
+    return;
+  }
+
+  if (cardData.cardNumber && cardData.cardNumber.length < 16) {
+    showToast("شماره کارت باید ۱۶ رقم باشد", "error");
+    return;
+  }
+
+  const existingIndex = bankCards.findIndex(c => c.id === cardData.id);
+  if (existingIndex >= 0) {
+    bankCards[existingIndex] = cardData;
+  } else {
+    bankCards.push(cardData);
+  }
+
+  saveBankCards();
+  closeBankCardModal();
+  showToast("کارت بانکی ذخیره شد", "success");
+});
+
+// دکمه‌های بستن مودال
+document.getElementById("closeBankCardModal")?.addEventListener("click", closeBankCardModal);
+document.getElementById("bankCardModal")?.querySelector(".modal-backdrop")?.addEventListener("click", closeBankCardModal);
+document.getElementById("addBankCardBtn")?.addEventListener("click", () => openBankCardModal());
+
+// =========================================================
+// ================= منوی همبرگری =================
+// =========================================================
+
+function createHamburgerPanel() {
+  const panel = document.createElement("div");
+  panel.id = "hamburgerPanel";
+  panel.className = "hamburger-panel hidden";
+  panel.innerHTML = `
+    <div class="hamburger-backdrop"></div>
+    <div class="hamburger-sheet">
+      <div class="hamburger-header">
+        <h3>📋 منو</h3>
+        <button id="closeHamburgerBtn" type="button">✕</button>
+      </div>
+      <div class="hamburger-items">
+        <button class="hamburger-item" data-action="refresh">
+          <span>🔄</span> بروزرسانی
+        </button>
+        <button class="hamburger-item" data-action="banks">
+          <span>🏦</span> بانک‌ها
+        </button>
+        <button class="hamburger-item" data-action="settings">
+          <span>⚙️</span> تنظیمات
+        </button>
+        <button class="hamburger-item" data-action="profile">
+          <span>👤</span> پروفایل
+        </button>
+      </div>
+      <div class="hamburger-profile">
+        <div class="profile-avatar" id="profileAvatar">
+          <img id="profileAvatarImg" src="assets/default-avatar.png" alt="پروفایل">
+        </div>
+        <div class="profile-name" id="profileName">کاربر</div>
+        <button class="profile-upload-btn" id="profileUploadBtn" type="button">📷 تغییر عکس</button>
+        <input type="file" id="profileImageInput" accept="image/*" style="display:none">
+      </div>
+    </div>
+  `;
+  document.body.appendChild(panel);
+
+  // باز و بسته کردن منو
+  document.getElementById("hamburgerMenuBtn")?.addEventListener("click", () => {
+    panel.classList.toggle("hidden");
+    document.body.style.overflow = panel.classList.contains("hidden") ? "" : "hidden";
+  });
+
+  document.getElementById("closeHamburgerBtn")?.addEventListener("click", () => {
+    panel.classList.add("hidden");
+    document.body.style.overflow = "";
+  });
+
+  panel.querySelector(".hamburger-backdrop")?.addEventListener("click", () => {
+    panel.classList.add("hidden");
+    document.body.style.overflow = "";
+  });
+
+  // دکمه‌های منو
+  panel.querySelectorAll(".hamburger-item").forEach(item => {
+    item.addEventListener("click", () => {
+      const action = item.dataset.action;
+      panel.classList.add("hidden");
+      document.body.style.overflow = "";
+      
+      switch(action) {
+        case "refresh":
+          performFullAppUpdate();
+          break;
+        case "banks":
+          openPage("banksPage", "🏦 بانک‌ها");
+          setTimeout(renderBankCards, 100);
+          break;
+        case "settings":
+          openPage("settingsPage", "⚙️ تنظیمات");
+          break;
+        case "profile":
+          showToast("پروفایل در منو قابل مشاهده است", "info");
+          break;
+      }
+    });
+  });
+
+  // آپلود عکس پروفایل
+  document.getElementById("profileUploadBtn")?.addEventListener("click", () => {
+    document.getElementById("profileImageInput")?.click();
+  });
+
+  document.getElementById("profileImageInput")?.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = document.getElementById("profileAvatarImg");
+      if (img) img.src = ev.target.result;
+      localStorage.setItem("profileImage", ev.target.result);
+      showToast("عکس پروفایل تغییر کرد", "success");
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // بارگذاری عکس پروفایل ذخیره شده
+  const savedImage = localStorage.getItem("profileImage");
+  if (savedImage) {
+    const img = document.getElementById("profileAvatarImg");
+    if (img) img.src = savedImage;
+  }
+}
+
+// =========================================================
+// ================= مقداردهی اولیه =================
+// =========================================================
+
+// تابع مقداردهی اولیه همه چیز
+function initNewFeatures() {
+  createHamburgerPanel();
+  loadBankCards();
+  initCarouselTouch();
+  
+  // دکمه افزودن کارت از حالت خالی
+  document.addEventListener("click", (e) => {
+    if (e.target.id === "emptyAddBankBtn") {
+      openBankCardModal();
+    }
+  });
+}
+
+// اجرا بعد از لود شدن صفحه
+setTimeout(initNewFeatures, 200);
+
+// همچنین وقتی صفحه بانک‌ها باز میشه، کارت‌ها رو رندر کن
+const originalOpenPageFn = openPage;
+openPage = function(id, title) {
+  originalOpenPageFn(id, title);
+  if (id === "banksPage") {
+    setTimeout(renderBankCards, 150);
+  }
+};
+
+//جدید
 initAppLock();
 initSettingsUI();
