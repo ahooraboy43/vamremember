@@ -263,8 +263,8 @@ img{
 }
 
 @keyframes fadeUp{
-  from{ opacity:0; transform:translateY(10px); }
-  to{ opacity:1; transform:translateY(0); }
+  from{ opacity:0; }
+  to{ opacity:1; }
 }
 
 /* =========================================================
@@ -2517,4 +2517,49 @@ label{
     scroll-behavior:auto!important;
     transition-duration:.01ms!important;
   }
+}
+
+/* =========================================================
+   iOS FIX — BOTTOM NAV MUST STAY FLUSH WITH VIEWPORT BOTTOM
+   ---------------------------------------------------------
+   نکته مهم:
+   .page animation نباید transform داشته باشد، چون transform روی
+   ancestor در iOS می‌تواند position:fixed را از viewport جدا کند.
+========================================================= */
+
+@media (max-width: 620px){
+  .bottom-nav{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    top:auto;
+
+    width:100%;
+    max-width:620px;
+    margin:0 auto;
+
+    height:calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+
+    padding-left:10px;
+    padding-right:10px;
+    padding-top:0;
+    padding-bottom:env(safe-area-inset-bottom, 0px);
+
+    box-sizing:border-box;
+
+    transform:none;
+  }
+}
+
+/* حتی هنگام ورود صفحه، هیچ transform روی page اعمال نمی‌شود. */
+.page{
+  transform:none;
+}
+
+/* انیمیشن ورود فقط fade است تا fixed elements در iOS containing block
+   اشتباه نگیرند. */
+@keyframes fadeUp{
+  from{opacity:0;}
+  to{opacity:1;}
 }
