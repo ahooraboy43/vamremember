@@ -3248,63 +3248,153 @@ if (typeof openPage === 'function') {
   };
 }
 // =========================================================
-// ================= تنظیم خودکار منوی پایین =================
+// ================= تنظیم خودکار منوی پایین ===============
+// =========================================================
+// ================= منوی پایین با sticky =================
 // =========================================================
 
-function fixBottomNavPosition() {
-  const nav = document.querySelector('.bottom-nav');
-  if (!nav) return;
-  
-  // محاسبه ارتفاع واقعی صفحه
-  function getRealHeight() {
-    return window.innerHeight;
-  }
-  
-  // تنظیم منو در پایین صفحه
-  function setNavPosition() {
-    const height = getRealHeight();
-    // منو رو دقیقاً پایین صفحه قرار بده
-    nav.style.position = 'fixed';
-    nav.style.bottom = '0px';
-    nav.style.left = '50%';
-    nav.style.transform = 'translateX(-50%)';
-    nav.style.width = 'min(100%, 620px)';
-    nav.style.zIndex = '999';
+function createStickyNav() {
+    // منوی موجود رو پیدا کن
+    const oldNav = document.querySelector('.bottom-nav');
+    if (oldNav) {
+        // منوی قدیمی رو مخفی کن
+        oldNav.style.display = 'none';
+    }
     
-    // فضای خالی برای محتوای اصلی
+    // یه منوی جدید بساز
+    const newNav = document.createElement('nav');
+    newNav.id = 'stickyNav';
+    newNav.innerHTML = `
+        <button class="nav-btn" data-page="duePage">
+            <img src="assets/book.png" alt="" style="width:24px;height:24px;">
+            <small>سررسیدها</small>
+        </button>
+        <button class="nav-btn" data-page="banksPage">
+            <img src="assets/bank.png" alt="" style="width:24px;height:24px;">
+            <small>بانک‌ها</small>
+        </button>
+        <button class="nav-btn home-btn" data-page="homePage">
+            <img src="assets/home.png" alt="" style="width:32px;height:32px;">
+        </button>
+        <button class="nav-btn" data-page="allPage">
+            <img src="assets/vam.png" alt="" style="width:24px;height:24px;">
+            <small>اقساط</small>
+        </button>
+        <button class="nav-btn" data-page="reportPage">
+            <img src="assets/fin.png" alt="" style="width:24px;height:24px;">
+            <small>گزارش</small>
+        </button>
+    `;
+    
+    // استایل منو جدید
+    newNav.style.cssText = `
+        position: fixed;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(100%, 620px);
+        height: 68px;
+        z-index: 99999;
+        background: rgba(17, 24, 39, 0.98);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(255,255,255,0.08);
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        align-items: center;
+        justify-items: center;
+        padding: 0 8px;
+        padding-bottom: env(safe-area-inset-bottom);
+        box-shadow: 0 -4px 30px rgba(0,0,0,0.5);
+        border-radius: 0;
+    `;
+    
+    // استایل دکمه‌ها
+    const style = document.createElement('style');
+    style.textContent = `
+        #stickyNav .nav-btn {
+            background: none;
+            border: none;
+            color: #8b94a3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            font-size: 10px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 12px;
+            transition: all 0.2s;
+            width: 100%;
+            height: 100%;
+        }
+        #stickyNav .nav-btn.active {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.1);
+        }
+        #stickyNav .home-btn {
+            margin-top: -25px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #38bdf8, #0284c7);
+            box-shadow: 0 8px 25px rgba(2,132,199,0.4);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            font-size: 20px;
+        }
+        #stickyNav .home-btn.active {
+            transform: scale(1.05);
+            box-shadow: 0 12px 35px rgba(2,132,199,0.5);
+        }
+        #stickyNav .nav-btn small {
+            font-size: 9px;
+        }
+        @media(max-width: 480px) {
+            #stickyNav { height: 62px; }
+            #stickyNav .home-btn { width: 54px; height: 54px; margin-top: -20px; }
+        }
+        @media(max-width: 375px) {
+            #stickyNav { height: 56px; }
+            #stickyNav .home-btn { width: 48px; height: 48px; margin-top: -16px; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // اضافه کردن به صفحه
+    document.body.appendChild(newNav);
+    
+    // رویداد کلیک
+    newNav.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const page = this.dataset.page;
+            if (typeof openPage === 'function') {
+                openPage(page, this.textContent.trim());
+            }
+            // فعال کردن
+            newNav.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+    
+    // فضای خالی
     const app = document.querySelector('.app');
     if (app) {
-      const navHeight = nav.offsetHeight || 70;
-      app.style.paddingBottom = (navHeight + 20) + 'px';
+        app.style.paddingBottom = '85px';
     }
-  }
-  
-  // اجرا در اولین لود
-  setNavPosition();
-  
-  // اجرا بعد از هر تغییری
-  window.addEventListener('resize', setNavPosition);
-  window.addEventListener('orientationchange', function() {
-    setTimeout(setNavPosition, 300);
-  });
-  window.addEventListener('load', function() {
-    setTimeout(setNavPosition, 100);
-    setTimeout(setNavPosition, 500);
-  });
-  document.addEventListener('visibilitychange', function() {
-    if (!document.hidden) {
-      setTimeout(setNavPosition, 200);
-    }
-  });
-  
-  // اجرا بعد از هر کلیک (برای مواقعی که محتوا تغییر میکنه)
-  document.addEventListener('click', function() {
-    setTimeout(setNavPosition, 50);
-  });
+    
+    console.log("✅ منوی جدید ساخته شد");
 }
 
 // اجرا
-setTimeout(fixBottomNavPosition, 100);
+if (document.readyState === 'complete') {
+    createStickyNav();
+} else {
+    window.addEventListener('load', function() {
+        setTimeout(createStickyNav, 100);
+    });
+}
 //آخر جدید
 initAppLock();
 initSettingsUI();
