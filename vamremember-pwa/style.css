@@ -2542,39 +2542,11 @@ label{
    ancestor در iOS می‌تواند position:fixed را از viewport جدا کند.
 ========================================================= */
 
-@media (max-width: 620px){
-  .bottom-nav{
-    position:fixed;
-    left:0;
-    right:0;
-    bottom:0;
-    top:auto;
 
-    width:100%;
-    max-width:620px;
-    margin:0 auto;
-
-    height:calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
-
-    padding-left:10px;
-    padding-right:10px;
-    padding-top:0;
-    padding-bottom:env(safe-area-inset-bottom, 0px);
-
-    box-sizing:border-box;
-
-    transform:none;
-  }
-}
-.bottom-nav{
-    height:calc(
-      var(--nav-height) +
-      env(safe-area-inset-bottom)
-    );
-  }
-}
 /* حتی هنگام ورود صفحه، هیچ transform روی page اعمال نمی‌شود. */
-
+.page{
+  transform:none;
+}
 
 /* انیمیشن ورود فقط fade است تا fixed elements در iOS containing block
    اشتباه نگیرند. */
