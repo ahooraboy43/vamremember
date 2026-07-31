@@ -1215,13 +1215,7 @@ img{
     --home-btn-lift:34px;
   }
 
-  .bottom-nav{
-    height:calc(
-      var(--nav-height) +
-      env(safe-area-inset-bottom)
-    );
-  }
-}
+  
 
 @media(max-width:375px){
   :root{
