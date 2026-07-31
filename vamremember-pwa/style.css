@@ -3194,7 +3194,67 @@ label{
 /* =========================================================
    رفع باگ فاصله منوی پایین از کف صفحه
 ========================================================= */
+/* =========================================================
+   رفع باگ منوی پایین - نسخه قطعی
+========================================================= */
 
+/* تنظیم ارتفاع واقعی viewport با جاوااسکریپت */
+:root {
+  --app-height: 100vh;
+}
+
+/* منوی پایین با استفاده از --app-height */
+.bottom-nav {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: min(100%, 620px) !important;
+  height: calc(64px + env(safe-area-inset-bottom)) !important;
+  padding-bottom: env(safe-area-inset-bottom) !important;
+  padding-top: 4px !important;
+  z-index: 50 !important;
+  background: rgba(17, 24, 39, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-top: 1px solid var(--border) !important;
+  display: grid !important;
+  grid-template-columns: repeat(5, 1fr) !important;
+  align-items: center !important;
+  justify-items: center !important;
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.3) !important;
+  transition: none !important;
+  will-change: transform !important;
+}
+
+/* فضای خالی پایین صفحه برای منو */
+.app {
+  padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+}
+
+/* دکمه خانه وسط */
+.home-button {
+  margin-top: -20px !important;
+}
+
+/* برای گوشی‌های کوچک */
+@media(max-width: 480px) {
+  .bottom-nav {
+    height: calc(60px + env(safe-area-inset-bottom)) !important;
+  }
+  .app {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+@media(max-width: 375px) {
+  .bottom-nav {
+    height: calc(56px + env(safe-area-inset-bottom)) !important;
+  }
+  .app {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+  }
+}
 /* =========================================================
    رفع باگ منوی پایین
 ========================================================= */
