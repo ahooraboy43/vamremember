@@ -11,14 +11,8 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="stylesheet" href="./style.css">
 <title>حسابداری شایان</title>
-<style>
-  /* برای جلوگیری از فاصله اولیه */
-  .bottom-nav {
-    bottom: 0 !important;
-  }
-</style>
 </head>
-<body style="margin:0;padding:0;min-height:100vh;display:flex;flex-direction:column;">
+<body>
 
 <!-- ================= قفل اپلیکیشن ================= -->
 <div id="appLockScreen" class="app-lock-screen hidden">
@@ -34,7 +28,7 @@
 </div>
 </div>
 
-<main class="app" style="flex:1;padding-bottom:90px;">
+<main class="app">
 
 <header class="app-header">
 <div>
@@ -264,22 +258,22 @@
 
 <!-- ================= منوی پایین ================= -->
 <nav class="bottom-nav">
-<button class="nav-button nav-item" data-page="duePage" data-title="⏰ سررسیدها" type="button">
+<button class="nav-button" data-page="duePage" onclick="openPage('duePage','⏰ سررسیدها')">
 <img class="img-btn1" src="assets/book.png" alt="">
 <small>سررسیدها</small>
 </button>
-<button class="nav-button nav-item" data-page="banksPage" data-title="🏦 بانک‌ها" type="button">
+<button class="nav-button" data-page="banksPage" onclick="openPage('banksPage','🏦 بانک‌ها')">
 <img class="img-btn1" src="assets/bank.png" alt="">
 <small>بانک‌ها</small>
 </button>
-<button class="home-button nav-button" data-page="homePage" data-title="🏠 داشبورد" type="button">
+<button class="nav-button home-button" data-page="homePage" onclick="openPage('homePage','🏠 داشبورد')">
 <img class="img-btn" src="assets/home.png" alt="صفحه اصلی">
 </button>
-<button class="nav-button nav-item" data-page="allPage" data-title="📋 همه اقساط" type="button">
+<button class="nav-button" data-page="allPage" onclick="openPage('allPage','📋 همه اقساط')">
 <img class="img-btn1" src="assets/vam.png" alt="">
 <small>اقساط</small>
 </button>
-<button class="nav-button nav-item" data-page="reportPage" data-title="📊 گزارش‌ها" type="button">
+<button class="nav-button" data-page="reportPage" onclick="openPage('reportPage','📊 گزارش‌ها')">
 <img class="img-btn1" src="assets/fin.png" alt="">
 <small>گزارش</small>
 </button>
