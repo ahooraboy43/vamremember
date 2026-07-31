@@ -1031,46 +1031,32 @@ img{
    BOTTOM NAVIGATION
    (منبع واحد قوانین — بدون هیچ override دیگری در فایل)
 ========================================================= */
-.bottom-nav{
-  position:fixed;
-  z-index:50;
+.nav-button{
+  position:relative;
 
-  left:50%;
-  bottom:0;
+  height:100%;
+  min-height:100%;
 
-  transform:translateX(-50%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
 
-  width:min(100%,620px);
+  border:none;
+  background:transparent;
 
-  height:var(--nav-height);
+  color:var(--muted);
+  font-size:10px;
 
-  padding:
-    0 10px
-    env(safe-area-inset-bottom);
+  border-radius:16px;
 
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  align-items:stretch;
-
-  background:linear-gradient(
-    180deg,
-    rgba(17,24,39,.78),
-    rgba(10,15,25,.94)
-  );
-
-  backdrop-filter:var(--blur);
-  -webkit-backdrop-filter:var(--blur);
-
-  border:1px solid var(--border-light);
-  border-bottom:0;
-
-  border-radius:26px 26px 0 0;
-
-  box-shadow:
-    0 -12px 40px rgba(0,0,0,.28);
-
-  /* جلوگیری از جابه‌جایی اولیه در iOS */
   margin:0;
+
+  transition:
+    color .25s,
+    background .25s var(--ease),
+    transform .25s var(--ease);
 }
 
 
