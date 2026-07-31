@@ -3198,30 +3198,3 @@ label{
 /* =========================================================
    رفع باگ منوی پایین
 ========================================================= */
-
-.bottom-nav {
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  width: min(100%, 620px) !important;
-  height: calc(64px + env(safe-area-inset-bottom)) !important;
-  padding-bottom: env(safe-area-inset-bottom) !important;
-  z-index: 50 !important;
-  background: var(--bg) !important;
-  border-top: 1px solid var(--border) !important;
-  display: grid !important;
-  grid-template-columns: repeat(5, 1fr) !important;
-  align-items: center !important;
-  justify-items: center !important;
-}
-
-/* فضای خالی پایین صفحه برای منو */
-.app {
-  padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
-}
-
-/* دکمه خانه وسط */
-.home-button {
-  margin-top: -20px !important;
-}
