@@ -2787,3 +2787,407 @@ label{
   }
 
 }
+/* تست بانک*/
+/* =========================================================
+   کارت‌های بانکی - چرخ فلک ۳ بعدی
+========================================================= */
+
+.bank-carousel-container {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  margin-bottom: 16px;
+  overflow: visible;
+  padding: 10px 0;
+}
+
+.bank-carousel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.bank-carousel:active {
+  cursor: grabbing;
+}
+
+.bank-card-item {
+  position: absolute;
+  width: 85%;
+  max-width: 340px;
+  height: 200px;
+  border-radius: 24px;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease, z-index 0.5s ease;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  user-select: none;
+  pointer-events: none;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.85);
+  opacity: 0.5;
+}
+
+.bank-card-item[style*="z-index: 10"] {
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+
+.bank-card-inner {
+  width: 100%;
+  height: 100%;
+  padding: 18px 20px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.bank-card-inner::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  right: -20%;
+  width: 80%;
+  height: 80%;
+  background: radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%);
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.bank-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bank-card-chip {
+  font-size: 28px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.bank-card-type {
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.85;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.bank-card-number {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  font-family: 'Courier New', monospace;
+  background: rgba(0,0,0,0.2);
+  padding: 8px 14px;
+  border-radius: 12px;
+  margin: 6px 0;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.bank-card-number span {
+  font-size: 16px;
+  letter-spacing: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bank-card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.bank-card-expiry, .bank-card-cvv {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0,0,0,0.15);
+  padding: 4px 12px;
+  border-radius: 8px;
+}
+
+.bank-card-iban {
+  font-size: 12px;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0,0,0,0.1);
+  padding: 4px 12px;
+  border-radius: 8px;
+  margin-top: 4px;
+  font-family: 'Courier New', monospace;
+}
+
+.bank-card-balance {
+  font-size: 14px;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  margin-top: 6px;
+  text-align: center;
+  background: rgba(0,0,0,0.15);
+  padding: 6px;
+  border-radius: 10px;
+}
+
+.copy-btn {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  padding: 2px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.copy-btn:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+.copy-btn:active {
+  transform: scale(0.9);
+}
+
+.bank-card-edit-btn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bank-card-edit-btn:hover {
+  background: rgba(255,255,255,0.25);
+  transform: scale(1.1);
+}
+
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.carousel-dots .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border-light);
+  cursor: pointer;
+  transition: background 0.3s, transform 0.3s;
+}
+
+.carousel-dots .dot.active {
+  background: var(--primary-light);
+  transform: scale(1.3);
+}
+
+.empty-bank-state {
+  text-align: center;
+  padding: 30px 20px;
+  color: var(--muted);
+}
+
+.empty-bank-state .empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.banks-quick-info {
+  margin-top: 12px;
+}
+
+/* =========================================================
+   منوی همبرگری
+========================================================= */
+
+.hamburger-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+}
+
+.hamburger-panel.hidden {
+  display: none;
+}
+
+.hamburger-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  animation: backdropIn 0.3s ease;
+}
+
+.hamburger-sheet {
+  position: relative;
+  width: 300px;
+  max-width: 80vw;
+  height: 100%;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  box-shadow: 4px 0 30px rgba(0,0,0,0.3);
+  padding: 20px 16px;
+  animation: slideRight 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideRight {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.hamburger-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.hamburger-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.hamburger-header button {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.hamburger-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.hamburger-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-align: right;
+  width: 100%;
+}
+
+.hamburger-item:hover {
+  background: var(--surface);
+}
+
+.hamburger-item:active {
+  transform: scale(0.97);
+}
+
+.hamburger-item span {
+  font-size: 20px;
+}
+
+.hamburger-profile {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  margin: 0 auto 10px;
+  border: 2px solid var(--primary-light);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.profile-upload-btn {
+  margin-top: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 16px;
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.profile-upload-btn:hover {
+  background: var(--surface-2);
+}
+
+/* پاسخگو برای موبایل */
+@media(max-width: 480px) {
+  .bank-card-item {
+    width: 90%;
+    height: 180px;
+  }
+  
+  .bank-card-number {
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+  
+  .bank-card-number span {
+    font-size: 13px;
+  }
+  
+  .hamburger-sheet {
+    width: 260px;
+  }
+}
