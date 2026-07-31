@@ -255,12 +255,7 @@ img{
   display:block;
 }
 
-@media(max-width:620px){
-  .page{
-    padding-left:14px;
-    padding-right:14px;
-  }
-}
+
 
 @keyframes fadeUp{
   from{ opacity:0; }
@@ -1194,7 +1189,7 @@ img{
 
 @media(max-width:480px){
   :root{
-    --nav-height:60px;
+    --nav-height:80px;
     --nav-icon-size:22px;
     --home-btn-size:60px;
     --home-btn-icon-size:28px;
@@ -1203,15 +1198,7 @@ img{
 
   
 
-@media(max-width:375px){
-  :root{
-    --nav-height:56px;
-    --nav-icon-size:20px;
-    --home-btn-size:56px;
-    --home-btn-icon-size:26px;
-    --home-btn-lift:30px;
-  }
-}
+
 
 /* =========================================================
    FAB (دکمه شناور +)
