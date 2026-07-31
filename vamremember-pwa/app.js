@@ -3253,30 +3253,29 @@ if (typeof openPage === 'function') {
 // ================= چسبوندن منو به کف صفحه =================
 // =========================================================
 
-(function fixNavOnceAndForAll() {
-    
-    function stickNavToBottom() {
+// =========================================================
+// ================= بالا آوردن منو =================
+// =========================================================
+
+(function bringNavUp() {
+    function fixNav() {
         const nav = document.querySelector('.bottom-nav');
         if (!nav) return;
         
-        // محاسبه ارتفاع واقعی صفحه
-        const realHeight = window.innerHeight;
-        
-        // منو رو با مختصات دقیق به کف بچسبون
+        // منو رو بالاتر ببر (با فاصله از پایین)
         nav.style.position = 'fixed';
-        nav.style.bottom = '0px';
-        nav.style.left = '0px';
-        nav.style.right = '0px';
-        nav.style.width = '100%';
+        nav.style.bottom = '12px';  // ← این خط رو عوض کن به 12px
+        nav.style.left = '50%';
+        nav.style.transform = 'translateX(-50%)';
+        nav.style.width = 'min(100%, 620px)';
         nav.style.maxWidth = '620px';
-        nav.style.margin = '0 auto';
-        nav.style.transform = 'none';
         nav.style.zIndex = '99999';
         nav.style.height = '70px';
-        nav.style.backgroundColor = 'rgba(17, 24, 39, 0.98)';
+        nav.style.background = 'rgba(17, 24, 39, 0.98)';
         nav.style.backdropFilter = 'blur(20px)';
         nav.style.WebkitBackdropFilter = 'blur(20px)';
         nav.style.borderTop = '1px solid rgba(255,255,255,0.08)';
+        nav.style.borderRadius = '16px';  // گرد کردن گوشه‌ها
         nav.style.display = 'grid';
         nav.style.gridTemplateColumns = 'repeat(5, 1fr)';
         nav.style.alignItems = 'center';
@@ -3284,60 +3283,30 @@ if (typeof openPage === 'function') {
         nav.style.padding = '0 10px';
         nav.style.paddingBottom = 'env(safe-area-inset-bottom)';
         nav.style.boxShadow = '0 -4px 30px rgba(0,0,0,0.5)';
-        nav.style.borderRadius = '0';
         
-        // فضای خالی برای محتوا
+        // فضای خالی
         const app = document.querySelector('.app');
         if (app) {
-            app.style.paddingBottom = '90px';
-        }
-        
-        // یه المان شفاف برای پر کردن فضا
-        let spacer = document.getElementById('navSpacer');
-        if (!spacer) {
-            spacer = document.createElement('div');
-            spacer.id = 'navSpacer';
-            spacer.style.cssText = 'height:70px;width:100%;display:block;';
-            document.body.appendChild(spacer);
+            app.style.paddingBottom = '95px';
         }
     }
     
-    // اجرا در همه حالات
-    stickNavToBottom();
+    fixNav();
     
-    // اجرا بعد از هر تغییری
+    // همه رویدادها
     window.addEventListener('load', function() {
-        setTimeout(stickNavToBottom, 50);
-        setTimeout(stickNavToBottom, 200);
-        setTimeout(stickNavToBottom, 500);
+        setTimeout(fixNav, 50);
+        setTimeout(fixNav, 200);
     });
-    
-    window.addEventListener('resize', function() {
-        stickNavToBottom();
-    });
-    
+    window.addEventListener('resize', fixNav);
     window.addEventListener('orientationchange', function() {
-        setTimeout(stickNavToBottom, 100);
-        setTimeout(stickNavToBottom, 300);
-        setTimeout(stickNavToBottom, 600);
+        setTimeout(fixNav, 200);
     });
-    
     document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
-            setTimeout(stickNavToBottom, 100);
-            setTimeout(stickNavToBottom, 300);
-        }
+        if (!document.hidden) setTimeout(fixNav, 200);
     });
     
-    // هر ثانیه یکبار چک کن (برای مواقعی که چیزی تغییرش میده)
-    setInterval(stickNavToBottom, 1000);
-    
-    // وقتی صفحه اسکرول میشه هم چک کن
-    window.addEventListener('scroll', function() {
-        stickNavToBottom();
-    }, { passive: true });
-    
-    console.log('✅ منو به کف صفحه چسبیده شد');
+    console.log('✅ منو بالا آورده شد');
 })();
 //آخر جدید
 initAppLock();
