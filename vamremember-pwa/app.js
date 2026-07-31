@@ -416,6 +416,21 @@ function setupPaymentPanel(card, item){
 
         await registerPaymentTransaction(item, note, selectedBank);
 
+        // پرداخت قسط: تعداد اقساط باقی‌مانده یک واحد کم می‌شود.
+        const currentRemaining = Number(item.installment_count);
+        if (Number.isFinite(currentRemaining) && currentRemaining > 0) {
+            await supabaseRequest(
+                `${TABLE_NAME}?id=eq.${item.id}`,
+                {
+                    method: "PATCH",
+                    headers: { Prefer: "return=representation" },
+                    body: JSON.stringify({
+                        installment_count: Math.max(0, currentRemaining - 1)
+                    })
+                }
+            );
+        }
+
         card.classList.remove("open");
         await loadData();
     } catch(e) {
@@ -1158,7 +1173,7 @@ if(type !== "expense" && type !== "income"){
   const d = Number(expenseDueDay.value);
   const c = Number(expenseInstallments.value);
 
-  if (expenseDueDay.value !== "" && (!Number.isFinite(d) || d < 1 || d > 31)) {
+  if (expenseDueDay.value !== "" && (!Number.isFinite(d) || d < 0 || d > 31)) {
     alert("روز سررسید معتبر نیست.");
     return;
   }
@@ -1234,7 +1249,7 @@ const body={
     title:expenseTitle.value.trim(),
     note:expenseNote.value.trim()||null
 };
-  if(type==="installment"){body.amount=Number(expenseAmount.value);body.due_day=Number(expenseDueDay.value);body.installment_count=Number(expenseInstallments.value);MONTHS.forEach((m,i)=>body[m.key]=i<idx?"CLOSE":null)}
+  if(type==="installment"){body.amount=Number(expenseAmount.value);body.due_day=expenseDueDay.value.trim()==="" ? null : Number(expenseDueDay.value);body.installment_count=expenseInstallments.value.trim()==="" ? null : Number(expenseInstallments.value);MONTHS.forEach((m,i)=>body[m.key]=i<idx?"CLOSE":null)}
 else if(type==="expense" || type==="income"){
 
     body.amount=null;
