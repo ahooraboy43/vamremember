@@ -3250,151 +3250,95 @@ if (typeof openPage === 'function') {
 // =========================================================
 // ================= تنظیم خودکار منوی پایین ===============
 // =========================================================
-// ================= منوی پایین با sticky =================
+// ================= چسبوندن منو به کف صفحه =================
 // =========================================================
 
-function createStickyNav() {
-    // منوی موجود رو پیدا کن
-    const oldNav = document.querySelector('.bottom-nav');
-    if (oldNav) {
-        // منوی قدیمی رو مخفی کن
-        oldNav.style.display = 'none';
+(function fixNavOnceAndForAll() {
+    
+    function stickNavToBottom() {
+        const nav = document.querySelector('.bottom-nav');
+        if (!nav) return;
+        
+        // محاسبه ارتفاع واقعی صفحه
+        const realHeight = window.innerHeight;
+        
+        // منو رو با مختصات دقیق به کف بچسبون
+        nav.style.position = 'fixed';
+        nav.style.bottom = '0px';
+        nav.style.left = '0px';
+        nav.style.right = '0px';
+        nav.style.width = '100%';
+        nav.style.maxWidth = '620px';
+        nav.style.margin = '0 auto';
+        nav.style.transform = 'none';
+        nav.style.zIndex = '99999';
+        nav.style.height = '70px';
+        nav.style.backgroundColor = 'rgba(17, 24, 39, 0.98)';
+        nav.style.backdropFilter = 'blur(20px)';
+        nav.style.WebkitBackdropFilter = 'blur(20px)';
+        nav.style.borderTop = '1px solid rgba(255,255,255,0.08)';
+        nav.style.display = 'grid';
+        nav.style.gridTemplateColumns = 'repeat(5, 1fr)';
+        nav.style.alignItems = 'center';
+        nav.style.justifyItems = 'center';
+        nav.style.padding = '0 10px';
+        nav.style.paddingBottom = 'env(safe-area-inset-bottom)';
+        nav.style.boxShadow = '0 -4px 30px rgba(0,0,0,0.5)';
+        nav.style.borderRadius = '0';
+        
+        // فضای خالی برای محتوا
+        const app = document.querySelector('.app');
+        if (app) {
+            app.style.paddingBottom = '90px';
+        }
+        
+        // یه المان شفاف برای پر کردن فضا
+        let spacer = document.getElementById('navSpacer');
+        if (!spacer) {
+            spacer = document.createElement('div');
+            spacer.id = 'navSpacer';
+            spacer.style.cssText = 'height:70px;width:100%;display:block;';
+            document.body.appendChild(spacer);
+        }
     }
     
-    // یه منوی جدید بساز
-    const newNav = document.createElement('nav');
-    newNav.id = 'stickyNav';
-    newNav.innerHTML = `
-        <button class="nav-btn" data-page="duePage">
-            <img src="assets/book.png" alt="" style="width:24px;height:24px;">
-            <small>سررسیدها</small>
-        </button>
-        <button class="nav-btn" data-page="banksPage">
-            <img src="assets/bank.png" alt="" style="width:24px;height:24px;">
-            <small>بانک‌ها</small>
-        </button>
-        <button class="nav-btn home-btn" data-page="homePage">
-            <img src="assets/home.png" alt="" style="width:32px;height:32px;">
-        </button>
-        <button class="nav-btn" data-page="allPage">
-            <img src="assets/vam.png" alt="" style="width:24px;height:24px;">
-            <small>اقساط</small>
-        </button>
-        <button class="nav-btn" data-page="reportPage">
-            <img src="assets/fin.png" alt="" style="width:24px;height:24px;">
-            <small>گزارش</small>
-        </button>
-    `;
+    // اجرا در همه حالات
+    stickNavToBottom();
     
-    // استایل منو جدید
-    newNav.style.cssText = `
-        position: fixed;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: min(100%, 620px);
-        height: 68px;
-        z-index: 99999;
-        background: rgba(17, 24, 39, 0.98);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-top: 1px solid rgba(255,255,255,0.08);
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        align-items: center;
-        justify-items: center;
-        padding: 0 8px;
-        padding-bottom: env(safe-area-inset-bottom);
-        box-shadow: 0 -4px 30px rgba(0,0,0,0.5);
-        border-radius: 0;
-    `;
-    
-    // استایل دکمه‌ها
-    const style = document.createElement('style');
-    style.textContent = `
-        #stickyNav .nav-btn {
-            background: none;
-            border: none;
-            color: #8b94a3;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 2px;
-            font-size: 10px;
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 12px;
-            transition: all 0.2s;
-            width: 100%;
-            height: 100%;
-        }
-        #stickyNav .nav-btn.active {
-            color: #38bdf8;
-            background: rgba(56, 189, 248, 0.1);
-        }
-        #stickyNav .home-btn {
-            margin-top: -25px;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(145deg, #38bdf8, #0284c7);
-            box-shadow: 0 8px 25px rgba(2,132,199,0.4);
-            border: 1px solid rgba(255,255,255,0.2);
-            color: white;
-            font-size: 20px;
-        }
-        #stickyNav .home-btn.active {
-            transform: scale(1.05);
-            box-shadow: 0 12px 35px rgba(2,132,199,0.5);
-        }
-        #stickyNav .nav-btn small {
-            font-size: 9px;
-        }
-        @media(max-width: 480px) {
-            #stickyNav { height: 62px; }
-            #stickyNav .home-btn { width: 54px; height: 54px; margin-top: -20px; }
-        }
-        @media(max-width: 375px) {
-            #stickyNav { height: 56px; }
-            #stickyNav .home-btn { width: 48px; height: 48px; margin-top: -16px; }
-        }
-    `;
-    document.head.appendChild(style);
-    
-    // اضافه کردن به صفحه
-    document.body.appendChild(newNav);
-    
-    // رویداد کلیک
-    newNav.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const page = this.dataset.page;
-            if (typeof openPage === 'function') {
-                openPage(page, this.textContent.trim());
-            }
-            // فعال کردن
-            newNav.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-        });
-    });
-    
-    // فضای خالی
-    const app = document.querySelector('.app');
-    if (app) {
-        app.style.paddingBottom = '85px';
-    }
-    
-    console.log("✅ منوی جدید ساخته شد");
-}
-
-// اجرا
-if (document.readyState === 'complete') {
-    createStickyNav();
-} else {
+    // اجرا بعد از هر تغییری
     window.addEventListener('load', function() {
-        setTimeout(createStickyNav, 100);
+        setTimeout(stickNavToBottom, 50);
+        setTimeout(stickNavToBottom, 200);
+        setTimeout(stickNavToBottom, 500);
     });
-}
+    
+    window.addEventListener('resize', function() {
+        stickNavToBottom();
+    });
+    
+    window.addEventListener('orientationchange', function() {
+        setTimeout(stickNavToBottom, 100);
+        setTimeout(stickNavToBottom, 300);
+        setTimeout(stickNavToBottom, 600);
+    });
+    
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            setTimeout(stickNavToBottom, 100);
+            setTimeout(stickNavToBottom, 300);
+        }
+    });
+    
+    // هر ثانیه یکبار چک کن (برای مواقعی که چیزی تغییرش میده)
+    setInterval(stickNavToBottom, 1000);
+    
+    // وقتی صفحه اسکرول میشه هم چک کن
+    window.addEventListener('scroll', function() {
+        stickNavToBottom();
+    }, { passive: true });
+    
+    console.log('✅ منو به کف صفحه چسبیده شد');
+})();
 //آخر جدید
 initAppLock();
 initSettingsUI();
