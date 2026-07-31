@@ -1031,34 +1031,48 @@ img{
    BOTTOM NAVIGATION
    (منبع واحد قوانین — بدون هیچ override دیگری در فایل)
 ========================================================= */
-
 .bottom-nav{
   position:fixed;
   z-index:50;
 
   left:50%;
   bottom:0;
+
   transform:translateX(-50%);
 
   width:min(100%,620px);
-  height:calc(var(--nav-height) + env(safe-area-inset-bottom));
 
-  padding:0 10px env(safe-area-inset-bottom);
+  height:var(--nav-height);
+
+  padding:
+    0 10px
+    env(safe-area-inset-bottom);
 
   display:grid;
   grid-template-columns:repeat(4,1fr);
   align-items:stretch;
 
-  background:linear-gradient(180deg, rgba(17,24,39,.78), rgba(10,15,25,.94));
+  background:linear-gradient(
+    180deg,
+    rgba(17,24,39,.78),
+    rgba(10,15,25,.94)
+  );
+
   backdrop-filter:var(--blur);
   -webkit-backdrop-filter:var(--blur);
 
   border:1px solid var(--border-light);
   border-bottom:0;
+
   border-radius:26px 26px 0 0;
 
-  box-shadow:0 -12px 40px rgba(0,0,0,.28);
+  box-shadow:
+    0 -12px 40px rgba(0,0,0,.28);
+
+  /* جلوگیری از جابه‌جایی اولیه در iOS */
+  margin:0;
 }
+
 
 :root[data-theme="light"] .bottom-nav{
   background:rgba(255,255,255,.78);
