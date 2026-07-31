@@ -3247,6 +3247,52 @@ if (typeof openPage === 'function') {
     }
   };
 }
+// =========================================================
+// ================= رفع باگ منوی پایین در اولین لود =================
+// =========================================================
+
+function fixBottomNav() {
+  // تنظیم height واقعی
+  function setAppHeight() {
+    const doc = document.documentElement;
+    const height = window.innerHeight;
+    doc.style.setProperty('--app-height', height + 'px');
+    
+    // منوی پایین رو مجبور به نمایش درست کن
+    const nav = document.querySelector('.bottom-nav');
+    if (nav) {
+      nav.style.bottom = '0px';
+    }
+  }
+
+  // اجرا در اولین لود
+  setAppHeight();
+
+  // اجرا بعد از تغییر اندازه
+  window.addEventListener('resize', setAppHeight);
+  
+  // اجرا بعد از چرخش صفحه
+  window.addEventListener('orientationchange', function() {
+    setTimeout(setAppHeight, 300);
+  });
+
+  // اجرا بعد از لود کامل
+  window.addEventListener('load', function() {
+    setTimeout(setAppHeight, 100);
+    setTimeout(setAppHeight, 500);
+  });
+
+  // اجرا بعد از visibility change (بازگشت به برنامه)
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+      setTimeout(setAppHeight, 200);
+    }
+  });
+}
+
+// اجرا
+setTimeout(fixBottomNav, 50);
+
 //آخر جدید
 initAppLock();
 initSettingsUI();
