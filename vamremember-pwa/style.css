@@ -3194,46 +3194,53 @@ label{
 /* =========================================================
    رفع باگ فاصله منوی پایین از کف صفحه
 ========================================================= */
-/* چسبوندن منو به کف - نهایی */
+/* منوی پایین با فاصله از پایین */
 .bottom-nav {
     position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100% !important;
+    bottom: 12px !important;  /* ← فاصله از پایین */
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: min(100%, 620px) !important;
     max-width: 620px !important;
-    margin: 0 auto !important;
-    transform: none !important;
     z-index: 99999 !important;
     height: 70px !important;
     background: rgba(17, 24, 39, 0.98) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
     border-top: 1px solid rgba(255,255,255,0.08) !important;
+    border-radius: 16px !important;  /* گرد کردن گوشه‌ها */
     display: grid !important;
     grid-template-columns: repeat(5, 1fr) !important;
     align-items: center !important;
     justify-items: center !important;
     padding: 0 10px !important;
     padding-bottom: env(safe-area-inset-bottom) !important;
-    box-shadow: 0 -4px 30px rgba(0,0,0,0.5) !important;
-    border-radius: 0 !important;
+    box-shadow: 0 -4px 30px rgba(0,0,0,0.5), 0 4px 20px rgba(0,0,0,0.3) !important;
 }
 
 /* فضای خالی */
 .app {
-    padding-bottom: 90px !important;
+    padding-bottom: 95px !important;
 }
 
 /* گوشی‌های کوچک */
 @media(max-width: 480px) {
-    .bottom-nav { height: 65px !important; }
-    .app { padding-bottom: 85px !important; }
+    .bottom-nav {
+        height: 65px !important;
+        bottom: 10px !important;
+        border-radius: 14px !important;
+    }
+    .app { padding-bottom: 88px !important; }
 }
 @media(max-width: 375px) {
-    .bottom-nav { height: 60px !important; }
-    .app { padding-bottom: 80px !important; }
+    .bottom-nav {
+        height: 60px !important;
+        bottom: 8px !important;
+        border-radius: 12px !important;
+    }
+    .app { padding-bottom: 82px !important; }
 }
+/* چسبوندن منو به کف - نهایی 
 /* =========================================================
    رفع باگ منوی پایین
 ========================================================= */
