@@ -2322,12 +2322,23 @@ function ensureDefaultAppLock(){
   // اجرای اولیه
   setAppHeight();
 
+  // مخصوص اولین اجرای PWA / Standalone
+  requestAnimationFrame(() => {
+    setAppHeight();
+
+    requestAnimationFrame(() => {
+      setAppHeight();
+    });
+  });
+
+  setTimeout(setAppHeight, 150);
+  setTimeout(setAppHeight, 500);
+
   // تغییر اندازه صفحه
   window.addEventListener('resize', setAppHeight, { passive: true });
 
   // چرخش گوشی
   window.addEventListener('orientationchange', function () {
-    // iOS گاهی بلافاصله ارتفاع واقعی را برنمی‌گرداند
     requestAnimationFrame(setAppHeight);
     setTimeout(setAppHeight, 100);
   }, { passive: true });
