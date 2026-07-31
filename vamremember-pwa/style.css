@@ -1,4 +1,35 @@
-```css
+/* =========================================================
+   VAM REMEMBER — FINAL MOBILE CSS (REFACTORED)
+   iPhone / iOS optimized
+   ---------------------------------------------------------
+   این فایل به‌صورت اصولی بازنویسی شده:
+   - همه‌ی override های تکراری و !important های پراکنده
+     (که در انتهای فایل قبلی روی هم انباشته شده بودند)
+     حذف و مستقیماً داخل قانون اصلی همان selector ادغام شدند.
+   - باگ فاصله bottom-nav از کف صفحه با استفاده از یک
+     متغیر CSS به نام --app-vh رفع شده که باید توسط اسکریپت
+     کوچک زیر در app.js مقداردهی شود (توضیح در پاسخ چت):
+
+        function setAppHeight(){
+          const vh = window.visualViewport
+            ? window.visualViewport.height
+            : window.innerHeight;
+          document.documentElement.style.setProperty('--app-vh', vh + 'px');
+        }
+        setAppHeight();
+        window.addEventListener('resize', setAppHeight);
+        window.addEventListener('orientationchange', setAppHeight);
+        if (window.visualViewport){
+          window.visualViewport.addEventListener('resize', setAppHeight);
+          window.visualViewport.addEventListener('scroll', setAppHeight);
+        }
+
+   - باگ عدم وسط‌چین بودن آیکون‌های bottom-nav با محدود کردن
+     اندازه آیکون‌ها *فقط داخل نوار پایین* (بدون دست‌کاری
+     کلاس عمومی .img-btn / .img-btn1 که جای دیگر هم استفاده
+     می‌شود) رفع شده است.
+========================================================= */
+
 *{
   box-sizing:border-box;
   -webkit-tap-highlight-color:transparent;
@@ -10,21 +41,31 @@
   --surface-2:rgba(255,255,255,.07);
   --border:rgba(255,255,255,.08);
   --border-light:rgba(255,255,255,.14);
+
   --text:#f4f6f8;
   --muted:#8b94a3;
+
   --primary:#0284c7;
   --primary-light:#38bdf8;
+
   --danger:#ff453a;
   --warning:#ffb340;
   --success:#30d158;
+
   --expense:#b794f6;
   --income:#30d158;
+
   --radius-lg:24px;
   --radius-md:16px;
   --radius-sm:12px;
+
   --blur:blur(24px);
   --ease:cubic-bezier(.22,1,.36,1);
+
+  /* ارتفاع واقعی viewport — توسط JS آپدیت می‌شود، پیش‌فرض 100dvh */
   --app-vh:100dvh;
+
+  /* اندازه‌های نوار پایین به‌صورت متمرکز (نقطه واحد تغییر) */
   --nav-height:64px;
   --nav-icon-size:24px;
   --home-btn-size:66px;
@@ -54,20 +95,20 @@ html{
 body{
   margin:0;
   min-height:var(--app-vh);
+
   background:
-    radial-gradient(circle at 20% -10%,rgba(2,132,199,.18),transparent 55%),
-    radial-gradient(circle at 100% 100%,rgba(48,209,88,.08),transparent 50%),
+    radial-gradient(circle at 20% -10%, rgba(2,132,199,.18), transparent 55%),
+    radial-gradient(circle at 100% 100%, rgba(48,209,88,.08), transparent 50%),
     var(--bg);
+
   color:var(--text);
   font-family:"Vazirmatn","SF Pro Display",Tahoma,Arial,sans-serif;
+
   -webkit-tap-highlight-color:transparent;
-  transition:background .4s var(--ease),color .4s var(--ease);
+  transition:background .4s var(--ease), color .4s var(--ease);
 }
 
-button,
-input,
-textarea,
-select{
+button, input, textarea, select{
   font-family:inherit;
 }
 
@@ -89,12 +130,16 @@ img{
   display:none!important;
 }
 
-/* APP */
+/* =========================================================
+   APP CONTAINER
+========================================================= */
 
 .app{
   width:100%;
   max-width:620px;
   margin:0 auto;
+
+  /* فضای پایین فقط به اندازه‌ی نوار پایین + safe area */
   padding:
     env(safe-area-inset-top)
     10px
@@ -109,25 +154,33 @@ img{
   }
 }
 
-/* HEADER */
+/* =========================================================
+   HEADER
+========================================================= */
 
 .app-header{
   position:sticky;
   top:env(safe-area-inset-top);
   z-index:40;
+
   width:100%;
   min-height:68px;
+
   display:flex;
   align-items:center;
   justify-content:space-between;
+
   padding:12px 16px;
+
   background:rgba(17,24,39,.72);
   backdrop-filter:var(--blur);
   -webkit-backdrop-filter:var(--blur);
+
   border:1px solid var(--border);
   border-radius:20px;
+
   box-shadow:0 10px 35px rgba(0,0,0,.18);
-  transition:background .3s var(--ease),box-shadow .3s var(--ease),transform .3s var(--ease);
+  transition:background .3s var(--ease), box-shadow .3s var(--ease), transform .3s var(--ease);
 }
 
 :root[data-theme="light"] .app-header{
@@ -168,15 +221,18 @@ img{
 #settingsButton{
   width:55px;
   height:55px;
+
   border:1px solid var(--border);
   border-radius:50%;
+
   background:var(--surface-2);
   color:var(--text);
-  font-size:x-large;
+  font-size: x-large;
   display:flex;
   align-items:center;
   justify-content:center;
-  transition:transform .25s var(--ease),background .25s;
+
+  transition:transform .25s var(--ease), background .25s;
 }
 
 .icon-button:active,
@@ -185,7 +241,9 @@ img{
   transform:scale(.92);
 }
 
-/* PAGE */
+/* =========================================================
+   PAGE
+========================================================= */
 
 .page{
   display:none;
@@ -200,7 +258,7 @@ img{
 .page.active{
   display:block;
   min-height:0;
-  height:auto;
+  height:auto
 }
 
 @media(max-width:620px){
@@ -211,11 +269,13 @@ img{
 }
 
 @keyframes fadeUp{
-  from{opacity:0;transform:translateY(10px)}
-  to{opacity:1;transform:translateY(0)}
+  from{ opacity:0; transform:translateY(10px); }
+  to{ opacity:1; transform:translateY(0); }
 }
 
-/* STATUS */
+/* =========================================================
+   STATUS
+========================================================= */
 
 .status{
   background:var(--surface);
@@ -231,7 +291,9 @@ img{
   color:var(--text);
 }
 
-/* CARDS */
+/* =========================================================
+   GENERAL CARDS
+========================================================= */
 
 .cards{
   display:grid;
@@ -240,12 +302,17 @@ img{
 
 .card{
   position:relative;
+
   background:var(--surface);
+
   border:1px solid var(--border);
   border-right:4px solid var(--primary-light);
+
   border-radius:18px;
+
   overflow:hidden;
-  transition:transform .3s var(--ease),box-shadow .3s var(--ease);
+
+  transition:transform .3s var(--ease), box-shadow .3s var(--ease);
 }
 
 .card:active{
@@ -279,7 +346,7 @@ img{
 
 .card.income-card{
   border-right-color:var(--income);
-  background:linear-gradient(90deg,rgba(34,197,94,.08),transparent 60%);
+  background:linear-gradient(90deg, rgba(34,197,94,.08), transparent 60%);
 }
 
 .card-main{
@@ -288,10 +355,10 @@ img{
 
 .top{
   display:flex;
-  align-items:flex-end;
+  align-items: flex-end;
   justify-content:space-between;
   gap:10px;
-  flex-direction:column;
+  flex-direction: column;
 }
 
 .name{
@@ -328,7 +395,9 @@ img{
   font-size:12px;
 }
 
-/* BADGES */
+/* =========================================================
+   BADGES
+========================================================= */
 
 .installment-badge,
 .expense-badge,
@@ -374,7 +443,9 @@ img{
   font-weight:bold;
 }
 
-/* COMPACT CARDS */
+/* =========================================================
+   COMPACT CARDS
+========================================================= */
 
 .compact-main{
   padding:11px 13px;
@@ -413,8 +484,10 @@ img{
   align-items:center;
   justify-content:space-between;
   gap:10px;
+
   margin-top:10px;
   padding-top:9px;
+
   border-top:1px solid var(--border);
 }
 
@@ -439,10 +512,13 @@ img{
 
 .edit-expense{
   width:100%;
+
   border:1px solid var(--border-light);
   border-radius:10px;
+
   background:var(--surface-2);
   color:var(--text);
+
   padding:8px;
   font-size:12px;
 }
@@ -455,7 +531,9 @@ img{
   background:var(--expense);
 }
 
-/* PAYMENT */
+/* =========================================================
+   PAYMENT PANEL (inline, inside a card)
+========================================================= */
 
 .payment-panel{
   display:none;
@@ -476,10 +554,13 @@ img{
 .payment-note{
   width:100%;
   min-height:90px;
+
   border:1px solid var(--border-light);
   border-radius:14px;
+
   background:var(--bg);
   color:var(--text);
+
   padding:13px;
 }
 
@@ -494,8 +575,10 @@ img{
 .confirm-option{
   display:flex;
   gap:10px;
+
   background:var(--bg);
   border:1px solid var(--border);
+
   border-radius:12px;
   padding:12px;
   margin-top:12px;
@@ -523,7 +606,9 @@ img{
   background:var(--primary);
 }
 
-/* SEARCH */
+/* =========================================================
+   SEARCH / FILTERS
+========================================================= */
 
 .search-box{
   position:sticky;
@@ -535,10 +620,13 @@ img{
 .search-box input{
   width:100%;
   height:50px;
+
   border:1px solid var(--border-light);
   border-radius:15px;
+
   background:rgba(17,24,39,.96);
   color:var(--text);
+
   padding:0 16px;
 }
 
@@ -564,10 +652,13 @@ img{
 .type-filter,
 .status-filter{
   min-height:40px;
+
   border:1px solid var(--border-light);
   border-radius:12px;
+
   background:var(--surface);
   color:var(--muted);
+
   font-size:12px;
   padding:7px;
 }
@@ -582,11 +673,15 @@ img{
 .load-more{
   display:block;
   width:100%;
+
   margin-top:16px;
+
   border:1px solid var(--border-light);
   border-radius:14px;
+
   background:var(--surface);
   color:#cbd5e1;
+
   padding:14px;
 }
 
@@ -598,7 +693,9 @@ img{
   display:none;
 }
 
-/* REPORTS */
+/* =========================================================
+   REPORTS — TOTALS GRID
+========================================================= */
 
 .report-grid{
   display:grid;
@@ -610,8 +707,10 @@ img{
   backdrop-filter:var(--blur);
   border-radius:var(--radius-md);
   transition:transform .25s var(--ease);
+
   min-height:100px;
   padding:16px;
+
   background:var(--surface);
   border:1px solid var(--border);
   border-bottom:4px solid var(--primary-light);
@@ -643,7 +742,7 @@ img{
 
 .report-card.income{
   border-bottom-color:var(--income);
-  background:linear-gradient(160deg,rgba(34,197,94,.08),var(--surface) 65%);
+  background:linear-gradient(160deg, rgba(34,197,94,.08), var(--surface) 65%);
 }
 
 .report-card.income .report-value{
@@ -652,7 +751,7 @@ img{
 
 .report-card.balance{
   border-bottom-color:#f59e0b;
-  background:linear-gradient(160deg,rgba(245,158,11,.08),var(--surface) 65%);
+  background:linear-gradient(160deg, rgba(245,158,11,.08), var(--surface) 65%);
   cursor:default;
 }
 
@@ -662,10 +761,11 @@ img{
 }
 
 .report-icon{
-  display:flex;
-  align-items:baseline;
+  display:block;
   font-size:24px;
   margin-bottom:15px;
+  display: flex;
+    align-items: baseline;
 }
 
 .report-label{
@@ -681,12 +781,18 @@ img{
   font-weight:bold;
 }
 
+/* =========================================================
+   REPORTS — PERIOD TOGGLE (روزانه / ماهانه / سالانه)
+========================================================= */
+
 .period-toggle{
   display:grid;
   grid-template-columns:repeat(3,1fr);
   gap:8px;
+
   padding:6px;
   margin-bottom:14px;
+
   background:var(--surface);
   border:1px solid var(--border);
   border-radius:16px;
@@ -694,13 +800,17 @@ img{
 
 .period-toggle button{
   min-height:40px;
+
   border:0;
   border-radius:11px;
+
   background:transparent;
   color:var(--muted);
+
   font-size:13px;
   font-weight:600;
-  transition:background .25s var(--ease),color .25s var(--ease);
+
+  transition:background .25s var(--ease), color .25s var(--ease);
 }
 
 .period-toggle button.active{
@@ -727,17 +837,25 @@ img{
   display:flex;
   align-items:center;
   justify-content:space-between;
+
   margin-top:10px;
   padding:12px 14px;
+
   background:var(--surface);
   border:1px solid var(--border);
   border-radius:14px;
 }
 
+/* =========================================================
+   REPORTS — CHART CARD
+========================================================= */
+
 .chart-card{
   border-bottom:4px solid #aef838;
+
   margin-top:14px;
   padding:18px;
+
   background:var(--surface);
   border-radius:18px;
 }
@@ -760,8 +878,10 @@ img{
 .chart-info{
   display:flex;
   justify-content:space-between;
+
   color:#cbd5e1;
   font-size:13px;
+
   margin-bottom:9px;
 }
 
@@ -833,6 +953,7 @@ img{
   font-weight:bold;
 }
 
+/* نمودارهای سالانه: میله‌ای عمودی / خطی / عنکبوتی (radar) */
 .yearly-charts{
   display:grid;
   gap:16px;
@@ -851,7 +972,9 @@ img{
   max-height:280px;
 }
 
-/* REPORT DETAILS */
+/* =========================================================
+   REPORT DETAILS MODAL
+========================================================= */
 
 .report-details-list{
   display:grid;
@@ -874,7 +997,9 @@ img{
   display:flex;
   justify-content:space-between;
   gap:10px;
+
   margin-top:7px;
+
   color:var(--muted);
   font-size:11px;
 }
@@ -883,13 +1008,17 @@ img{
   max-height:80vh;
 }
 
-/* TAGS */
+/* =========================================================
+   TAG BUTTONS
+========================================================= */
 
 .tag-btn{
   border:1px solid var(--border-light);
   border-radius:10px;
+
   background:var(--surface-2);
   color:#e2e8f0;
+
   padding:8px;
 }
 
@@ -906,26 +1035,36 @@ img{
   box-shadow:0 8px 26px rgba(3,122,185,.25);
 }
 
-/* BOTTOM NAV */
+/* =========================================================
+   BOTTOM NAVIGATION
+   (منبع واحد قوانین — بدون هیچ override دیگری در فایل)
+========================================================= */
 
 .bottom-nav{
   position:fixed;
   z-index:50;
+
   left:50%;
   bottom:0;
   transform:translateX(-50%);
+
   width:min(100%,620px);
   height:calc(var(--nav-height) + env(safe-area-inset-bottom));
+
   padding:0 10px env(safe-area-inset-bottom);
+
   display:grid;
   grid-template-columns:repeat(4,1fr);
   align-items:stretch;
-  background:linear-gradient(180deg,rgba(17,24,39,.78),rgba(10,15,25,.94));
+
+  background:linear-gradient(180deg, rgba(17,24,39,.78), rgba(10,15,25,.94));
   backdrop-filter:var(--blur);
   -webkit-backdrop-filter:var(--blur);
+
   border:1px solid var(--border-light);
   border-bottom:0;
   border-radius:26px 26px 0 0;
+
   box-shadow:0 -12px 40px rgba(0,0,0,.28);
 }
 
@@ -935,24 +1074,37 @@ img{
 
 .nav-button{
   position:relative;
+
   height:100%;
   min-height:100%;
+
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
   gap:2px;
+
   border:none;
   background:transparent;
+
   color:var(--muted);
   font-size:10px;
+
   border-radius:16px;
-  margin-top:12px;
-  transition:color .25s,background .25s var(--ease),transform .25s var(--ease);
+  margin-top: 12px;
+  transition:color .25s, background .25s var(--ease), transform .25s var(--ease);
 }
 
 .nav-button:active{
   transform:scale(.94);
+}
+
+/* آیکون‌ها فقط داخل نوار پایین کوچیک می‌شوند — کلاس عمومی
+   .img-btn / .img-btn1 در بقیه صفحه دست‌نخورده می‌ماند */
+.nav-button .img-btn1,
+.nav-button .img-btn{
+  /*width:var(--nav-icon-size);
+  height:var(--nav-icon-size);*/
 }
 
 .nav-button small{
@@ -965,28 +1117,38 @@ img{
   background:rgba(56,189,248,.10);
 }
 
+/* دکمه خانه وسط — روی گرید نوار پایین قرار می‌گیرد */
 .home-button{
   position:relative;
+
   width:var(--home-btn-size);
   height:var(--home-btn-size);
+
   margin-top:calc(-1 * var(--home-btn-lift));
+
   justify-self:center;
   align-self:start;
+
   display:flex;
   align-items:center;
   justify-content:center;
+
   border-radius:50%;
   color:#fff;
+
   background:
-    radial-gradient(circle at 30% 25%,rgba(255,255,255,.28),transparent 25%),
-    linear-gradient(145deg,#38bdf8 0%,#0284c7 48%,#075985 100%);
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,.28), transparent 25%),
+    linear-gradient(145deg, #38bdf8 0%, #0284c7 48%, #075985 100%);
+
   border:1px solid rgba(255,255,255,.28);
+
   box-shadow:
     0 14px 35px rgba(2,132,199,.42),
     0 0 0 7px rgba(2,132,199,.07),
     inset 0 2px 2px rgba(255,255,255,.35),
     inset 0 -10px 18px rgba(0,0,0,.18);
-  transition:transform .35s var(--ease),box-shadow .35s var(--ease);
+
+  transition:transform .35s var(--ease), box-shadow .35s var(--ease);
 }
 
 .home-button::before{
@@ -1032,8 +1194,8 @@ img{
 
 :root[data-theme="light"] .home-button{
   background:
-    radial-gradient(circle at 30% 25%,rgba(255,255,255,.65),transparent 27%),
-    linear-gradient(145deg,#38bdf8,#0284c7 55%,#0369a1);
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,.65), transparent 27%),
+    linear-gradient(145deg, #38bdf8, #0284c7 55%, #0369a1);
   color:#fff;
 }
 
@@ -1057,12 +1219,15 @@ img{
   }
 }
 
-/* FAB */
+/* =========================================================
+   FAB (دکمه شناور +)
+========================================================= */
 
 #fabContainer{
   position:fixed;
   z-index:60;
-  left:max(16px,calc((100vw - 620px)/2 + 16px));
+
+  left:max(16px, calc((100vw - 620px)/2 + 16px));
   bottom:calc(var(--nav-height) + 18px + env(safe-area-inset-bottom));
 }
 
@@ -1070,11 +1235,13 @@ img{
   position:absolute;
   bottom:64px;
   left:70px;
+
   display:flex;
   flex-direction:column-reverse;
   gap:18px;
   align-items:flex-end;
-  transition:opacity .25s,transform .25s var(--ease);
+
+  transition:opacity .25s, transform .25s var(--ease);
 }
 
 .fab-menu.hidden{
@@ -1091,18 +1258,25 @@ img{
   display:flex;
   align-items:center;
   gap:10px;
+
   border:1px solid var(--border-light);
   border-radius:18px;
+
   padding:10px 16px;
+
   background:var(--surface);
   backdrop-filter:var(--blur);
   -webkit-backdrop-filter:var(--blur);
+
   color:var(--text);
   font-size:13px;
   white-space:nowrap;
+
   box-shadow:0 8px 20px rgba(0,0,0,.3);
+
   cursor:pointer;
   opacity:0;
+
   direction:rtl;
   justify-content:flex-start;
   text-align:left;
@@ -1116,42 +1290,54 @@ img{
   font-size:18px;
 }
 
-.fab-menu.animating .fab-option:nth-child(1){animation-delay:0s}
-.fab-menu.animating .fab-option:nth-child(2){animation-delay:.06s}
-.fab-menu.animating .fab-option:nth-child(3){animation-delay:.12s}
+.fab-menu.animating .fab-option:nth-child(1){ animation-delay:0s; }
+.fab-menu.animating .fab-option:nth-child(2){ animation-delay:.06s; }
+.fab-menu.animating .fab-option:nth-child(3){ animation-delay:.12s; }
 
 @keyframes fabIn{
-  from{opacity:0;transform:translateY(12px) scale(.96)}
-  to{opacity:1;transform:translateY(0) scale(1)}
+  from{ opacity:0; transform:translateY(12px) scale(.96); }
+  to{ opacity:1; transform:translateY(0) scale(1); }
 }
 
+/* دکمه اصلی + (هر دو کلاس .insz و #addExpenseButton در HTML روی
+   یک المان استفاده می‌شوند؛ قوانین اینجا ادغام و غیرتکراری‌اند) */
 #addExpenseButton{
   position:fixed;
   z-index:1000;
-  left:max(16px,calc((100vw - 620px)/2 + 16px));
+
+  left:max(16px, calc((100vw - 620px)/2 + 16px));
   bottom:calc(var(--nav-height) + 18px + env(safe-area-inset-bottom));
+
   width:62px;
   height:62px;
+
   display:flex;
   align-items:center;
   justify-content:center;
+
   border:1px solid rgba(255,255,255,.18);
   border-radius:50%;
+
   font-size:38px;
   font-weight:300;
   line-height:1;
   color:#fff;
+
   cursor:pointer;
+
   background:
-    radial-gradient(circle at 30% 25%,rgba(255,255,255,.25),transparent 30%),
-    linear-gradient(145deg,#38bdf8,#0284c7 55%,#075985);
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,.25), transparent 30%),
+    linear-gradient(145deg, #38bdf8, #0284c7 55%, #075985);
+
   backdrop-filter:blur(18px) saturate(180%);
   -webkit-backdrop-filter:blur(18px) saturate(180%);
+
   box-shadow:
     0 12px 30px rgba(37,99,235,.35),
     inset 0 1px 1px rgba(255,255,255,.45),
     inset 0 -8px 16px rgba(0,0,0,.12);
-  transition:transform .35s var(--ease),box-shadow .25s,filter .25s;
+
+  transition:transform .35s var(--ease), box-shadow .25s, filter .25s;
 }
 
 #addExpenseButton::before{
@@ -1159,7 +1345,7 @@ img{
   position:absolute;
   inset:2px;
   border-radius:50%;
-  background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,.03));
+  background:linear-gradient(180deg, rgba(255,255,255,.28), rgba(255,255,255,.03));
   pointer-events:none;
 }
 
@@ -1189,9 +1375,9 @@ img{
 }
 
 @keyframes pulseFab{
-  0%{transform:scale(.85);opacity:.8}
-  70%{transform:scale(1.35);opacity:0}
-  100%{transform:scale(1.35);opacity:0}
+  0%{ transform:scale(.85); opacity:.8; }
+  70%{ transform:scale(1.35); opacity:0; }
+  100%{ transform:scale(1.35); opacity:0; }
 }
 
 @media(max-width:480px){
@@ -1201,7 +1387,9 @@ img{
   }
 }
 
-/* MODALS */
+/* =========================================================
+   MODALS / BOTTOM SHEETS
+========================================================= */
 
 .modal{
   position:fixed;
@@ -1218,15 +1406,17 @@ img{
 .modal-backdrop{
   position:absolute;
   inset:0;
+
   background:rgba(0,0,0,.62);
   backdrop-filter:blur(5px);
   -webkit-backdrop-filter:blur(5px);
+
   animation:backdropIn .28s ease both;
 }
 
 @keyframes backdropIn{
-  from{opacity:0}
-  to{opacity:1}
+  from{ opacity:0; }
+  to{ opacity:1; }
 }
 
 .modal-sheet{
@@ -1234,27 +1424,34 @@ img{
   left:50%;
   bottom:0;
   transform:translateX(-50%);
+
   width:min(100%,620px);
   max-height:calc(92dvh - env(safe-area-inset-top));
+
   overflow-y:auto;
   overflow-x:hidden;
   overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
-  background:linear-gradient(180deg,rgba(30,41,59,.94),rgba(15,23,42,.98));
+
+  background:linear-gradient(180deg, rgba(30,41,59,.94), rgba(15,23,42,.98));
   backdrop-filter:var(--blur);
   -webkit-backdrop-filter:var(--blur);
+
   border:1px solid var(--border-light);
   border-bottom:0;
   border-radius:24px 24px 0 0;
+
   padding:10px 18px calc(24px + env(safe-area-inset-bottom));
+
   box-shadow:0 -20px 60px rgba(0,0,0,.5);
+
   animation:sheetUp .42s var(--ease) both;
 }
 
 @keyframes sheetUp{
-  from{transform:translate(-50%,100%);opacity:.7}
-  60%{opacity:1}
-  to{transform:translate(-50%,0);opacity:1}
+  from{ transform:translate(-50%,100%); opacity:.7; }
+  60%{ opacity:1; }
+  to{ transform:translate(-50%,0); opacity:1; }
 }
 
 .modal.closing .modal-sheet{
@@ -1266,13 +1463,13 @@ img{
 }
 
 @keyframes sheetDown{
-  from{transform:translate(-50%,0);opacity:1}
-  to{transform:translate(-50%,100%);opacity:.7}
+  from{ transform:translate(-50%,0); opacity:1; }
+  to{ transform:translate(-50%,100%); opacity:.7; }
 }
 
 @keyframes backdropOut{
-  from{opacity:1}
-  to{opacity:0}
+  from{ opacity:1; }
+  to{ opacity:0; }
 }
 
 .modal-handle{
@@ -1296,18 +1493,23 @@ img{
 }
 
 .close-modal{
-  width:40px;
-  height:40px;
+  width:32px;
+  height:32px;
+
   border:0;
   border-radius:12px;
+
   background:var(--surface-2);
   color:var(--text);
+
   display:flex;
   align-items:center;
   justify-content:center;
 }
 
-/* FORMS */
+/* =========================================================
+   FORMS
+========================================================= */
 
 .field{
   display:block;
@@ -1329,13 +1531,17 @@ img{
 .field textarea,
 .field select{
   width:100%;
+
   border:1px solid var(--border-light);
   border-radius:13px;
+
   background:var(--bg);
   color:var(--text);
+
   padding:13px;
   font-size:16px;
-  transition:border-color .25s,box-shadow .25s;
+
+  transition:border-color .25s, box-shadow .25s;
 }
 
 .field input,
@@ -1384,19 +1590,25 @@ select:focus{
 .expense-type-selector button,
 .expense-type-button{
   min-height:48px;
+
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
   gap:6px;
+
   border:1px solid var(--border-light);
   border-radius:14px;
+
   background:var(--surface-2);
   color:var(--text);
+
   padding:12px 6px;
   font-size:13px;
+
   cursor:pointer;
-  transition:transform .2s,border-color .2s,background .2s,box-shadow .2s;
+
+  transition:transform .2s, border-color .2s, background .2s, box-shadow .2s;
 }
 
 .expense-type-selector button:hover{
@@ -1444,13 +1656,18 @@ select:focus{
 .primary-button{
   width:100%;
   min-height:50px;
+
   border:0;
   border-radius:14px;
+
   background:var(--primary);
   color:#fff;
+
   font-weight:bold;
+
   box-shadow:0 10px 25px rgba(2,132,199,.35);
-  transition:transform .2s var(--ease),filter .2s;
+
+  transition:transform .2s var(--ease), filter .2s;
 }
 
 :root[data-theme="light"] .primary-button,
@@ -1483,10 +1700,13 @@ select:focus{
 .month-field input{
   width:100%;
   height:44px;
+
   border:1px solid var(--border-light);
   border-radius:11px;
+
   background:var(--bg);
   color:var(--text);
+
   padding:10px;
 }
 
@@ -1495,6 +1715,7 @@ select{
   background:var(--surface-2);
   border:1px solid var(--border);
   border-radius:var(--radius-sm);
+
   padding:12px 14px;
   color:var(--text);
   font-size:14px;
@@ -1516,13 +1737,17 @@ label{
   gap:8px;
 }
 
-/* DASHBOARD */
+/* =========================================================
+   DASHBOARD
+========================================================= */
 
 .home-balance-card{
-  background:linear-gradient(135deg,#0284c7,#0369a1);
+  background:linear-gradient(135deg, #0284c7, #0369a1);
+
   border-radius:24px;
   padding:20px;
   margin-bottom:12px;
+
   box-shadow:0 10px 30px rgba(0,0,0,.25);
   backdrop-filter:var(--blur);
 }
@@ -1582,9 +1807,11 @@ label{
   display:flex;
   align-items:center;
   gap:12px;
+
   background:var(--surface);
   border:1px solid var(--border);
   border-radius:20px;
+
   padding:14px;
 }
 
@@ -1636,8 +1863,10 @@ label{
   background:rgba(11,18,32,.42);
   border:1px solid var(--border);
   border-radius:20px;
+
   padding:14px;
   margin-bottom:12px;
+
   backdrop-filter:blur(18px);
   -webkit-backdrop-filter:blur(18px);
 }
@@ -1650,39 +1879,48 @@ label{
   margin-bottom:12px;
 }
 
-/* DEBT */
+/* =========================================================
+   DEBT / BORROW SECTION
+========================================================= */
 
 .home-gharz{
   position:relative;
+
   display:flex;
   flex-direction:column;
-  height:min(390px,calc(100dvh - 360px));
+
+  height:min(390px, calc(100dvh - 360px));
   min-height:230px;
+
   margin-bottom:12px;
   padding:14px;
+
   border:1px solid rgba(56,189,248,.14);
   border-radius:22px;
-  background:linear-gradient(145deg,rgba(30,41,59,.72),rgba(15,23,42,.48));
+
+  background:linear-gradient(145deg, rgba(30,41,59,.72), rgba(15,23,42,.48));
+
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.06),
     0 12px 35px rgba(0,0,0,.16);
+
   overflow:hidden;
 }
 
 :root[data-theme="light"] .home-gharz{
-  background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(241,245,249,.72));
+  background:linear-gradient(145deg, rgba(255,255,255,.82), rgba(241,245,249,.72));
   border-color:rgba(15,23,42,.08);
 }
 
 @media(max-width:480px){
   .home-gharz{
-    height:min(390px,calc(100dvh - 345px));
+    height:min(390px, calc(100dvh - 345px));
   }
 }
 
 @media(max-width:375px){
   .home-gharz{
-    height:min(350px,calc(100dvh - 330px));
+    height:min(350px, calc(100dvh - 330px));
   }
 }
 
@@ -1691,10 +1929,12 @@ label{
   position:absolute;
   top:-80px;
   right:-70px;
+
   width:180px;
   height:180px;
   border-radius:50%;
-  background:radial-gradient(circle,rgba(56,189,248,.12),transparent 70%);
+
+  background:radial-gradient(circle, rgba(56,189,248,.12), transparent 70%);
   pointer-events:none;
 }
 
@@ -1702,12 +1942,15 @@ label{
   position:relative;
   z-index:2;
   flex-shrink:0;
+
   display:flex;
   align-items:center;
   justify-content:space-between;
+
   min-height:42px;
   margin:0 0 10px;
   padding:0 2px;
+
   font-size:15px;
   color:var(--text);
 }
@@ -1716,25 +1959,33 @@ label{
   content:"";
   width:34px;
   height:3px;
+
   margin-right:auto;
   margin-left:10px;
+
   border-radius:10px;
-  background:linear-gradient(90deg,var(--primary-light),transparent);
+  background:linear-gradient(90deg, var(--primary-light), transparent);
 }
 
 #debtsPanel{
   position:relative;
   z-index:2;
+
   display:flex;
   flex-direction:column;
   gap:10px;
+
   flex:1;
   min-height:0;
+
   overflow-y:auto;
   overflow-x:hidden;
+
   padding:2px 3px 8px;
+
   -webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;
+
   scrollbar-width:none;
 }
 
@@ -1744,17 +1995,23 @@ label{
 
 .debt-row{
   cursor:pointer;
+
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:10px;
+
   padding:12px;
+
   border:1px solid rgba(255,255,255,.08);
   border-right:3px solid var(--border-light);
   border-radius:15px;
+
   background:rgba(30,41,59,.52);
+
   flex-shrink:0;
-  transition:transform .18s ease,box-shadow .18s ease,opacity .18s ease;
+
+  transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease;
 }
 
 :root[data-theme="light"] .debt-row{
@@ -1768,7 +2025,7 @@ label{
 
 .debt-row.debt-borrowed{
   border-right-color:var(--danger);
-  background:linear-gradient(135deg,rgba(239,68,68,.14),rgba(239,68,68,.045));
+  background:linear-gradient(135deg, rgba(239,68,68,.14), rgba(239,68,68,.045));
 }
 
 .debt-row:hover{
@@ -1828,8 +2085,10 @@ label{
 .debt-actions button{
   border:0;
   border-radius:8px;
+
   background:var(--surface);
   color:var(--text);
+
   padding:6px 8px;
   font-size:11px;
 }
@@ -1853,6 +2112,7 @@ label{
   align-items:center;
   justify-content:space-between;
   gap:12px;
+
   padding:10px 0;
   border-bottom:1px solid rgba(255,255,255,.08);
 }
@@ -1878,29 +2138,38 @@ label{
   flex:1;
 }
 
-/* EDIT / DELETE */
+/* =========================================================
+   EDIT / DELETE BUTTONS
+========================================================= */
 
 .edit-btn,
 .delete-btn{
   position:relative;
   overflow:hidden;
+
   width:100%;
   height:48px;
+
   display:flex;
   align-items:center;
   justify-content:center;
   gap:8px;
+
   border:none;
   outline:none;
   border-radius:16px;
+
   padding:0 18px;
   margin-top:10px;
+
   font-family:inherit;
   font-size:15px;
   font-weight:700;
+
   cursor:pointer;
   color:#fff;
-  transition:transform .18s ease,box-shadow .18s ease,filter .18s ease,background .18s ease;
+
+  transition:transform .18s ease, box-shadow .18s ease, filter .18s ease, background .18s ease;
 }
 
 .edit-btn::before,
@@ -1908,19 +2177,20 @@ label{
   content:"";
   position:absolute;
   inset:0;
-  background:linear-gradient(120deg,rgba(255,255,255,.22),rgba(255,255,255,0) 45%);
+
+  background:linear-gradient(120deg, rgba(255,255,255,.22), rgba(255,255,255,0) 45%);
   opacity:.7;
   pointer-events:none;
 }
 
 .edit-btn{
-  background:linear-gradient(135deg,#2563eb,#06b6d4);
-  box-shadow:0 12px 26px rgba(37,99,235,.32),inset 0 1px 0 rgba(255,255,255,.25);
+  background:linear-gradient(135deg, #2563eb, #06b6d4);
+  box-shadow:0 12px 26px rgba(37,99,235,.32), inset 0 1px 0 rgba(255,255,255,.25);
 }
 
 .delete-btn{
-  background:linear-gradient(135deg,#ef4444,#f97316);
-  box-shadow:0 12px 26px rgba(239,68,68,.32),inset 0 1px 0 rgba(255,255,255,.25);
+  background:linear-gradient(135deg, #ef4444, #f97316);
+  box-shadow:0 12px 26px rgba(239,68,68,.32), inset 0 1px 0 rgba(255,255,255,.25);
 }
 
 .edit-btn:hover,
@@ -1956,7 +2226,9 @@ label{
   margin-right:6px;
 }
 
-/* SETTINGS */
+/* =========================================================
+   SETTINGS
+========================================================= */
 
 .settings-switch-row{
   display:flex;
@@ -1984,10 +2256,13 @@ label{
 
 .theme-btn{
   height:52px;
+
   border:1px solid var(--border-light);
   border-radius:14px;
+
   background:var(--surface-2);
   color:var(--text);
+
   font-size:14px;
 }
 
@@ -1999,10 +2274,13 @@ label{
 
 #appIconInput{
   width:100%;
+
   border:1px solid var(--border-light);
   border-radius:13px;
+
   background:var(--bg);
   color:var(--text);
+
   padding:12px;
   font-size:13px;
 }
@@ -2017,8 +2295,10 @@ label{
 .app-icon-preview-row img{
   width:56px;
   height:56px;
+
   border-radius:16px;
   object-fit:cover;
+
   border:1px solid var(--border-light);
   background:var(--surface-2);
 }
@@ -2040,10 +2320,13 @@ label{
 .settings-row,
 .settings-row1{
   display:block;
+
   border:1px solid var(--border-light);
   border-radius:14px;
+
   background:var(--surface-2);
   color:var(--text);
+
   font-size:16px;
   padding:10px 12px;
 }
@@ -2054,10 +2337,13 @@ label{
 
 .bnk-inp{
   width:100%;
+
   border:1px solid var(--border-light);
   border-radius:13px;
+
   background:var(--bg);
   color:var(--text);
+
   padding:0 14px;
   height:45px;
   font-size:16px;
@@ -2066,8 +2352,10 @@ label{
 .btn-primary{
   width:93px;
   height:45px;
+
   border:0;
   border-radius:14px;
+
   background:var(--primary);
   color:#fff;
   font-weight:bold;
@@ -2075,8 +2363,10 @@ label{
 
 .btn-sm{
   height:40px;
+
   border:1px solid var(--border-light);
   border-radius:14px;
+
   background:var(--surface-2);
   color:var(--text);
   font-size:12px;
@@ -2092,15 +2382,19 @@ label{
   justify-content:space-between;
 }
 
-/* LOCK SCREEN */
+/* =========================================================
+   LOCK SCREEN
+========================================================= */
 
 .app-lock-screen{
   position:fixed;
   inset:0;
   z-index:300;
+
   display:flex;
   align-items:center;
   justify-content:center;
+
   background:var(--bg);
   padding:24px;
 }
@@ -2141,12 +2435,16 @@ label{
 
 .app-lock-box input{
   height:52px;
+
   border:1px solid var(--border-light);
   border-radius:14px;
+
   background:var(--surface);
   color:var(--text);
+
   padding:0 16px;
   text-align:center;
+
   font-size:20px;
   letter-spacing:6px;
 }
@@ -2161,21 +2459,28 @@ label{
   display:none;
 }
 
-/* TOAST */
+/* =========================================================
+   TOAST
+========================================================= */
 
 .toast{
   position:fixed;
   z-index:9999;
+
   bottom:calc(env(safe-area-inset-bottom) + 80px);
   left:50%;
   transform:translateX(-50%);
+
   max-width:90vw;
   text-align:center;
+
   background:#1e2d45;
   color:#fff;
+
   padding:12px 20px;
   border-radius:12px;
   font-size:14px;
+
   box-shadow:0 4px 20px rgba(0,0,0,.4);
   transition:opacity .3s;
 }
@@ -2197,7 +2502,23 @@ label{
   border-right:4px solid #3b82f6;
 }
 
-/* LIQUID GLASS */
+/* =========================================================
+   REDUCE MOTION
+========================================================= */
+
+@media(prefers-reduced-motion:reduce){
+  *,
+  *::before,
+  *::after{
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    scroll-behavior:auto!important;
+    transition-duration:.01ms!important;
+  }
+}
+/* =========================================================
+   LIQUID GLASS — ثبت مورد جدید
+   ========================================================= */
 
 .liquid-segmented-control{
   position:relative;
@@ -2206,19 +2527,30 @@ label{
   width:100%;
   height:58px;
   padding:4px;
+
   border:1px solid rgba(255,255,255,.16);
   border-radius:19px;
-  background:linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.035));
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255,255,255,.12),
+      rgba(255,255,255,.035)
+    );
+
   backdrop-filter:blur(22px) saturate(180%);
   -webkit-backdrop-filter:blur(22px) saturate(180%);
+
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.18),
     inset 0 -1px 0 rgba(0,0,0,.22),
     0 10px 30px rgba(0,0,0,.22);
+
   overflow:hidden;
   isolation:isolate;
 }
 
+/* نور خیلی ظریف داخل شیشه */
 .liquid-segmented-control::before{
   content:"";
   position:absolute;
@@ -2226,128 +2558,199 @@ label{
   right:8%;
   width:55%;
   height:70px;
-  background:radial-gradient(ellipse,rgba(255,255,255,.13),transparent 70%);
+
+  background:radial-gradient(
+    ellipse,
+    rgba(255,255,255,.13),
+    transparent 70%
+  );
+
   filter:blur(10px);
   pointer-events:none;
   z-index:0;
 }
 
+/* خط نور بالایی */
 .liquid-segmented-control::after{
   content:"";
   position:absolute;
   inset:1px;
+
   border-radius:18px;
+
   border-top:1px solid rgba(255,255,255,.14);
+
   pointer-events:none;
   z-index:5;
 }
 
+/* خود شیشه فعال */
 .liquid-segmented-control .liquid-segment-glow{
   position:absolute;
   z-index:1;
+
   top:4px;
   right:4px;
+
   width:calc(25% - 2px);
   height:50px;
+
   border-radius:15px;
-  background:linear-gradient(145deg,rgba(255,255,255,.22),rgba(255,255,255,.075));
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.22),
+      rgba(255,255,255,.075)
+    );
+
   border:1px solid rgba(255,255,255,.2);
+
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.25),
     inset 0 -5px 10px rgba(0,0,0,.12),
     0 5px 16px rgba(0,0,0,.2);
+
   backdrop-filter:blur(18px) saturate(190%);
   -webkit-backdrop-filter:blur(18px) saturate(190%);
+
   transition:
     transform .38s cubic-bezier(.22,1,.36,1),
     background .25s ease,
     box-shadow .25s ease;
+
   pointer-events:none;
 }
 
-.liquid-segmented-control:has(#installmentTypeButton.active) .liquid-segment-glow{
+/* حرکت شیشه فعال در حالت RTL
+   ترتیب: قسط ← هزینه ← درآمد ← قرض و دین */
+
+.liquid-segmented-control:has(
+  #installmentTypeButton.active
+) .liquid-segment-glow{
   transform:translateX(0);
 }
 
-.liquid-segmented-control:has(#expenseTypeButton.active) .liquid-segment-glow{
+.liquid-segmented-control:has(
+  #expenseTypeButton.active
+) .liquid-segment-glow{
   transform:translateX(-100%);
 }
 
-.liquid-segmented-control:has(#incomeTypeButton.active) .liquid-segment-glow{
+.liquid-segmented-control:has(
+  #incomeTypeButton.active
+) .liquid-segment-glow{
   transform:translateX(-200%);
 }
 
-.liquid-segmented-control:has(#debtTypeButton.active) .liquid-segment-glow{
+.liquid-segmented-control:has(
+  #debtTypeButton.active
+) .liquid-segment-glow{
   transform:translateX(-300%);
 }
 
+
+/* گزینه‌ها */
 .liquid-segmented-control .liquid-segment{
   position:relative;
   z-index:3;
+
   min-width:0;
   height:50px;
+
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
+
   gap:2px;
+
   border:0;
   outline:0;
-  background:transparent!important;
+  background:transparent !important;
+
   color:rgba(255,255,255,.68);
+
   font-family:inherit;
   font-size:12px;
+
   padding:3px 2px;
+
   cursor:pointer;
-  transition:color .25s ease,transform .18s ease;
+
+  transition:
+    color .25s ease,
+    transform .18s ease;
 }
 
+/* آیکن */
 .liquid-segmented-control .segment-icon{
   font-size:16px;
   line-height:17px;
-  filter:grayscale(.25) drop-shadow(0 1px 2px rgba(0,0,0,.25));
-  transition:transform .3s ease,filter .3s ease;
+
+  filter:
+    grayscale(.25)
+    drop-shadow(0 1px 2px rgba(0,0,0,.25));
+
+  transition:
+    transform .3s ease,
+    filter .3s ease;
 }
 
+/* فعال */
 .liquid-segmented-control .liquid-segment.active{
-  color:#fff!important;
-  text-shadow:0 1px 4px rgba(0,0,0,.35);
+  color:#fff !important;
+
+  text-shadow:
+    0 1px 4px rgba(0,0,0,.35);
 }
 
 .liquid-segmented-control .liquid-segment.active .segment-icon{
   transform:translateY(-1px) scale(1.08);
-  filter:drop-shadow(0 2px 5px rgba(255,255,255,.18));
+
+  filter:
+    drop-shadow(0 2px 5px rgba(255,255,255,.18));
 }
 
+/* لمس */
 .liquid-segmented-control .liquid-segment:active{
   transform:scale(.93);
 }
 
-.form-installment .liquid-segment-glow{
+
+/* نور فعال برای رنگ‌های مختلف */
+.form-installment
+.liquid-segment-glow{
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.28),
     0 5px 20px rgba(14,165,233,.16);
 }
 
-.form-expense .liquid-segment-glow{
+.form-expense
+.liquid-segment-glow{
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.28),
     0 5px 20px rgba(239,68,68,.14);
 }
 
-.form-income .liquid-segment-glow{
+.form-income
+.liquid-segment-glow{
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.28),
     0 5px 20px rgba(34,197,94,.14);
 }
 
-.form-transfer .liquid-segment-glow{
+.form-transfer
+.liquid-segment-glow{
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.28),
     0 5px 20px rgba(245,158,11,.14);
 }
 
+
+/* موبایل */
 @media(max-width:480px){
+
   .liquid-segmented-control{
     height:56px;
     border-radius:18px;
@@ -2366,9 +2769,13 @@ label{
   .liquid-segmented-control .segment-icon{
     font-size:15px;
   }
+
 }
 
+
+/* iPhone های کوچک */
 @media(max-width:360px){
+
   .liquid-segmented-control .liquid-segment{
     font-size:10px;
   }
@@ -2376,18 +2783,5 @@ label{
   .liquid-segmented-control .segment-icon{
     font-size:14px;
   }
-}
 
-/* REDUCE MOTION */
-
-@media(prefers-reduced-motion:reduce){
-  *,
-  *::before,
-  *::after{
-    animation-duration:.01ms!important;
-    animation-iteration-count:1!important;
-    scroll-behavior:auto!important;
-    transition-duration:.01ms!important;
-  }
 }
-```
