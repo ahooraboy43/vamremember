@@ -2496,272 +2496,169 @@ label{
 /* =========================================================
    LIQUID GLASS — ثبت مورد جدید
    ========================================================= */
+/* =====================================================
+   ثبت جدید - Liquid Glass چهار گزینه‌ای
+   فقط روی .new-record-selector
+   ===================================================== */
 
-.liquid-segmented-control{
-  position:relative;
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  width:100%;
-  height:58px;
-  padding:4px;
+#expenseModal .new-record-selector {
+    position: relative !important;
 
-  border:1px solid rgba(255,255,255,.16);
-  border-radius:19px;
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
 
-  background:
-    linear-gradient(
-      135deg,
-      rgba(255,255,255,.12),
-      rgba(255,255,255,.035)
-    );
+    width: 100% !important;
+    height: 56px !important;
 
-  backdrop-filter:blur(22px) saturate(180%);
-  -webkit-backdrop-filter:blur(22px) saturate(180%);
+    padding: 4px !important;
+    gap: 0 !important;
 
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.18),
-    inset 0 -1px 0 rgba(0,0,0,.22),
-    0 10px 30px rgba(0,0,0,.22);
+    border-radius: 18px !important;
 
-  overflow:hidden;
-  isolation:isolate;
-}
+    background: rgba(255,255,255,.055) !important;
 
-/* نور خیلی ظریف داخل شیشه */
-.liquid-segmented-control::before{
-  content:"";
-  position:absolute;
-  top:-35px;
-  right:8%;
-  width:55%;
-  height:70px;
+    border: 1px solid rgba(255,255,255,.13) !important;
 
-  background:radial-gradient(
-    ellipse,
-    rgba(255,255,255,.13),
-    transparent 70%
-  );
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
 
-  filter:blur(10px);
-  pointer-events:none;
-  z-index:0;
-}
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.12),
+        inset 0 -1px 0 rgba(0,0,0,.15),
+        0 8px 24px rgba(0,0,0,.18);
 
-/* خط نور بالایی */
-.liquid-segmented-control::after{
-  content:"";
-  position:absolute;
-  inset:1px;
-
-  border-radius:18px;
-
-  border-top:1px solid rgba(255,255,255,.14);
-
-  pointer-events:none;
-  z-index:5;
-}
-
-/* خود شیشه فعال */
-.liquid-segmented-control .liquid-segment-glow{
-  position:absolute;
-  z-index:1;
-
-  top:4px;
-  right:4px;
-
-  width:calc(25% - 2px);
-  height:50px;
-
-  border-radius:15px;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,.22),
-      rgba(255,255,255,.075)
-    );
-
-  border:1px solid rgba(255,255,255,.2);
-
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.25),
-    inset 0 -5px 10px rgba(0,0,0,.12),
-    0 5px 16px rgba(0,0,0,.2);
-
-  backdrop-filter:blur(18px) saturate(190%);
-  -webkit-backdrop-filter:blur(18px) saturate(190%);
-
-  transition:
-    transform .38s cubic-bezier(.22,1,.36,1),
-    background .25s ease,
-    box-shadow .25s ease;
-
-  pointer-events:none;
-}
-
-/* حرکت شیشه فعال در حالت RTL
-   ترتیب: قسط ← هزینه ← درآمد ← قرض و دین */
-
-.liquid-segmented-control:has(
-  #installmentTypeButton.active
-) .liquid-segment-glow{
-  transform:translateX(0);
-}
-
-.liquid-segmented-control:has(
-  #expenseTypeButton.active
-) .liquid-segment-glow{
-  transform:translateX(-100%);
-}
-
-.liquid-segmented-control:has(
-  #incomeTypeButton.active
-) .liquid-segment-glow{
-  transform:translateX(-200%);
-}
-
-.liquid-segmented-control:has(
-  #debtTypeButton.active
-) .liquid-segment-glow{
-  transform:translateX(-300%);
+    overflow: hidden !important;
 }
 
 
-/* گزینه‌ها */
-.liquid-segmented-control .liquid-segment{
-  position:relative;
-  z-index:3;
+/* شیشه انتخاب‌شده */
 
-  min-width:0;
-  height:50px;
+#expenseModal .new-record-selector::before {
+    content: "";
 
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
+    position: absolute;
 
-  gap:2px;
+    top: 4px;
+    right: 4px;
 
-  border:0;
-  outline:0;
-  background:transparent !important;
+    width: calc(25% - 2px);
+    height: calc(100% - 8px);
 
-  color:rgba(255,255,255,.68);
+    border-radius: 14px;
 
-  font-family:inherit;
-  font-size:12px;
-  font-weight:600;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.20),
+            rgba(255,255,255,.065)
+        );
 
-  padding:3px 2px;
+    border: 1px solid rgba(255,255,255,.17);
 
-  cursor:pointer;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.18),
+        0 4px 14px rgba(0,0,0,.18);
 
-  transition:
-    color .25s ease,
-    transform .18s ease;
+    pointer-events: none;
+
+    z-index: 0;
+
+    transition:
+        transform .38s cubic-bezier(.22,1,.36,1);
 }
 
-/* آیکن */
-.liquid-segmented-control .segment-icon{
-  font-size:16px;
-  line-height:17px;
 
-  filter:
-    grayscale(.25)
-    drop-shadow(0 1px 2px rgba(0,0,0,.25));
+/* حرکت شیشه فعال */
 
-  transition:
-    transform .3s ease,
-    filter .3s ease;
+#expenseModal .new-record-selector:has(
+    #installmentTypeButton.active
+)::before {
+    transform: translateX(0);
 }
 
-/* فعال */
-.liquid-segmented-control .liquid-segment.active{
-  color:#fff !important;
-
-  text-shadow:
-    0 1px 4px rgba(0,0,0,.35);
+#expenseModal .new-record-selector:has(
+    #expenseTypeButton.active
+)::before {
+    transform: translateX(-100%);
 }
 
-.liquid-segmented-control .liquid-segment.active .segment-icon{
-  transform:translateY(-1px) scale(1.08);
-
-  filter:
-    drop-shadow(0 2px 5px rgba(255,255,255,.18));
+#expenseModal .new-record-selector:has(
+    #incomeTypeButton.active
+)::before {
+    transform: translateX(-200%);
 }
+
+#expenseModal .new-record-selector:has(
+    #debtTypeButton.active
+)::before {
+    transform: translateX(-300%);
+}
+
+
+/* چهار دکمه */
+
+#expenseModal .new-record-selector > button {
+    position: relative !important;
+
+    z-index: 2;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 46px !important;
+
+    margin: 0 !important;
+    padding: 0 2px !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    border: 0 !important;
+    border-radius: 13px !important;
+
+    background: transparent !important;
+    box-shadow: none !important;
+
+    color: rgba(255,255,255,.58) !important;
+
+    font-family: inherit;
+    font-size: 12px;
+
+    white-space: nowrap;
+
+    transition:
+        color .25s ease,
+        transform .18s ease;
+}
+
+
+/* دکمه فعال */
+
+#expenseModal .new-record-selector > button.active {
+    color: #fff !important;
+}
+
 
 /* لمس */
-.liquid-segmented-control .liquid-segment:active{
-  transform:scale(.93);
-}
 
-
-/* نور فعال برای رنگ‌های مختلف */
-.form-installment
-.liquid-segment-glow{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.28),
-    0 5px 20px rgba(14,165,233,.16);
-}
-
-.form-expense
-.liquid-segment-glow{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.28),
-    0 5px 20px rgba(239,68,68,.14);
-}
-
-.form-income
-.liquid-segment-glow{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.28),
-    0 5px 20px rgba(34,197,94,.14);
-}
-
-.form-transfer
-.liquid-segment-glow{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.28),
-    0 5px 20px rgba(245,158,11,.14);
+#expenseModal .new-record-selector > button:active {
+    transform: scale(.94);
 }
 
 
 /* موبایل */
-@media(max-width:480px){
 
-  .liquid-segmented-control{
-    height:56px;
-    border-radius:18px;
-  }
+@media (max-width: 480px) {
 
-  .liquid-segmented-control .liquid-segment-glow{
-    height:48px;
-    border-radius:14px;
-  }
+    #expenseModal .new-record-selector {
+        height: 54px !important;
+        border-radius: 17px !important;
+    }
 
-  .liquid-segmented-control .liquid-segment{
-    height:48px;
-    font-size:11px;
-  }
-
-  .liquid-segmented-control .segment-icon{
-    font-size:15px;
-  }
-
-}
-
-
-/* iPhone های کوچک */
-@media(max-width:360px){
-
-  .liquid-segmented-control .liquid-segment{
-    font-size:10px;
-  }
-
-  .liquid-segmented-control .segment-icon{
-    font-size:14px;
-  }
-
+    #expenseModal .new-record-selector > button {
+        height: 44px !important;
+        font-size: 11px;
+    }
 }
 /* =========================================================
    REDUCE MOTION
