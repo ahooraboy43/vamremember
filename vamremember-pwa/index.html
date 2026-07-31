@@ -40,7 +40,6 @@
 </div>
 <div class="header-actions">
 <button id="hamburgerMenuBtn" class="icon-button" type="button" aria-label="منو">☰</button>
-<button id="refresh" class="icon-button" type="button" aria-label="بروزرسانی">↻</button>
 </div>
 </header>
 
@@ -57,7 +56,7 @@
 <div class="home-balance-card">
 <div>
 <small>وضعیت این ماه</small>
-<h1 id="homeMonthTitle">تیر ۱۴۰۵</h1>
+<h1 id="homeMonthTitle">مرداد ۱۴۰۵</h1>
 </div>
 <div class="balance-row">
 <div>
@@ -185,20 +184,23 @@
 </article>
 </section>
 
-<!-- ================= صفحه بانک‌ها (جدید) ================= -->
+<!-- صفحه بانک‌ها -->
 <section class="page" id="banksPage">
-<div class="bank-carousel-container">
-<div class="bank-carousel" id="bankCarousel">
-<!-- کارت‌ها توسط جاوااسکریپت ساخته می‌شن -->
+<div class="banks-management" style="margin-bottom:16px;">
+<div class="section-title">🏦 مدیریت بانک‌ها</div>
+<div id="banksManagementList"></div>
+<button class="primary-button" id="addBankBtn" type="button" style="margin-top:10px;">➕ افزودن بانک جدید</button>
 </div>
-<div class="carousel-dots" id="carouselDots"></div>
+<div class="bank-carousel-container" style="position:relative;width:100%;height:240px;margin-bottom:16px;overflow:visible;padding:10px 0;">
+<div class="bank-carousel" id="bankCarousel" style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;touch-action:pan-y;cursor:grab;"></div>
+<div class="carousel-dots" id="carouselDots" style="display:flex;justify-content:center;gap:8px;margin-top:12px;"></div>
 </div>
-<div class="banks-quick-info">
+<div class="banks-quick-info" style="margin-top:12px;">
 <button class="primary-button" id="addBankCardBtn" type="button">➕ افزودن کارت بانکی</button>
 </div>
 </section>
 
-<!-- ================= صفحه تنظیمات ================= -->
+<!-- صفحه تنظیمات -->
 <section class="page" id="settingsPage">
 <div class="home-section">
 <div class="section-title">🔐 قفل کل اپلیکیشن</div>
@@ -243,14 +245,6 @@
 <img id="appIconPreview" src="assets/book.png" alt="آیکون برنامه">
 <button type="button" class="edit-expense app-icon-reset" id="resetAppIconButton">بازگردانی پیش‌فرض</button>
 </div>
-<div class="settings-card">
-<h3>مدیریت بانک‌ها</h3>
-<div id="banksList"></div>
-<div class="row" style="gap:8px;margin-top:8px">
-<input id="bankNameInput" class="bnk-inp" type="text" placeholder="نام بانک جدید" style="flex:1">
-<button id="addBankButton" class="btn-primary">افزودن</button>
-</div>
-</div>
 </div>
 
 <div class="home-section">
@@ -266,6 +260,10 @@
 <button class="nav-button nav-item" data-page="duePage" data-title="⏰ سررسیدها" type="button">
 <img class="img-btn1" src="assets/book.png" alt="">
 <small>سررسیدها</small>
+</button>
+<button class="nav-button nav-item" data-page="banksPage" data-title="🏦 بانک‌ها" type="button">
+<img class="img-btn1" src="assets/bank.png" alt="">
+<small>بانک‌ها</small>
 </button>
 <button class="home-button nav-button" data-page="homePage" data-title="🏠 داشبورد" type="button">
 <img class="img-btn" src="assets/home.png" alt="صفحه اصلی">
@@ -514,7 +512,7 @@
 </div>
 </div>
 
-<!-- ================= مودال کارت بانکی (جدید) ================= -->
+<!-- مودال کارت بانکی -->
 <div class="modal" id="bankCardModal">
 <div class="modal-backdrop"></div>
 <div class="modal-sheet">
