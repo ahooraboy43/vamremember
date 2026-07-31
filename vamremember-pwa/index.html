@@ -873,40 +873,45 @@ type="hidden">
 نوع مورد
 </span>
 
-<div class="expense-type-selector">
+<div class="expense-type-selector liquid-segmented-control">
 
-<button
-id="installmentTypeButton"
-data-type="installment"
-type="button">
+  <div class="liquid-segment-glow"></div>
 
-💳 قسط
+  <button
+    id="installmentTypeButton"
+    class="liquid-segment"
+    data-type="installment"
+    type="button">
+    <span class="segment-icon">💳</span>
+    <span>قسط</span>
+  </button>
 
-</button>
+  <button
+    id="expenseTypeButton"
+    class="liquid-segment"
+    data-type="expense"
+    type="button">
+    <span class="segment-icon">🧾</span>
+    <span>هزینه</span>
+  </button>
 
-<button
-id="expenseTypeButton"
-data-type="expense"
-type="button">
+  <button
+    id="incomeTypeButton"
+    class="liquid-segment"
+    data-type="income"
+    type="button">
+    <span class="segment-icon">💰</span>
+    <span>درآمد</span>
+  </button>
 
-🧾 هزینه
-
-</button>
-
-<button
-id="incomeTypeButton"
-data-type="income"
-type="button">
-
-💰 درآمد
-
-</button>
-<button
-id="debtTypeButton"
-data-type="debt"
-type="button">
-🤝 قرض و دین
-</button>
+  <button
+    id="debtTypeButton"
+    class="liquid-segment"
+    data-type="debt"
+    type="button">
+    <span class="segment-icon">🤝</span>
+    <span>قرض و دین</span>
+  </button>
 
 </div>
 
