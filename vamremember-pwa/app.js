@@ -3248,51 +3248,63 @@ if (typeof openPage === 'function') {
   };
 }
 // =========================================================
-// ================= رفع باگ منوی پایین در اولین لود =================
+// ================= تنظیم خودکار منوی پایین =================
 // =========================================================
 
-function fixBottomNav() {
-  // تنظیم height واقعی
-  function setAppHeight() {
-    const doc = document.documentElement;
-    const height = window.innerHeight;
-    doc.style.setProperty('--app-height', height + 'px');
+function fixBottomNavPosition() {
+  const nav = document.querySelector('.bottom-nav');
+  if (!nav) return;
+  
+  // محاسبه ارتفاع واقعی صفحه
+  function getRealHeight() {
+    return window.innerHeight;
+  }
+  
+  // تنظیم منو در پایین صفحه
+  function setNavPosition() {
+    const height = getRealHeight();
+    // منو رو دقیقاً پایین صفحه قرار بده
+    nav.style.position = 'fixed';
+    nav.style.bottom = '0px';
+    nav.style.left = '50%';
+    nav.style.transform = 'translateX(-50%)';
+    nav.style.width = 'min(100%, 620px)';
+    nav.style.zIndex = '999';
     
-    // منوی پایین رو مجبور به نمایش درست کن
-    const nav = document.querySelector('.bottom-nav');
-    if (nav) {
-      nav.style.bottom = '0px';
+    // فضای خالی برای محتوای اصلی
+    const app = document.querySelector('.app');
+    if (app) {
+      const navHeight = nav.offsetHeight || 70;
+      app.style.paddingBottom = (navHeight + 20) + 'px';
     }
   }
-
-  // اجرا در اولین لود
-  setAppHeight();
-
-  // اجرا بعد از تغییر اندازه
-  window.addEventListener('resize', setAppHeight);
   
-  // اجرا بعد از چرخش صفحه
+  // اجرا در اولین لود
+  setNavPosition();
+  
+  // اجرا بعد از هر تغییری
+  window.addEventListener('resize', setNavPosition);
   window.addEventListener('orientationchange', function() {
-    setTimeout(setAppHeight, 300);
+    setTimeout(setNavPosition, 300);
   });
-
-  // اجرا بعد از لود کامل
   window.addEventListener('load', function() {
-    setTimeout(setAppHeight, 100);
-    setTimeout(setAppHeight, 500);
+    setTimeout(setNavPosition, 100);
+    setTimeout(setNavPosition, 500);
   });
-
-  // اجرا بعد از visibility change (بازگشت به برنامه)
   document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
-      setTimeout(setAppHeight, 200);
+      setTimeout(setNavPosition, 200);
     }
+  });
+  
+  // اجرا بعد از هر کلیک (برای مواقعی که محتوا تغییر میکنه)
+  document.addEventListener('click', function() {
+    setTimeout(setNavPosition, 50);
   });
 }
 
 // اجرا
-setTimeout(fixBottomNav, 50);
-
+setTimeout(fixBottomNavPosition, 100);
 //آخر جدید
 initAppLock();
 initSettingsUI();
