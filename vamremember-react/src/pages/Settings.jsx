@@ -1,0 +1,2 @@
+export default function Settings({theme,setTheme,onRefresh}){return <main className="page active"><div className="section-title">تنظیمات</div>
+<div className="settings-list"><button onClick={onRefresh}>🔄 دریافت آخرین اطلاعات از Supabase</button><button onClick={()=>setTheme(theme==="dark"?"light":"dark")}>🌓 حالت {theme==="dark"?"روشن":"تاریک"}</button><div className="settings-info">VamRemember · نسخه React</div></div></main>}

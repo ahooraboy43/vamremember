@@ -1,0 +1,3 @@
+import{useMemo}from"react";import{calculateReport,money}from"../services/vamData";
+export default function Reports({items}){const r=useMemo(()=>calculateReport(items),[items]);const cards=[["💳","کل اقساط",r.installment],["✅","پرداخت اقساط",r.paidInstallment],["⏳","باقی‌مانده اقساط",r.remaining],["💸","هزینه‌ها",r.expense],["💵","درآمد",r.income],["📊","مانده",r.balance]];
+return <main className="page active"><div className="section-title">گزارش ماه جاری</div><div className="report-grid">{cards.map(x=><article className="report-card" key={x[1]}><span className="report-icon">{x[0]}</span><span className="report-label">{x[1]}</span><div className={`report-value ${x[2]<0?"negative":"positive"}`}>{money(Math.abs(x[2]))}</div></article>)}</div></main>}
