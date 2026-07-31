@@ -2299,28 +2299,49 @@ function ensureDefaultAppLock(){
     saveSettings(appSettings);
   }
 }
-function setAppHeight() {
-  const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
-  document.documentElement.style.setProperty('--app-vh', `${vh}px`);
-}
-setAppHeight();
-window.addEventListener('resize', setAppHeight);
-window.addEventListener('orientationchange', setAppHeight);
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', setAppHeight);
-  window.visualViewport.addEventListener('scroll', setAppHeight);
-}
-function setAppHeight(){
-  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  document.documentElement.style.setProperty('--app-vh', vh + 'px');
-}
-setAppHeight();
-window.addEventListener('resize', setAppHeight);
-window.addEventListener('orientationchange', setAppHeight);
-if (window.visualViewport){
-  window.visualViewport.addEventListener('resize', setAppHeight);
-  window.visualViewport.addEventListener('scroll', setAppHeight);
-}
+/* =========================================================
+   iOS VIEWPORT HEIGHT
+   فقط یک بار در کل app.js
+========================================================= */
+
+(function () {
+
+  function setAppHeight() {
+    const vv = window.visualViewport;
+
+    const height = vv
+      ? Math.round(vv.height)
+      : window.innerHeight;
+
+    document.documentElement.style.setProperty(
+      '--app-vh',
+      height + 'px'
+    );
+  }
+
+  // اجرای اولیه
+  setAppHeight();
+
+  // تغییر اندازه صفحه
+  window.addEventListener('resize', setAppHeight, { passive: true });
+
+  // چرخش گوشی
+  window.addEventListener('orientationchange', function () {
+    // iOS گاهی بلافاصله ارتفاع واقعی را برنمی‌گرداند
+    requestAnimationFrame(setAppHeight);
+    setTimeout(setAppHeight, 100);
+  }, { passive: true });
+
+  // مخصوص Safari / iOS
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener(
+      'resize',
+      setAppHeight,
+      { passive: true }
+    );
+  }
+
+})();
 
 function isAppLocked(){
   return !!(
