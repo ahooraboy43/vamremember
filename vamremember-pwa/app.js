@@ -2938,5 +2938,158 @@ openPage = function(id, title) {
 };
 
 //جدید
+
+// =========================================================
+// ================= تلفیق بانک‌ها و کارت‌ها =================
+// =========================================================
+
+// بارگذاری بانک‌ها از لوکال استوریج (همون بانک‌های قبلی)
+function loadBanksFromStorage() {
+  try {
+    const saved = localStorage.getItem("banks");
+    return saved ? JSON.parse(saved) : ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
+  } catch {
+    return ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
+  }
+}
+
+// ذخیره بانک‌ها
+function saveBanksToStorage(banks) {
+  localStorage.setItem("banks", JSON.stringify(banks));
+}
+
+// بارگذاری کارت‌های بانکی
+function loadBankCards() {
+  try {
+    const data = localStorage.getItem("bankCardsV1");
+    bankCards = data ? JSON.parse(data) : [];
+  } catch (e) {
+    bankCards = [];
+  }
+  renderBankCards();
+}
+
+// نمایش بانک‌ها و کارت‌ها با هم
+function renderBankCards() {
+  const container = document.getElementById("bankCarousel");
+  const dotsContainer = document.getElementById("carouselDots");
+  const banksListContainer = document.getElementById("banksManagementList");
+  
+  if (!container) return;
+
+  // ===== بخش مدیریت بانک‌ها =====
+  if (banksListContainer) {
+    const banks = loadBanksFromStorage();
+    banksListContainer.innerHTML = banks.map((b, i) => `
+      <div class="bank-manage-item">
+        <span>🏦 ${b}</span>
+        <div class="bank-manage-actions">
+          <button class="btn-sm" onclick="editBankName(${i})">✎</button>
+          <button class="btn-sm btn-danger" onclick="deleteBankName(${i})">✕</button>
+          <button class="btn-sm btn-primary" onclick="addCardToBank('${b}')">➕ کارت</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ===== بخش کارت‌ها =====
+  if (bankCards.length === 0) {
+    container.innerHTML = `
+      <div class="empty-bank-state">
+        <div class="empty-icon">💳</div>
+        <p>هیچ کارت بانکی ثبت نشده است</p>
+        <p style="font-size:12px;color:var(--muted);">ابتدا یک بانک تعریف کنید، سپس کارت آن را ثبت کنید</p>
+        <button class="primary-button" id="emptyAddBankBtn" type="button">➕ افزودن بانک</button>
+      </div>
+    `;
+    if (dotsContainer) dotsContainer.innerHTML = "";
+    const emptyBtn = document.getElementById("emptyAddBankBtn");
+    if (emptyBtn) emptyBtn.addEventListener("click", () => openAddBankModal());
+    return;
+  }
+
+  // ... ادامه کد کارت‌ها (همون کد قبلی)
+}
+
+// ===== توابع مدیریت بانک‌ها =====
+function openAddBankModal() {
+  const name = prompt("نام بانک جدید را وارد کنید:");
+  if (name && name.trim()) {
+    const banks = loadBanksFromStorage();
+    banks.push(name.trim());
+    saveBanksToStorage(banks);
+    renderBankCards();
+    showToast("بانک اضافه شد", "success");
+  }
+}
+
+function editBankName(index) {
+  const banks = loadBanksFromStorage();
+  const newName = prompt("نام جدید:", banks[index]);
+  if (newName && newName.trim()) {
+    banks[index] = newName.trim();
+    saveBanksToStorage(banks);
+    renderBankCards();
+    showToast("نام بانک تغییر کرد", "success");
+  }
+}
+
+function deleteBankName(index) {
+  const banks = loadBanksFromStorage();
+  if (!confirm(`حذف "${banks[index]}"؟`)) return;
+  banks.splice(index, 1);
+  saveBanksToStorage(banks);
+  renderBankCards();
+  showToast("بانک حذف شد", "info");
+}
+
+function addCardToBank(bankName) {
+  // باز کردن مودال با نام بانک پر شده
+  openBankCardModal(null, bankName);
+}
+
+// ===== اصلاح مودال کارت =====
+function openBankCardModal(card = null, prefillBank = null) {
+  const modal = document.getElementById("bankCardModal");
+  const form = document.getElementById("bankCardForm");
+  const title = document.getElementById("bankCardModalTitle");
+  const idField = document.getElementById("editBankCardId");
+  const nameField = document.getElementById("bankCardName");
+  const numberField = document.getElementById("bankCardNumber");
+  const ibanField = document.getElementById("bankCardIban");
+  const expiryField = document.getElementById("bankCardExpiry");
+  const cvvField = document.getElementById("bankCardCvv");
+  const balanceField = document.getElementById("bankCardBalance");
+  const colorField = document.getElementById("bankCardColor");
+  const designField = document.getElementById("bankCardDesign");
+
+  if (!modal) return;
+  form.reset();
+  idField.value = "";
+
+  // اگر نام بانک از قبل مشخص شده
+  if (prefillBank) {
+    nameField.value = prefillBank;
+  }
+
+  if (card) {
+    title.textContent = "ویرایش کارت بانکی";
+    idField.value = card.id || "";
+    nameField.value = card.bankName || "";
+    numberField.value = card.cardNumber || "";
+    ibanField.value = card.iban || "";
+    expiryField.value = card.expiry || "";
+    cvvField.value = card.cvv || "";
+    balanceField.value = card.balance || "";
+    colorField.value = card.color || "#1a2332";
+    if (designField) designField.value = card.design || "0";
+  } else {
+    title.textContent = "ثبت کارت بانکی جدید";
+  }
+
+  modal.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+//آخر جدید
 initAppLock();
 initSettingsUI();
