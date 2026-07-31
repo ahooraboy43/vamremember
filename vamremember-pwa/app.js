@@ -275,7 +275,6 @@ function parseMoney(v){
 }
 function getRemainingInstallments(item){
     if (!isInstallment(item)) return 0;
-
     return Number(item.installment_count || 0);
 }
 
@@ -332,9 +331,9 @@ async function loadData(){
     }
 }
 function getDaysInPersianMonth(monthIndex){
-    if(monthIndex <= 5) return 31;   // فروردین تا شهریور
-    if(monthIndex <= 10) return 30;  // مهر تا بهمن
-    return 29;                        // اسفند
+    if(monthIndex <= 5) return 31;
+    if(monthIndex <= 10) return 30;
+    return 29;
 }
 
 function getDueItems(){
@@ -399,7 +398,6 @@ function setupPaymentPanel(card, item){
 
     const note = noteBox.value.trim() || null;
 
-    // مبلغ اصلاً وارد سلول نمی‌شود، فقط note و date
     const cellValue = [note, dateStr]
         .filter(Boolean)
         .join(" - ");
@@ -416,7 +414,6 @@ function setupPaymentPanel(card, item){
 
         await registerPaymentTransaction(item, note, selectedBank);
 
-        // پرداخت قسط: تعداد اقساط باقی‌مانده یک واحد کم می‌شود.
         const currentRemaining = Number(item.installment_count);
         if (Number.isFinite(currentRemaining) && currentRemaining > 0) {
             await supabaseRequest(
@@ -557,12 +554,10 @@ function getFilteredItems() {
       return false;
     }
 
-    // بدون متن جستجو
     if (!s) {
       return true;
     }
 
-    // جستجو
     return (
       String(i.title || "").toLowerCase().includes(s) ||
       String(i.id || "").includes(s) ||
@@ -618,7 +613,6 @@ function setExpenseType(type){
         );
     }
 
-    // فعال کردن دکمه نوع
     installmentTypeButton?.classList.toggle(
         "active",
         type === "installment"
@@ -639,7 +633,6 @@ function setExpenseType(type){
         type === "transfer"
     );
 
-    // نمایش فرم مربوطه
     installmentFields?.classList.toggle(
         "hidden",
         type !== "installment"
@@ -661,7 +654,6 @@ incomeFields?.classList.toggle(
         type !== "transfer"
     );
 
-    // عنوان‌ها
     switch(type){
 
         case "installment":
@@ -710,11 +702,9 @@ case "transfer":
 
     }
 
-    // اجباری بودن فیلدهای قسط
     expenseDueDay.required = false;
 expenseInstallments.required = false;
 
-    // متن دکمه ثبت
     if(editExpenseId.value){
 
         saveExpenseButton.textContent="ذخیره تغییرات";
@@ -747,7 +737,6 @@ expenseInstallments.required = false;
 
     }
 
- // کلاس ظاهری فرم
     const sheet = document.querySelector(".modal-sheet");
 
     if(sheet){
@@ -787,7 +776,6 @@ function monthKeyFromDatePart(dateStr){
 async function updateAccountCellFromPayment(itemId, monthKey, amount){
     if(!itemId || !monthKey) return;
 
-    // مقدار فعلی سلول را پیدا می‌کنیم تا مبلغ جدید به آن اضافه شود، نه جایگزین آن
     const item = allExpenses.find(i => Number(i.id) === Number(itemId));
     const existing = item ? parseMoney(item[monthKey]) : null;
     const total = (existing || 0) + amount;
@@ -802,13 +790,11 @@ async function updateAccountCellFromPayment(itemId, monthKey, amount){
     );
 }
 
-// تغییر حالت پرداخت / دریافت در مودال
 document.querySelectorAll(".payment-type-btn")
 .forEach(btn => {
 
     btn.addEventListener("click",()=>{
 
-        // فعال کردن دکمه انتخاب شده
         document.querySelectorAll(".payment-type-btn")
         .forEach(b=>b.classList.remove("active"));
 
@@ -816,11 +802,9 @@ document.querySelectorAll(".payment-type-btn")
 
         const type = btn.dataset.type;
 
-        // ذخیره نوع عملیات
         $("paymentType").value = type;
         fillPaymentItems(type);
 
-        // تغییر عنوان مودال
         $("paymentModalTitle").textContent =
             type === "income" ? "ثبت دریافت" : "ثبت پرداخت";
 
@@ -828,7 +812,6 @@ document.querySelectorAll(".payment-type-btn")
 
 });
 
-// انتخاب بانک/حساب
 document.querySelectorAll(".payment-bank").forEach(btn => {
     btn.addEventListener("click", () => {
         document.querySelectorAll(".payment-bank").forEach(b => b.classList.remove("active"));
@@ -857,7 +840,6 @@ $("paymentForm").addEventListener("submit", async e => {
     if(submitBtn) submitBtn.disabled = true;
 
     try{
-        // ابتدا خود تراکنش (پرداخت/دریافت) ثبت می‌شود؛ این مهم‌ترین بخش است
         await addTransaction({
             expense_id: Number(itemId),
             title: itemSelect.options[itemSelect.selectedIndex]?.text || "",
@@ -870,7 +852,6 @@ $("paymentForm").addEventListener("submit", async e => {
             note: note || null
         });
 
-        // سپس سلول مربوط به ماه/حساب مورد نظر آپدیت می‌شود
         try{
             await updateAccountCellFromPayment(itemId, monthKey, amount);
         }catch(cellErr){
@@ -1092,7 +1073,6 @@ await loadDebts();
     return;
 }
 
-    // انتقال وجه
     if(type==="transfer"){
 
         if(!transferFrom.value || !transferTo.value){
@@ -1325,7 +1305,6 @@ let expense=0;
 
 allExpenses.forEach(i=>{
 
-// پرداخت اقساط این ماه
 if(
     isInstallment(i)
     &&
@@ -1334,7 +1313,6 @@ if(
     paid += Number(i.amount)||0;
 }
 
-// هزینه های ماه
 if(isExpense(i)){
 
     const value=parseMoney(i[currentMonthKey]);
@@ -1425,7 +1403,6 @@ function renderReports(){
     reportBalanceTotal.style.color=balanceTotal<0?"var(--danger)":"var(--success)";
   }
 
-  // نمودار اقساط پرداخت‌شده / باقی‌مانده
   const chartTotal=paidInstallmentTotal+remainingInstallmentTotal;
 
   const paidPercentage=chartTotal
@@ -1454,7 +1431,6 @@ if (remainingBar) {
   remainingBar.style.width = `${remainingPercentage}%`;
 }
 
-  // نمودار درآمد / قسط پرداخت‌شده / هزینه / قسط پرداخت‌نشده
   const incomeChartTotal =
     monthIncomeTotal +
     paidInstallmentTotal +
@@ -1583,7 +1559,6 @@ function openDebtDetailsModal(d){
   const body = $("debtDetailsBody");
   const title = $("debtDetailsTitle");
 
-  // پشتیبانی از هر دو مدل ID برای جلوگیری از خراب شدن
   const editBtn =
     $("editDebtDetailsBtn") ||
     $("debtDetailsEditBtn");
@@ -1765,6 +1740,9 @@ function openPage(id,title){
   if(id==="homePage") renderHome();
   if(id==="allPage") renderAllCards();
   if(id==="reportPage") renderReports();
+  if(id==="banksPage") {
+    setTimeout(renderBankCards, 150);
+  }
 
   window.scrollTo({top:0,behavior:"smooth"})
 }
@@ -1829,7 +1807,6 @@ $("closeDebtDetailsModal")?.addEventListener("click", closeDebtDetailsModal);
 $("debtDetailsModal")?.querySelector(".modal-backdrop")?.addEventListener("click", closeDebtDetailsModal);
 
 
-// بستن منو با کلیک خارج از آن
 document.addEventListener("click", e => {
   if (!$("fabContainer").contains(e.target)) {
     fabMenu.classList.add("hidden");
@@ -2079,7 +2056,6 @@ function saveSettings(settings){
 
 let appSettings = loadSettings();
 
-// هش ساده برای رمز عبور (فقط جهت جلوگیری از دیدن ساده رمز، امنیت بالا نیست)
 function simpleHash(str){
   let hash = 0;
   const s = String(str || "");
@@ -2181,7 +2157,6 @@ document.querySelectorAll(".theme-btn").forEach(btn=>{
   });
 });
 
-const settingsButton = $("settingsButton");
 const settingsLockModal = $("settingsLockModal");
 const settingsLockForm = $("settingsLockForm");
 const settingsLockInput = $("settingsLockInput");
@@ -2205,16 +2180,6 @@ function closeSettingsLockModalFn(){
   if(!settingsLockModal) return;
   settingsLockModal.classList.remove("open");
   document.body.style.overflow = "";
-}
-
-if(settingsButton){
-  settingsButton.addEventListener("click", ()=>{
-    if(appSettings.lockEnabled && appSettings.passwordHash){
-      openSettingsLockModal();
-    }else{
-      openSettingsPage();
-    }
-  });
 }
 
 if(settingsLockForm){
@@ -2301,7 +2266,6 @@ function ensureDefaultAppLock(){
 }
 /* =========================================================
    iOS VIEWPORT HEIGHT
-   فقط یک بار در کل app.js
 ========================================================= */
 
 (function () {
@@ -2319,12 +2283,6 @@ function ensureDefaultAppLock(){
     );
   }
 
-  /* رفع باگ فاصله نوار پایین (bottom-nav) از کف صفحه در اولین
-     لود در iOS Safari: نوار fixed تا وقتی صفحه یک اسکرول
-     نخورده باشد نسبت به viewport اشتباه (بزرگ‌تر از واقعی،
-     قبل از جمع‌شدن نوار آدرس) رندر می‌شود. این تابع همان
-     اسکرول را به‌صورت یک‌پیکسلی و کاملاً نامرئی شبیه‌سازی
-     می‌کند تا وبکیت موقعیت را فوراً دوباره محاسبه کند. */
   function nudgeScroll() {
     const y = window.scrollY || window.pageYOffset || 0;
     window.scrollTo(0, y + 1);
@@ -2336,10 +2294,8 @@ function ensureDefaultAppLock(){
     nudgeScroll();
   }
 
-  // اجرای اولیه
   refresh();
 
-  // مخصوص اولین اجرای PWA / Standalone
   requestAnimationFrame(() => {
     refresh();
 
@@ -2358,7 +2314,6 @@ function ensureDefaultAppLock(){
     setTimeout(refresh, 1000);
   }, { passive: true });
 
-  // مخصوص باز شدن اپ از حالت PWA/Standalone (Home Screen)
   window.addEventListener('pageshow', function () {
     refresh();
     setTimeout(refresh, 300);
@@ -2372,16 +2327,13 @@ function ensureDefaultAppLock(){
     }
   }, { passive: true });
 
-  // تغییر اندازه صفحه
   window.addEventListener('resize', setAppHeight, { passive: true });
 
-  // چرخش گوشی
   window.addEventListener('orientationchange', function () {
     requestAnimationFrame(refresh);
     setTimeout(refresh, 100);
   }, { passive: true });
 
-  // مخصوص Safari / iOS
   if (window.visualViewport) {
     window.visualViewport.addEventListener(
       'resize',
@@ -2476,8 +2428,9 @@ if(saveAppLockPasswordButton){
     alert("رمز عبور اپلیکیشن ذخیره شد");
   });
 }
+
 // =========================================================
-// ================= بخش جدید: کارت‌های بانکی =================
+// ================= کارت‌های بانکی =================
 // =========================================================
 
 const BANK_CARDS_KEY = "bankCardsV1";
@@ -2486,7 +2439,6 @@ let currentCardIndex = 0;
 let touchStartX = 0;
 let touchEndX = 0;
 
-// بارگذاری کارت‌ها از لوکال استوریج
 function loadBankCards() {
   try {
     const data = localStorage.getItem(BANK_CARDS_KEY);
@@ -2497,24 +2449,38 @@ function loadBankCards() {
   renderBankCards();
 }
 
-// ذخیره کارت‌ها در لوکال استوریج
 function saveBankCards() {
   localStorage.setItem(BANK_CARDS_KEY, JSON.stringify(bankCards));
   renderBankCards();
 }
 
-// نمایش کارت‌ها با افکت چرخ فلک
 function renderBankCards() {
   const container = document.getElementById("bankCarousel");
   const dotsContainer = document.getElementById("carouselDots");
+  const banksListContainer = document.getElementById("banksManagementList");
+  
   if (!container) return;
+
+  if (banksListContainer) {
+    const banks = loadBanksFromStorage();
+    banksListContainer.innerHTML = banks.map((b, i) => `
+      <div class="bank-manage-item" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+        <span>🏦 ${b}</span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-sm" onclick="editBankName(${i})">✎</button>
+          <button class="btn-sm btn-danger" onclick="deleteBankName(${i})">✕</button>
+          <button class="btn-sm btn-primary" onclick="addCardToBank('${b}')">➕</button>
+        </div>
+      </div>
+    `).join('');
+  }
 
   if (bankCards.length === 0) {
     container.innerHTML = `
       <div class="empty-bank-state">
         <div class="empty-icon">💳</div>
         <p>هیچ کارت بانکی ثبت نشده است</p>
-        <button class="primary-button" id="emptyAddBankBtn" type="button">افزودن کارت</button>
+        <button class="primary-button" id="emptyAddBankBtn" type="button">➕ افزودن کارت</button>
       </div>
     `;
     if (dotsContainer) dotsContainer.innerHTML = "";
@@ -2551,11 +2517,16 @@ function renderBankCards() {
       <div class="bank-card-item" 
            data-index="${i}"
            style="
+             position:absolute;
+             width:85%;max-width:340px;height:200px;border-radius:24px;
              transform: translateX(${translateX}px) scale(${scale});
              opacity: ${opacity};
              z-index: ${zIndex};
              background: ${card.color || '#1a2332'};
              pointer-events: ${isCenter ? 'auto' : 'none'};
+             left:50%;top:50%;margin-left:-42.5%;
+             box-shadow:0 20px 50px rgba(0,0,0,0.4);
+             transition:transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease, z-index 0.5s ease;
            ">
         <div class="bank-card-inner">
           <div class="bank-card-top">
@@ -2591,7 +2562,6 @@ function renderBankCards() {
 
   container.innerHTML = cardsHtml;
 
-  // دکمه‌های کپی
   container.querySelectorAll('.copy-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -2612,7 +2582,6 @@ function renderBankCards() {
     });
   });
 
-  // دکمه‌های ویرایش
   container.querySelectorAll('.bank-card-edit-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -2622,7 +2591,6 @@ function renderBankCards() {
     });
   });
 
-  // دایره‌های ناوبری
   if (dotsContainer) {
     dotsContainer.innerHTML = bankCards.map((_, i) => 
       `<span class="dot ${i === currentCardIndex ? 'active' : ''}" data-index="${i}"></span>`
@@ -2637,7 +2605,6 @@ function renderBankCards() {
   }
 }
 
-// پشتیبانی از لمس برای چرخش کارت‌ها
 function initCarouselTouch() {
   const container = document.getElementById("bankCarousel");
   if (!container) return;
@@ -2666,45 +2633,57 @@ function initCarouselTouch() {
       }
     }
   }, { passive: true });
-
-  // پشتیبانی از ماوس
-  let mouseDown = false;
-  let mouseStartX = 0;
-
-  container.addEventListener('mousedown', (e) => {
-    mouseDown = true;
-    mouseStartX = e.screenX;
-    e.preventDefault();
-  });
-
-  container.addEventListener('mouseup', (e) => {
-    if (!mouseDown) return;
-    mouseDown = false;
-    const diff = e.screenX - mouseStartX;
-    if (Math.abs(diff) > 50) {
-      if (diff < 0 && currentCardIndex < bankCards.length - 1) {
-        currentCardIndex++;
-        renderBankCards();
-      } else if (diff > 0 && currentCardIndex > 0) {
-        currentCardIndex--;
-        renderBankCards();
-      } else if (diff < 0 && currentCardIndex === bankCards.length - 1) {
-        currentCardIndex = 0;
-        renderBankCards();
-      } else if (diff > 0 && currentCardIndex === 0) {
-        currentCardIndex = bankCards.length - 1;
-        renderBankCards();
-      }
-    }
-  });
-
-  container.addEventListener('mouseleave', () => {
-    mouseDown = false;
-  });
 }
 
-// باز کردن مودال کارت بانکی
-function openBankCardModal(card = null) {
+function loadBanksFromStorage() {
+  try {
+    const saved = localStorage.getItem("banks");
+    return saved ? JSON.parse(saved) : ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
+  } catch {
+    return ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
+  }
+}
+
+function saveBanksToStorage(banks) {
+  localStorage.setItem("banks", JSON.stringify(banks));
+}
+
+function openAddBankModal() {
+  const name = prompt("نام بانک جدید را وارد کنید:");
+  if (name && name.trim()) {
+    const banks = loadBanksFromStorage();
+    banks.push(name.trim());
+    saveBanksToStorage(banks);
+    renderBankCards();
+    showToast("بانک اضافه شد", "success");
+  }
+}
+
+function editBankName(index) {
+  const banks = loadBanksFromStorage();
+  const newName = prompt("نام جدید:", banks[index]);
+  if (newName && newName.trim()) {
+    banks[index] = newName.trim();
+    saveBanksToStorage(banks);
+    renderBankCards();
+    showToast("نام بانک تغییر کرد", "success");
+  }
+}
+
+function deleteBankName(index) {
+  const banks = loadBanksFromStorage();
+  if (!confirm(`حذف "${banks[index]}"؟`)) return;
+  banks.splice(index, 1);
+  saveBanksToStorage(banks);
+  renderBankCards();
+  showToast("بانک حذف شد", "info");
+}
+
+function addCardToBank(bankName) {
+  openBankCardModal(null, bankName);
+}
+
+function openBankCardModal(card = null, prefillBank = null) {
   const modal = document.getElementById("bankCardModal");
   const form = document.getElementById("bankCardForm");
   const title = document.getElementById("bankCardModalTitle");
@@ -2720,6 +2699,10 @@ function openBankCardModal(card = null) {
   if (!modal) return;
   form.reset();
   idField.value = "";
+
+  if (prefillBank) {
+    nameField.value = prefillBank;
+  }
 
   if (card) {
     title.textContent = "ویرایش کارت بانکی";
@@ -2739,7 +2722,6 @@ function openBankCardModal(card = null) {
   document.body.style.overflow = "hidden";
 }
 
-// بستن مودال کارت بانکی
 function closeBankCardModal() {
   const modal = document.getElementById("bankCardModal");
   if (!modal) return;
@@ -2747,7 +2729,6 @@ function closeBankCardModal() {
   document.body.style.overflow = "";
 }
 
-// ذخیره کارت بانکی
 document.getElementById("bankCardForm")?.addEventListener("submit", function(e) {
   e.preventDefault();
   
@@ -2794,10 +2775,10 @@ document.getElementById("bankCardForm")?.addEventListener("submit", function(e) 
   showToast("کارت بانکی ذخیره شد", "success");
 });
 
-// دکمه‌های بستن مودال
 document.getElementById("closeBankCardModal")?.addEventListener("click", closeBankCardModal);
 document.getElementById("bankCardModal")?.querySelector(".modal-backdrop")?.addEventListener("click", closeBankCardModal);
 document.getElementById("addBankCardBtn")?.addEventListener("click", () => openBankCardModal());
+document.getElementById("addBankBtn")?.addEventListener("click", openAddBankModal);
 
 // =========================================================
 // ================= منوی همبرگری =================
@@ -2840,298 +2821,6 @@ function createHamburgerPanel() {
   `;
   document.body.appendChild(panel);
 
-  // باز و بسته کردن منو
-  document.getElementById("hamburgerMenuBtn")?.addEventListener("click", () => {
-    panel.classList.toggle("hidden");
-    document.body.style.overflow = panel.classList.contains("hidden") ? "" : "hidden";
-  });
-
-  document.getElementById("closeHamburgerBtn")?.addEventListener("click", () => {
-    panel.classList.add("hidden");
-    document.body.style.overflow = "";
-  });
-
-  panel.querySelector(".hamburger-backdrop")?.addEventListener("click", () => {
-    panel.classList.add("hidden");
-    document.body.style.overflow = "";
-  });
-
-  // دکمه‌های منو
-  panel.querySelectorAll(".hamburger-item").forEach(item => {
-    item.addEventListener("click", () => {
-      const action = item.dataset.action;
-      panel.classList.add("hidden");
-      document.body.style.overflow = "";
-      
-      switch(action) {
-        case "refresh":
-          performFullAppUpdate();
-          break;
-        case "banks":
-          openPage("banksPage", "🏦 بانک‌ها");
-          setTimeout(renderBankCards, 100);
-          break;
-        case "settings":
-          openPage("settingsPage", "⚙️ تنظیمات");
-          break;
-        case "profile":
-          showToast("پروفایل در منو قابل مشاهده است", "info");
-          break;
-      }
-    });
-  });
-
-  // آپلود عکس پروفایل
-  document.getElementById("profileUploadBtn")?.addEventListener("click", () => {
-    document.getElementById("profileImageInput")?.click();
-  });
-
-  document.getElementById("profileImageInput")?.addEventListener("change", (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = document.getElementById("profileAvatarImg");
-      if (img) img.src = ev.target.result;
-      localStorage.setItem("profileImage", ev.target.result);
-      showToast("عکس پروفایل تغییر کرد", "success");
-    };
-    reader.readAsDataURL(file);
-  });
-
-  // بارگذاری عکس پروفایل ذخیره شده
-  const savedImage = localStorage.getItem("profileImage");
-  if (savedImage) {
-    const img = document.getElementById("profileAvatarImg");
-    if (img) img.src = savedImage;
-  }
-}
-
-// =========================================================
-// ================= مقداردهی اولیه =================
-// =========================================================
-
-// تابع مقداردهی اولیه همه چیز
-function initNewFeatures() {
-  createHamburgerPanel();
-  loadBankCards();
-  initCarouselTouch();
-  
-  // دکمه افزودن کارت از حالت خالی
-  document.addEventListener("click", (e) => {
-    if (e.target.id === "emptyAddBankBtn") {
-      openBankCardModal();
-    }
-  });
-}
-
-// اجرا بعد از لود شدن صفحه
-setTimeout(initNewFeatures, 200);
-
-// همچنین وقتی صفحه بانک‌ها باز میشه، کارت‌ها رو رندر کن
-const originalOpenPageFn = openPage;
-openPage = function(id, title) {
-  originalOpenPageFn(id, title);
-  if (id === "banksPage") {
-    setTimeout(renderBankCards, 150);
-  }
-};
-
-//جدید
-
-// =========================================================
-// ================= تلفیق بانک‌ها و کارت‌ها =================
-// =========================================================
-
-// بارگذاری بانک‌ها از لوکال استوریج (همون بانک‌های قبلی)
-function loadBanksFromStorage() {
-  try {
-    const saved = localStorage.getItem("banks");
-    return saved ? JSON.parse(saved) : ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
-  } catch {
-    return ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
-  }
-}
-
-// ذخیره بانک‌ها
-function saveBanksToStorage(banks) {
-  localStorage.setItem("banks", JSON.stringify(banks));
-}
-
-// بارگذاری کارت‌های بانکی
-function loadBankCards() {
-  try {
-    const data = localStorage.getItem("bankCardsV1");
-    bankCards = data ? JSON.parse(data) : [];
-  } catch (e) {
-    bankCards = [];
-  }
-  renderBankCards();
-}
-
-// نمایش بانک‌ها و کارت‌ها با هم
-function renderBankCards() {
-  const container = document.getElementById("bankCarousel");
-  const dotsContainer = document.getElementById("carouselDots");
-  const banksListContainer = document.getElementById("banksManagementList");
-  
-  if (!container) return;
-
-  // ===== بخش مدیریت بانک‌ها =====
-  if (banksListContainer) {
-    const banks = loadBanksFromStorage();
-    banksListContainer.innerHTML = banks.map((b, i) => `
-      <div class="bank-manage-item">
-        <span>🏦 ${b}</span>
-        <div class="bank-manage-actions">
-          <button class="btn-sm" onclick="editBankName(${i})">✎</button>
-          <button class="btn-sm btn-danger" onclick="deleteBankName(${i})">✕</button>
-          <button class="btn-sm btn-primary" onclick="addCardToBank('${b}')">➕ کارت</button>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  // ===== بخش کارت‌ها =====
-  if (bankCards.length === 0) {
-    container.innerHTML = `
-      <div class="empty-bank-state">
-        <div class="empty-icon">💳</div>
-        <p>هیچ کارت بانکی ثبت نشده است</p>
-        <p style="font-size:12px;color:var(--muted);">ابتدا یک بانک تعریف کنید، سپس کارت آن را ثبت کنید</p>
-        <button class="primary-button" id="emptyAddBankBtn" type="button">➕ افزودن بانک</button>
-      </div>
-    `;
-    if (dotsContainer) dotsContainer.innerHTML = "";
-    const emptyBtn = document.getElementById("emptyAddBankBtn");
-    if (emptyBtn) emptyBtn.addEventListener("click", () => openAddBankModal());
-    return;
-  }
-
-  // ... ادامه کد کارت‌ها (همون کد قبلی)
-}
-
-// ===== توابع مدیریت بانک‌ها =====
-function openAddBankModal() {
-  const name = prompt("نام بانک جدید را وارد کنید:");
-  if (name && name.trim()) {
-    const banks = loadBanksFromStorage();
-    banks.push(name.trim());
-    saveBanksToStorage(banks);
-    renderBankCards();
-    showToast("بانک اضافه شد", "success");
-  }
-}
-
-function editBankName(index) {
-  const banks = loadBanksFromStorage();
-  const newName = prompt("نام جدید:", banks[index]);
-  if (newName && newName.trim()) {
-    banks[index] = newName.trim();
-    saveBanksToStorage(banks);
-    renderBankCards();
-    showToast("نام بانک تغییر کرد", "success");
-  }
-}
-
-function deleteBankName(index) {
-  const banks = loadBanksFromStorage();
-  if (!confirm(`حذف "${banks[index]}"؟`)) return;
-  banks.splice(index, 1);
-  saveBanksToStorage(banks);
-  renderBankCards();
-  showToast("بانک حذف شد", "info");
-}
-
-function addCardToBank(bankName) {
-  // باز کردن مودال با نام بانک پر شده
-  openBankCardModal(null, bankName);
-}
-
-// ===== اصلاح مودال کارت =====
-function openBankCardModal(card = null, prefillBank = null) {
-  const modal = document.getElementById("bankCardModal");
-  const form = document.getElementById("bankCardForm");
-  const title = document.getElementById("bankCardModalTitle");
-  const idField = document.getElementById("editBankCardId");
-  const nameField = document.getElementById("bankCardName");
-  const numberField = document.getElementById("bankCardNumber");
-  const ibanField = document.getElementById("bankCardIban");
-  const expiryField = document.getElementById("bankCardExpiry");
-  const cvvField = document.getElementById("bankCardCvv");
-  const balanceField = document.getElementById("bankCardBalance");
-  const colorField = document.getElementById("bankCardColor");
-  const designField = document.getElementById("bankCardDesign");
-
-  if (!modal) return;
-  form.reset();
-  idField.value = "";
-
-  // اگر نام بانک از قبل مشخص شده
-  if (prefillBank) {
-    nameField.value = prefillBank;
-  }
-
-  if (card) {
-    title.textContent = "ویرایش کارت بانکی";
-    idField.value = card.id || "";
-    nameField.value = card.bankName || "";
-    numberField.value = card.cardNumber || "";
-    ibanField.value = card.iban || "";
-    expiryField.value = card.expiry || "";
-    cvvField.value = card.cvv || "";
-    balanceField.value = card.balance || "";
-    colorField.value = card.color || "#1a2332";
-    if (designField) designField.value = card.design || "0";
-  } else {
-    title.textContent = "ثبت کارت بانکی جدید";
-  }
-
-  modal.classList.add("open");
-  document.body.style.overflow = "hidden";
-}
-// =========================================================
-// ================= منوی همبرگری =================
-// =========================================================
-
-function createHamburgerPanel() {
-  const panel = document.createElement("div");
-  panel.id = "hamburgerPanel";
-  panel.className = "hamburger-panel hidden";
-  panel.innerHTML = `
-    <div class="hamburger-backdrop"></div>
-    <div class="hamburger-sheet">
-      <div class="hamburger-header">
-        <h3>📋 منو</h3>
-        <button id="closeHamburgerBtn" type="button">✕</button>
-      </div>
-      <div class="hamburger-items">
-        <button class="hamburger-item" data-action="refresh">
-          <span>🔄</span> بروزرسانی
-        </button>
-        <button class="hamburger-item" data-action="banks">
-          <span>🏦</span> بانک‌ها
-        </button>
-        <button class="hamburger-item" data-action="settings">
-          <span>⚙️</span> تنظیمات
-        </button>
-        <button class="hamburger-item" data-action="profile">
-          <span>👤</span> پروفایل
-        </button>
-      </div>
-      <div class="hamburger-profile">
-        <div class="profile-avatar">
-          <img id="profileAvatarImg" src="assets/default-avatar.png" alt="پروفایل">
-        </div>
-        <div class="profile-name">کاربر</div>
-        <button class="profile-upload-btn" id="profileUploadBtn" type="button">📷 تغییر عکس</button>
-        <input type="file" id="profileImageInput" accept="image/*" style="display:none">
-      </div>
-    </div>
-  `;
-  document.body.appendChild(panel);
-
-  // باز و بسته کردن منو
   const menuBtn = document.getElementById("hamburgerMenuBtn");
   if (menuBtn) {
     menuBtn.addEventListener("click", function(e) {
@@ -3157,7 +2846,6 @@ function createHamburgerPanel() {
     });
   }
 
-  // دکمه‌های منو
   panel.querySelectorAll(".hamburger-item").forEach(function(item) {
     item.addEventListener("click", function() {
       const action = this.dataset.action;
@@ -3196,7 +2884,6 @@ function createHamburgerPanel() {
     });
   });
 
-  // عکس پروفایل
   const uploadBtn = document.getElementById("profileUploadBtn");
   if (uploadBtn) {
     uploadBtn.addEventListener("click", function() {
@@ -3222,7 +2909,6 @@ function createHamburgerPanel() {
     });
   }
 
-  // بارگذاری عکس ذخیره شده
   const savedImage = localStorage.getItem("profileImage");
   if (savedImage) {
     const img = document.getElementById("profileAvatarImg");
@@ -3230,84 +2916,24 @@ function createHamburgerPanel() {
   }
 }
 
-// اجرای منو بعد از لود کامل
-setTimeout(createHamburgerPanel, 300);
+// =========================================================
+// ================= مقداردهی اولیه =================
+// =========================================================
 
-// اصلاح openPage برای پشتیبانی از بانک‌ها
-if (typeof openPage === 'function') {
-  const originalOpenPage = openPage;
-  openPage = function(id, title) {
-    originalOpenPage(id, title);
-    if (id === "banksPage") {
-      setTimeout(function() {
-        if (typeof renderBankCards === 'function') {
-          renderBankCards();
-        }
-      }, 200);
+function initNewFeatures() {
+  createHamburgerPanel();
+  loadBankCards();
+  initCarouselTouch();
+  
+  document.addEventListener("click", (e) => {
+    if (e.target.id === "emptyAddBankBtn") {
+      openBankCardModal();
     }
-  };
+  });
 }
-// =========================================================
-// ================= تنظیم خودکار منوی پایین ===============
-// =========================================================
-// ================= چسبوندن منو به کف صفحه =================
-// =========================================================
 
-// =========================================================
-// ================= بالا آوردن منو =================
-// =========================================================
+setTimeout(initNewFeatures, 300);
 
-(function bringNavUp() {
-    function fixNav() {
-        const nav = document.querySelector('.bottom-nav');
-        if (!nav) return;
-        
-        // منو رو بالاتر ببر (با فاصله از پایین)
-        nav.style.position = 'fixed';
-        nav.style.bottom = '12px';  // ← این خط رو عوض کن به 12px
-        nav.style.left = '50%';
-        nav.style.transform = 'translateX(-50%)';
-        nav.style.width = 'min(100%, 620px)';
-        nav.style.maxWidth = '620px';
-        nav.style.zIndex = '99999';
-        nav.style.height = '70px';
-        nav.style.background = 'rgba(17, 24, 39, 0.98)';
-        nav.style.backdropFilter = 'blur(20px)';
-        nav.style.WebkitBackdropFilter = 'blur(20px)';
-        nav.style.borderTop = '1px solid rgba(255,255,255,0.08)';
-        nav.style.borderRadius = '16px';  // گرد کردن گوشه‌ها
-        nav.style.display = 'grid';
-        nav.style.gridTemplateColumns = 'repeat(5, 1fr)';
-        nav.style.alignItems = 'center';
-        nav.style.justifyItems = 'center';
-        nav.style.padding = '0 10px';
-        nav.style.paddingBottom = 'env(safe-area-inset-bottom)';
-        nav.style.boxShadow = '0 -4px 30px rgba(0,0,0,0.5)';
-        
-        // فضای خالی
-        const app = document.querySelector('.app');
-        if (app) {
-            app.style.paddingBottom = '95px';
-        }
-    }
-    
-    fixNav();
-    
-    // همه رویدادها
-    window.addEventListener('load', function() {
-        setTimeout(fixNav, 50);
-        setTimeout(fixNav, 200);
-    });
-    window.addEventListener('resize', fixNav);
-    window.addEventListener('orientationchange', function() {
-        setTimeout(fixNav, 200);
-    });
-    document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) setTimeout(fixNav, 200);
-    });
-    
-    console.log('✅ منو بالا آورده شد');
-})();
 //آخر جدید
 initAppLock();
 initSettingsUI();
