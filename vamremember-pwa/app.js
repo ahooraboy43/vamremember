@@ -3090,6 +3090,163 @@ function openBankCardModal(card = null, prefillBank = null) {
   modal.classList.add("open");
   document.body.style.overflow = "hidden";
 }
+// =========================================================
+// ================= منوی همبرگری =================
+// =========================================================
+
+function createHamburgerPanel() {
+  const panel = document.createElement("div");
+  panel.id = "hamburgerPanel";
+  panel.className = "hamburger-panel hidden";
+  panel.innerHTML = `
+    <div class="hamburger-backdrop"></div>
+    <div class="hamburger-sheet">
+      <div class="hamburger-header">
+        <h3>📋 منو</h3>
+        <button id="closeHamburgerBtn" type="button">✕</button>
+      </div>
+      <div class="hamburger-items">
+        <button class="hamburger-item" data-action="refresh">
+          <span>🔄</span> بروزرسانی
+        </button>
+        <button class="hamburger-item" data-action="banks">
+          <span>🏦</span> بانک‌ها
+        </button>
+        <button class="hamburger-item" data-action="settings">
+          <span>⚙️</span> تنظیمات
+        </button>
+        <button class="hamburger-item" data-action="profile">
+          <span>👤</span> پروفایل
+        </button>
+      </div>
+      <div class="hamburger-profile">
+        <div class="profile-avatar">
+          <img id="profileAvatarImg" src="assets/default-avatar.png" alt="پروفایل">
+        </div>
+        <div class="profile-name">کاربر</div>
+        <button class="profile-upload-btn" id="profileUploadBtn" type="button">📷 تغییر عکس</button>
+        <input type="file" id="profileImageInput" accept="image/*" style="display:none">
+      </div>
+    </div>
+  `;
+  document.body.appendChild(panel);
+
+  // باز و بسته کردن منو
+  const menuBtn = document.getElementById("hamburgerMenuBtn");
+  if (menuBtn) {
+    menuBtn.addEventListener("click", function(e) {
+      e.stopPropagation();
+      panel.classList.toggle("hidden");
+      document.body.style.overflow = panel.classList.contains("hidden") ? "" : "hidden";
+    });
+  }
+
+  const closeBtn = document.getElementById("closeHamburgerBtn");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", function() {
+      panel.classList.add("hidden");
+      document.body.style.overflow = "";
+    });
+  }
+
+  const backdrop = panel.querySelector(".hamburger-backdrop");
+  if (backdrop) {
+    backdrop.addEventListener("click", function() {
+      panel.classList.add("hidden");
+      document.body.style.overflow = "";
+    });
+  }
+
+  // دکمه‌های منو
+  panel.querySelectorAll(".hamburger-item").forEach(function(item) {
+    item.addEventListener("click", function() {
+      const action = this.dataset.action;
+      panel.classList.add("hidden");
+      document.body.style.overflow = "";
+      
+      switch(action) {
+        case "refresh":
+          if (typeof performFullAppUpdate === 'function') {
+            performFullAppUpdate();
+          } else {
+            window.location.reload();
+          }
+          break;
+        case "banks":
+          if (typeof openPage === 'function') {
+            openPage("banksPage", "🏦 بانک‌ها");
+            setTimeout(function() {
+              if (typeof renderBankCards === 'function') {
+                renderBankCards();
+              }
+            }, 200);
+          }
+          break;
+        case "settings":
+          if (typeof openPage === 'function') {
+            openPage("settingsPage", "⚙️ تنظیمات");
+          }
+          break;
+        case "profile":
+          if (typeof showToast === 'function') {
+            showToast("پروفایل در منو قابل مشاهده است", "info");
+          }
+          break;
+      }
+    });
+  });
+
+  // عکس پروفایل
+  const uploadBtn = document.getElementById("profileUploadBtn");
+  if (uploadBtn) {
+    uploadBtn.addEventListener("click", function() {
+      document.getElementById("profileImageInput")?.click();
+    });
+  }
+
+  const imageInput = document.getElementById("profileImageInput");
+  if (imageInput) {
+    imageInput.addEventListener("change", function(e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        const img = document.getElementById("profileAvatarImg");
+        if (img) img.src = ev.target.result;
+        localStorage.setItem("profileImage", ev.target.result);
+        if (typeof showToast === 'function') {
+          showToast("عکس پروفایل تغییر کرد", "success");
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // بارگذاری عکس ذخیره شده
+  const savedImage = localStorage.getItem("profileImage");
+  if (savedImage) {
+    const img = document.getElementById("profileAvatarImg");
+    if (img) img.src = savedImage;
+  }
+}
+
+// اجرای منو بعد از لود کامل
+setTimeout(createHamburgerPanel, 300);
+
+// اصلاح openPage برای پشتیبانی از بانک‌ها
+if (typeof openPage === 'function') {
+  const originalOpenPage = openPage;
+  openPage = function(id, title) {
+    originalOpenPage(id, title);
+    if (id === "banksPage") {
+      setTimeout(function() {
+        if (typeof renderBankCards === 'function') {
+          renderBankCards();
+        }
+      }, 200);
+    }
+  };
+}
 //آخر جدید
 initAppLock();
 initSettingsUI();
