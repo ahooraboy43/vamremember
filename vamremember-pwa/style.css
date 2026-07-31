@@ -28,8 +28,6 @@
      اندازه آیکون‌ها *فقط داخل نوار پایین* (بدون دست‌کاری
      کلاس عمومی .img-btn / .img-btn1 که جای دیگر هم استفاده
      می‌شود) رفع شده است.
-========================================================= */
-
 *{
   box-sizing:border-box;
   -webkit-tap-highlight-color:transparent;
@@ -2495,7 +2493,276 @@ label{
 .toast.info{
   border-right:4px solid #3b82f6;
 }
+/* =========================================================
+   LIQUID GLASS — ثبت مورد جدید
+   ========================================================= */
 
+.liquid-segmented-control{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  width:100%;
+  height:58px;
+  padding:4px;
+
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:19px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255,255,255,.12),
+      rgba(255,255,255,.035)
+    );
+
+  backdrop-filter:blur(22px) saturate(180%);
+  -webkit-backdrop-filter:blur(22px) saturate(180%);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.18),
+    inset 0 -1px 0 rgba(0,0,0,.22),
+    0 10px 30px rgba(0,0,0,.22);
+
+  overflow:hidden;
+  isolation:isolate;
+}
+
+/* نور خیلی ظریف داخل شیشه */
+.liquid-segmented-control::before{
+  content:"";
+  position:absolute;
+  top:-35px;
+  right:8%;
+  width:55%;
+  height:70px;
+
+  background:radial-gradient(
+    ellipse,
+    rgba(255,255,255,.13),
+    transparent 70%
+  );
+
+  filter:blur(10px);
+  pointer-events:none;
+  z-index:0;
+}
+
+/* خط نور بالایی */
+.liquid-segmented-control::after{
+  content:"";
+  position:absolute;
+  inset:1px;
+
+  border-radius:18px;
+
+  border-top:1px solid rgba(255,255,255,.14);
+
+  pointer-events:none;
+  z-index:5;
+}
+
+/* خود شیشه فعال */
+.liquid-segmented-control .liquid-segment-glow{
+  position:absolute;
+  z-index:1;
+
+  top:4px;
+  right:4px;
+
+  width:calc(25% - 2px);
+  height:50px;
+
+  border-radius:15px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.22),
+      rgba(255,255,255,.075)
+    );
+
+  border:1px solid rgba(255,255,255,.2);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.25),
+    inset 0 -5px 10px rgba(0,0,0,.12),
+    0 5px 16px rgba(0,0,0,.2);
+
+  backdrop-filter:blur(18px) saturate(190%);
+  -webkit-backdrop-filter:blur(18px) saturate(190%);
+
+  transition:
+    transform .38s cubic-bezier(.22,1,.36,1),
+    background .25s ease,
+    box-shadow .25s ease;
+
+  pointer-events:none;
+}
+
+/* حرکت شیشه فعال در حالت RTL
+   ترتیب: قسط ← هزینه ← درآمد ← قرض و دین */
+
+.liquid-segmented-control:has(
+  #installmentTypeButton.active
+) .liquid-segment-glow{
+  transform:translateX(0);
+}
+
+.liquid-segmented-control:has(
+  #expenseTypeButton.active
+) .liquid-segment-glow{
+  transform:translateX(-100%);
+}
+
+.liquid-segmented-control:has(
+  #incomeTypeButton.active
+) .liquid-segment-glow{
+  transform:translateX(-200%);
+}
+
+.liquid-segmented-control:has(
+  #debtTypeButton.active
+) .liquid-segment-glow{
+  transform:translateX(-300%);
+}
+
+
+/* گزینه‌ها */
+.liquid-segmented-control .liquid-segment{
+  position:relative;
+  z-index:3;
+
+  min-width:0;
+  height:50px;
+
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+
+  gap:2px;
+
+  border:0;
+  outline:0;
+  background:transparent !important;
+
+  color:rgba(255,255,255,.68);
+
+  font-family:inherit;
+  font-size:12px;
+  font-weight:600;
+
+  padding:3px 2px;
+
+  cursor:pointer;
+
+  transition:
+    color .25s ease,
+    transform .18s ease;
+}
+
+/* آیکن */
+.liquid-segmented-control .segment-icon{
+  font-size:16px;
+  line-height:17px;
+
+  filter:
+    grayscale(.25)
+    drop-shadow(0 1px 2px rgba(0,0,0,.25));
+
+  transition:
+    transform .3s ease,
+    filter .3s ease;
+}
+
+/* فعال */
+.liquid-segmented-control .liquid-segment.active{
+  color:#fff !important;
+
+  text-shadow:
+    0 1px 4px rgba(0,0,0,.35);
+}
+
+.liquid-segmented-control .liquid-segment.active .segment-icon{
+  transform:translateY(-1px) scale(1.08);
+
+  filter:
+    drop-shadow(0 2px 5px rgba(255,255,255,.18));
+}
+
+/* لمس */
+.liquid-segmented-control .liquid-segment:active{
+  transform:scale(.93);
+}
+
+
+/* نور فعال برای رنگ‌های مختلف */
+.form-installment
+.liquid-segment-glow{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.28),
+    0 5px 20px rgba(14,165,233,.16);
+}
+
+.form-expense
+.liquid-segment-glow{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.28),
+    0 5px 20px rgba(239,68,68,.14);
+}
+
+.form-income
+.liquid-segment-glow{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.28),
+    0 5px 20px rgba(34,197,94,.14);
+}
+
+.form-transfer
+.liquid-segment-glow{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.28),
+    0 5px 20px rgba(245,158,11,.14);
+}
+
+
+/* موبایل */
+@media(max-width:480px){
+
+  .liquid-segmented-control{
+    height:56px;
+    border-radius:18px;
+  }
+
+  .liquid-segmented-control .liquid-segment-glow{
+    height:48px;
+    border-radius:14px;
+  }
+
+  .liquid-segmented-control .liquid-segment{
+    height:48px;
+    font-size:11px;
+  }
+
+  .liquid-segmented-control .segment-icon{
+    font-size:15px;
+  }
+
+}
+
+
+/* iPhone های کوچک */
+@media(max-width:360px){
+
+  .liquid-segmented-control .liquid-segment{
+    font-size:10px;
+  }
+
+  .liquid-segmented-control .segment-icon{
+    font-size:14px;
+  }
+
+}
 /* =========================================================
    REDUCE MOTION
 ========================================================= */
