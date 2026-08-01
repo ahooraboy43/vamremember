@@ -1733,6 +1733,7 @@ function openEditDebtModal(d){
 }
 
 function openPage(id,title){
+
   pages.forEach(p=>p.classList.toggle("active",p.id===id));
   navButtons.forEach(b=>b.classList.toggle("active",b.dataset.page===id));
   pageTitle.textContent=title;
@@ -1747,7 +1748,6 @@ function openPage(id,title){
   window.scrollTo({top:0,behavior:"smooth"})
 }
 refreshButton.addEventListener("click", performFullAppUpdate);
-navButtons.forEach(b=>b.addEventListener("click",()=>openPage(b.dataset.page,b.dataset.title)));
 searchInput.addEventListener("input",()=>{visibleCount=PAGE_SIZE;renderAllCards()});
 function updateStatusFilterLabels(filter){
   const paidBtn=$("statusFilterPaid"),unpaidBtn=$("statusFilterUnpaid");
@@ -2712,36 +2712,29 @@ document.getElementById("addBankBtn")?.addEventListener("click", openAddBankModa
 function createHamburgerPanel() {
   const panel = document.createElement("div");
   panel.id = "hamburgerPanel";
-  panel.className = "hamburger-panel hidden";
+  panel.className = "hamburger-popup hidden";
   panel.innerHTML = `
-    <div class="hamburger-backdrop"></div>
-    <div class="hamburger-sheet">
-      <div class="hamburger-header">
-        <h3>📋 منو</h3>
-        <button id="closeHamburgerBtn" type="button">✕</button>
+    <div class="hamburger-items">
+      <button class="hamburger-item" data-action="refresh">
+        <span>🔄</span> بروزرسانی
+      </button>
+      <button class="hamburger-item" data-action="banks">
+        <span>🏦</span> بانک‌ها
+      </button>
+      <button class="hamburger-item" data-action="settings">
+        <span>⚙️</span> تنظیمات
+      </button>
+      <button class="hamburger-item" data-action="profile">
+        <span>👤</span> پروفایل
+      </button>
+    </div>
+    <div class="hamburger-profile">
+      <div class="profile-avatar" id="profileAvatar">
+        <img id="profileAvatarImg" src="assets/default-avatar.png" alt="پروفایل" onerror="this.src='assets/book.png'">
       </div>
-      <div class="hamburger-items">
-        <button class="hamburger-item" data-action="refresh">
-          <span>🔄</span> بروزرسانی
-        </button>
-        <button class="hamburger-item" data-action="banks">
-          <span>🏦</span> بانک‌ها
-        </button>
-        <button class="hamburger-item" data-action="settings">
-          <span>⚙️</span> تنظیمات
-        </button>
-        <button class="hamburger-item" data-action="profile">
-          <span>👤</span> پروفایل
-        </button>
-      </div>
-      <div class="hamburger-profile">
-        <div class="profile-avatar" id="profileAvatar">
-          <img id="profileAvatarImg" src="assets/default-avatar.png" alt="پروفایل">
-        </div>
-        <div class="profile-name" id="profileName">کاربر</div>
-        <button class="profile-upload-btn" id="profileUploadBtn" type="button">📷 تغییر عکس</button>
-        <input type="file" id="profileImageInput" accept="image/*" style="display:none">
-      </div>
+      <div class="profile-name" id="profileName">کاربر</div>
+      <button class="profile-upload-btn" id="profileUploadBtn" type="button">📷 تغییر عکس</button>
+      <input type="file" id="profileImageInput" accept="image/*" style="display:none">
     </div>
   `;
   document.body.appendChild(panel);
@@ -2751,32 +2744,23 @@ function createHamburgerPanel() {
     menuBtn.addEventListener("click", function(e) {
       e.stopPropagation();
       panel.classList.toggle("hidden");
-      document.body.style.overflow = panel.classList.contains("hidden") ? "" : "hidden";
     });
   }
 
-  const closeBtn = document.getElementById("closeHamburgerBtn");
-  if (closeBtn) {
-    closeBtn.addEventListener("click", function() {
+  // بستن با کلیک بیرون از پاپ‌آپ
+  document.addEventListener("click", function(e) {
+    if (!panel.classList.contains("hidden") &&
+        !panel.contains(e.target) &&
+        e.target !== menuBtn) {
       panel.classList.add("hidden");
-      document.body.style.overflow = "";
-    });
-  }
-
-  const backdrop = panel.querySelector(".hamburger-backdrop");
-  if (backdrop) {
-    backdrop.addEventListener("click", function() {
-      panel.classList.add("hidden");
-      document.body.style.overflow = "";
-    });
-  }
+    }
+  });
 
   panel.querySelectorAll(".hamburger-item").forEach(function(item) {
     item.addEventListener("click", function() {
       const action = this.dataset.action;
       panel.classList.add("hidden");
-      document.body.style.overflow = "";
-      
+
       switch(action) {
         case "refresh":
           if (typeof performFullAppUpdate === 'function') {
@@ -2800,45 +2784,10 @@ function createHamburgerPanel() {
             openPage("settingsPage", "⚙️ تنظیمات");
           }
           break;
-        case "profile":
-          if (typeof showToast === 'function') {
-            showToast("پروفایل در منو قابل مشاهده است", "info");
-          }
-          break;
+        // case "profile": ...
       }
     });
   });
-
-  const uploadBtn = document.getElementById("profileUploadBtn");
-  if (uploadBtn) {
-    uploadBtn.addEventListener("click", function() {
-      document.getElementById("profileImageInput")?.click();
-    });
-  }
-
-  const imageInput = document.getElementById("profileImageInput");
-  if (imageInput) {
-    imageInput.addEventListener("change", function(e) {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(ev) {
-        const img = document.getElementById("profileAvatarImg");
-        if (img) img.src = ev.target.result;
-        localStorage.setItem("profileImage", ev.target.result);
-        if (typeof showToast === 'function') {
-          showToast("عکس پروفایل تغییر کرد", "success");
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-
-  const savedImage = localStorage.getItem("profileImage");
-  if (savedImage) {
-    const img = document.getElementById("profileAvatarImg");
-    if (img) img.src = savedImage;
-  }
 }
 
 // =========================================================

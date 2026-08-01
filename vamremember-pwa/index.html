@@ -12,7 +12,9 @@
 <link rel="stylesheet" href="./style.css">
 <title>حسابداری شایان</title>
 </head>
-<body>
+<body style="
+    height: 1000px;
+">
 
 <!-- ================= قفل اپلیکیشن ================= -->
 <div id="appLockScreen" class="app-lock-screen hidden">
@@ -39,8 +41,9 @@
 <p id="today">در حال دریافت تاریخ…</p>
 </div>
 <div class="header-actions">
+  <button id="refresh" class="icon-button" type="button" aria-label="بروزرسانی">↻</button>
 <button id="hamburgerMenuBtn" class="icon-button" type="button" aria-label="منو">☰</button>
-<button id="refresh" class="icon-button" type="button" aria-label="بروزرسانی">↻</button>
+
 </div>
 </header>
 
@@ -187,16 +190,16 @@
 
 <!-- صفحه بانک‌ها -->
 <section class="page" id="banksPage">
-  <div class="bank-carousel-container" style="position:relative;width:100%;height:280px;margin-bottom:16px;overflow:visible;padding:10px 0;">
+  <div class="bank-carousel-container" style="position:relative;width:100%;height:280px;margin-bottom:0px;padding:10px 0;">
 <div class="bank-carousel" id="bankCarousel" style="position:relative;width:100%;height:0%;display:flex;align-items:center;justify-content:center;touch-action:pan-y;cursor:grab;"></div>
 <div class="carousel-dots" id="carouselDots" style="display:flex;justify-content:center;gap:8px;margin-top:12px;"></div>
 </div>
-<div class="banks-quick-info" style="margin-top:12px;">
+<div class="banks-quick-info" style="margin-top:-40px;margin-bottom: 20px;">
 <button class="primary-button" id="addBankCardBtn" type="button">➕ افزودن کارت بانکی</button>
 </div>
-<div class="banks-management" style="margin-bottom:16px;">
+<div class="home-gharz" style="margin-bottom:16px;">
 <div class="section-title">🏦 مدیریت بانک‌ها</div>
-<div id="banksManagementList"></div>
+<div id="banksManagementList" class="list-bank"></div>
 <button class="primary-button" id="addBankBtn" type="button" style="margin-top:10px;">➕ دددافزودن بانک جدید</button>
 </div>
 
@@ -267,7 +270,7 @@
 <button class="nav-button home-button" data-page="homePage" onclick="openPage('homePage','🏠 داشبورد')">
 <img class="img-btn" src="assets/home.png" alt="صفحه اصلی">
 </button>
-<button class="nav-button" data-page="banksPage" onclick="openPage('banksPage','🏦 بانک‌ها')">
+<button class="nav-button" data-page="banksPage" onclick="openPage('banksPage','📋 بانک ها')">
 <img class="img-btn1" src="assets/bank.png" alt="">
 <small>بانک‌ها</small>
 </button>
