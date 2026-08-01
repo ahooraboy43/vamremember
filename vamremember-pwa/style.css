@@ -868,7 +868,7 @@ img{
   transform: translateX(-50%) !important;
   width: min(100% - 24px, 620px) !important;
   max-width: 620px !important;
-  z-index: 99999 !important;
+  z-index: 899 !important;
   height: 70px !important;
   background: rgba(17, 24, 39, 0.95) !important;
   backdrop-filter: blur(20px) !important;
@@ -948,6 +948,7 @@ img{
   align-items: center !important;
   justify-content: center !important;
   padding: 0 !important;
+  z-index:960;
 }
 
 .home-button .img-btn {
