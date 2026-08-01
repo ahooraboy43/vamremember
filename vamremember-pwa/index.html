@@ -187,18 +187,17 @@
 
 <!-- صفحه بانک‌ها -->
 <section class="page" id="banksPage">
+  <div class="bank-carousel-container" style="position:relative;width:100%;height:240px;margin-bottom:16px;overflow:visible;padding:10px 0;">
+<div class="bank-carousel" id="bankCarousel" style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;touch-action:pan-y;cursor:grab;"></div>
+<div class="carousel-dots" id="carouselDots" style="display:flex;justify-content:center;gap:8px;margin-top:12px;"></div>
+</div>
+
 <div class="banks-management" style="margin-bottom:16px;">
 <div class="section-title">🏦 مدیریت بانک‌ها</div>
 <div id="banksManagementList"></div>
 <button class="primary-button" id="addBankBtn" type="button" style="margin-top:10px;">➕ افزودن بانک جدید</button>
 </div>
-<div class="bank-carousel-container" style="position:relative;width:100%;height:240px;margin-bottom:16px;overflow:visible;padding:10px 0;">
-<div class="bank-carousel" id="bankCarousel" style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;touch-action:pan-y;cursor:grab;"></div>
-<div class="carousel-dots" id="carouselDots" style="display:flex;justify-content:center;gap:8px;margin-top:12px;"></div>
-</div>
-<div class="banks-quick-info" style="margin-top:12px;">
-<button class="primary-button" id="addBankCardBtn" type="button">➕ افزودن کارت بانکی</button>
-</div>
+
 </section>
 
 <!-- صفحه تنظیمات -->
@@ -262,12 +261,13 @@
 <img class="img-btn1" src="assets/book.png" alt="">
 <small>سررسیدها</small>
 </button>
+
+<button class="nav-button home-button" data-page="homePage" onclick="openPage('homePage','🏠 داشبورد')">
+<img class="img-btn" src="assets/home.png" alt="صفحه اصلی">
+</button>
 <button class="nav-button" data-page="banksPage" onclick="openPage('banksPage','🏦 بانک‌ها')">
 <img class="img-btn1" src="assets/bank.png" alt="">
 <small>بانک‌ها</small>
-</button>
-<button class="nav-button home-button" data-page="homePage" onclick="openPage('homePage','🏠 داشبورد')">
-<img class="img-btn" src="assets/home.png" alt="صفحه اصلی">
 </button>
 <button class="nav-button" data-page="allPage" onclick="openPage('allPage','📋 همه اقساط')">
 <img class="img-btn1" src="assets/vam.png" alt="">

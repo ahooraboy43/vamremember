@@ -2777,7 +2777,6 @@ document.getElementById("bankCardForm")?.addEventListener("submit", function(e) 
 
 document.getElementById("closeBankCardModal")?.addEventListener("click", closeBankCardModal);
 document.getElementById("bankCardModal")?.querySelector(".modal-backdrop")?.addEventListener("click", closeBankCardModal);
-document.getElementById("addBankCardBtn")?.addEventListener("click", () => openBankCardModal());
 document.getElementById("addBankBtn")?.addEventListener("click", openAddBankModal);
 
 // =========================================================

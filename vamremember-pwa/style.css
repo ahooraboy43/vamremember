@@ -2529,19 +2529,3 @@ label{
   background: var(--surface-2);
 }
 
-@media(max-width: 480px) {
-  .bank-card-item {
-    width: 90%;
-    height: 180px;
-  }
-  .bank-card-number {
-    font-size: 14px;
-    padding: 6px 10px;
-  }
-  .bank-card-number span {
-    font-size: 13px;
-  }
-  .hamburger-sheet {
-    width: 260px;
-  }
-}
