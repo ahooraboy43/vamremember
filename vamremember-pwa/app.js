@@ -2268,81 +2268,6 @@ function ensureDefaultAppLock(){
    iOS VIEWPORT HEIGHT
 ========================================================= */
 
-(function () {
-
-  function setAppHeight() {
-    const vv = window.visualViewport;
-
-    const height = vv
-      ? Math.round(vv.height)
-      : window.innerHeight;
-
-    document.documentElement.style.setProperty(
-      '--app-vh',
-      height + 'px'
-    );
-  }
-
-  function nudgeScroll() {
-    const y = window.scrollY || window.pageYOffset || 0;
-    window.scrollTo(0, y + 1);
-    requestAnimationFrame(() => window.scrollTo(0, y));
-  }
-
-  function refresh() {
-    setAppHeight();
-    nudgeScroll();
-  }
-
-  refresh();
-
-  requestAnimationFrame(() => {
-    refresh();
-
-    requestAnimationFrame(() => {
-      refresh();
-    });
-  });
-
-  setTimeout(refresh, 150);
-  setTimeout(refresh, 500);
-  setTimeout(refresh, 1000);
-
-  window.addEventListener('load', function () {
-    setTimeout(refresh, 50);
-    setTimeout(refresh, 400);
-    setTimeout(refresh, 1000);
-  }, { passive: true });
-
-  window.addEventListener('pageshow', function () {
-    refresh();
-    setTimeout(refresh, 300);
-    setTimeout(refresh, 800);
-  }, { passive: true });
-
-  document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible') {
-      refresh();
-      setTimeout(refresh, 300);
-    }
-  }, { passive: true });
-
-  window.addEventListener('resize', setAppHeight, { passive: true });
-
-  window.addEventListener('orientationchange', function () {
-    requestAnimationFrame(refresh);
-    setTimeout(refresh, 100);
-  }, { passive: true });
-
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener(
-      'resize',
-      refresh,
-      { passive: true }
-    );
-  }
-
-})();
 
 function isAppLocked(){
   return !!(
@@ -2777,6 +2702,7 @@ document.getElementById("bankCardForm")?.addEventListener("submit", function(e) 
 
 document.getElementById("closeBankCardModal")?.addEventListener("click", closeBankCardModal);
 document.getElementById("bankCardModal")?.querySelector(".modal-backdrop")?.addEventListener("click", closeBankCardModal);
+document.getElementById("addBankCardBtn")?.addEventListener("click", () => openBankCardModal());
 document.getElementById("addBankBtn")?.addEventListener("click", openAddBankModal);
 
 // =========================================================
