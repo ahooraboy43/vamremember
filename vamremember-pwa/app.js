@@ -2480,6 +2480,7 @@ function renderBankCards() {
             ${card.balance ? Number(card.balance).toLocaleString('fa-IR') + ' ریال' : 'موجودی: ۰ ریال'}
           </div>
           <button class="bank-card-edit-btn" data-id="${card.id || i}" type="button">✎</button>
+          <button class="bank-card-delete-btn" data-id="${card.id || i}" type="button">🗑️</button>
         </div>
       </div>
     `;
@@ -2506,7 +2507,27 @@ function renderBankCards() {
       }
     });
   });
+container.querySelectorAll('.bank-card-edit-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const id = btn.dataset.id;
+    const card = bankCards.find(c => c.id == id);
+    if (card) openBankCardModal(card);
+  });
+});
 
+container.querySelectorAll('.bank-card-delete-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const id = btn.dataset.id;
+    const card = bankCards.find(c => c.id == id);
+    if (!card) return;
+    if (!confirm(`حذف کارت "${card.bankName}"؟`)) return;
+    bankCards = bankCards.filter(c => c.id != id);
+    saveBankCards();
+    showToast("کارت حذف شد", "info");
+  });
+});
   container.querySelectorAll('.bank-card-edit-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -2529,7 +2550,20 @@ function renderBankCards() {
     });
   }
 }
+function deleteBankName(index) {
+  const banks = loadBanksFromStorage();
+  const bankName = banks[index];
+  if (!confirm(`حذف "${bankName}"؟ کارت‌های این بانک هم حذف خواهند شد.`)) return;
 
+  banks.splice(index, 1);
+  saveBanksToStorage(banks);
+
+  // حذف کارت‌های بانکی مرتبط با این بانک
+  bankCards = bankCards.filter(c => c.bankName !== bankName);
+  saveBankCards();
+
+  showToast("بانک و کارت‌های آن حذف شد", "info");
+}
 function initCarouselTouch() {
   const container = document.getElementById("bankCarousel");
   if (!container) return;

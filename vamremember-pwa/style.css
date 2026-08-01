@@ -153,9 +153,9 @@ img{
 }
 
 #today{
-  margin-top:3px;
-  font-size:12px;
-  color:var(--muted);
+      margin: 16px;
+    font-size: 12px;
+    color: var(--muted);
 }
 
 .header-actions{
@@ -1946,10 +1946,11 @@ label{
 }
 
 .bank-card-type {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   opacity: 0.8;
   text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  margin: auto;
 }
 
 .bank-card-number {
@@ -1968,12 +1969,27 @@ label{
 }
 
 .bank-card-number span {
-  font-size: 12px;
+  font-size: 20px;
   letter-spacing: 1px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 130px;
+}
+.btn-sm{
+    position: static;
+    background: rgba(255, 255, 255, 0.12);
+    border: none;
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    color: #fff;
+    font-size: 11px;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: background 0.2s, transform 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .bank-card-bottom {
@@ -2237,22 +2253,15 @@ label{
     width: 94%;
   }
   .bank-card-number {
-    font-size: 12px;
-    padding: 4px 8px;
-  }
-  .bank-card-number span {
-    font-size: 10px;
-    max-width: 100px;
-  }
+    font-size: 14px;
+    padding: 14px 8px;
   .bank-card-inner {
     padding: 10px 12px;
   }
   .bank-card-chip {
     font-size: 18px;
   }
-  .bank-card-type {
-    font-size: 10px;
-  }
+  
   .bank-card-bottom {
     font-size: 9px;
   }
@@ -2712,4 +2721,24 @@ label{
 
 .profile-upload-btn:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+.bank-card-delete-btn {
+  position: absolute;
+  top: 8px;
+  left: 40px; /* کنار دکمه ویرایش، فاصله بده که رو هم نیوفتن */
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: #ff3b30;
+  font-size: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bank-card-delete-btn:hover {
+  background: rgba(255, 59, 48, 0.25);
 }
