@@ -2758,18 +2758,8 @@ function createHamburgerPanel() {
       <button class="hamburger-item" data-action="settings">
         <span>⚙️</span> تنظیمات
       </button>
-      <button class="hamburger-item" data-action="profile">
-        <span>👤</span> پروفایل
-      </button>
     </div>
-    <div class="hamburger-profile">
-      <div class="profile-avatar" id="profileAvatar">
-        <img id="profileAvatarImg" src="assets/default-avatar.png" alt="پروفایل" onerror="this.src='assets/book.png'">
-      </div>
-      <div class="profile-name" id="profileName">کاربر</div>
-      <button class="profile-upload-btn" id="profileUploadBtn" type="button">📷 تغییر عکس</button>
-      <input type="file" id="profileImageInput" accept="image/*" style="display:none">
-    </div>
+    
   `;
   document.body.appendChild(panel);
 
