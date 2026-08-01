@@ -949,6 +949,8 @@ img{
   justify-content: center !important;
   padding: 0 !important;
   z-index:960;
+  bottom: 87px !important;
+  left 200px;
 }
 
 .home-button .img-btn {
