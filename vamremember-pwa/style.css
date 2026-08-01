@@ -937,7 +937,7 @@ img{
 }
 
 .home-button {
-  margin-top: -25px !important;
+  margin-top: -35px !important;
   width: 60px !important;
   height: 60px !important;
   border-radius: 50% !important;
@@ -951,7 +951,7 @@ img{
   z-index:960;
   bottom: 87px !important;
   left :200px;
-  margin-left:200px;
+  
 }
 
 .home-button .img-btn {
