@@ -882,6 +882,22 @@ img{
   padding: 0 8px !important;
   padding-bottom: env(safe-area-inset-bottom) !important;
   box-shadow: 0 -4px 30px rgba(0,0,0,0.4), 0 4px 20px rgba(0,0,0,0.2) !important;
+  --r: 20px;  /* control the rounded part */
+  --s: 40px;  /* control the size of the cut */
+  --a: 30deg; /* control the depth of the curvature */
+  --p: 68%;   /* control the position */
+
+  height: 70px;<div>  width: 440px;<br><div><div>  aspect-ratio: 1/2;
+  background: #ED303C;
+  border-radius: var(--r);
+  --_m:var(--r),#000 calc(100% - 1px),#0000;
+  --_d:(var(--s) + var(--r))*cos(var(--a));
+  mask:
+    radial-gradient(var(--r) at calc(var(--p) + var(--_d)) var(--_m)),
+    radial-gradient(var(--r) at calc(var(--p) - var(--_d)) var(--_m)),
+    radial-gradient(var(--s) at var(--p) calc(-1*sin(var(--a))*var(--s)),
+      #0000 100%,#000 calc(100% + 1px)) 0 calc(var(--r)*(1 - sin(var(--a)))) no-repeat,
+    linear-gradient(90deg,#000 calc(var(--p) - var(--_d)),#0000 0 calc(var(--p) + var(--_d)),#000 0);
 }
 
 .nav-button {
