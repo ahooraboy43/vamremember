@@ -938,6 +938,7 @@ img{
 
 .home-button {
   margin-top: -35px !important;
+   bottom: 92px !important;
   width: 60px !important;
   height: 60px !important;
   border-radius: 50% !important;
@@ -950,7 +951,7 @@ img{
   padding: 0 !important;
   z-index:960;
   bottom: 87px !important;
-  left :200px;
+  margin-left :300px;
   
 }
 
