@@ -949,7 +949,11 @@ img{
   justify-content: center !important;
   padding: 0 !important;
   z-index:960;
-  margin-left :250px;
+ width: 54px !important;
+        height: 54px !important;
+        margin-top: -178px !important;
+        
+        margin-right: 112px;
   
 }
 
@@ -970,11 +974,6 @@ img{
     bottom: 10px !important;
     border-radius: 18px !important;
     padding: 0 6px !important;
-  }
-  .home-button {
-    width: 54px !important;
-    height: 54px !important;
-    margin-top: -20px !important;
   }
   .home-button .img-btn {
     width: 26px !important;
@@ -2640,7 +2639,7 @@ label{
 .icon-button:active {
   background: rgba(255, 255, 255, 0.1);
 }
-
+.inszz {display: none;}
 .hamburger-popup {
     position: fixed;
     top: 70px;
