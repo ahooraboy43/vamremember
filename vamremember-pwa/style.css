@@ -949,11 +949,9 @@ img{
   justify-content: center !important;
   padding: 0 !important;
   z-index:960;
-  width: 54px !important;
-  height: 54px !important;
-  margin-top: -142px !important;
-  margin-right: 117px;
-  
+  margin-top: -124px !important;
+    margin-right: 114px;
+    position: fixed;
 }
 
 .home-button .img-btn {
