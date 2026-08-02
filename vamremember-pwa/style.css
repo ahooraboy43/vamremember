@@ -1960,6 +1960,7 @@ label{
   font-weight: 600;
   opacity: 0.9;
   text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  display: none;
 }
 
 /* نمایش مقدار کامل فقط روی کارت وسط، بقیه ماسک‌شده - بدون رندر مجدد کل کارت */
@@ -1981,6 +1982,7 @@ label{
   border-radius: 8px;
   margin: 3px 0;
   text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  margin-bottom: -2rem;
 }
 
 .bank-card-number span {
@@ -2013,6 +2015,7 @@ label{
   align-items: center;
   font-size: 11px;
   opacity: 0.85;
+  margin-bottom: -2rem;
 }
 
 .bank-card-expiry, .bank-card-cvv {
@@ -2268,13 +2271,13 @@ label{
     padding: 10px calc(50% - 130px);
   }
   .bank-card-item {
-    height: 160px;
+    height: 190px;
     flex-basis: 260px;
-    max-width: 260px;
+    max-width: 290px;
   }
   .bank-card-number {
     font-size: 14px;
-    padding: 6px 8px;
+   
   }
   .bank-card-inner {
     padding: 10px 12px;

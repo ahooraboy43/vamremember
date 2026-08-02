@@ -2410,6 +2410,18 @@ function renderBankCards() {
 
   if (!container) return;
 
+  // حتماً استایل‌های اسکرول روی خود المان باشه
+  container.style.overflowX = "auto";
+  container.style.overflowY = "hidden";
+  container.style.webkitOverflowScrolling = "touch";
+  container.style.scrollSnapType = "x mandatory";
+  container.style.display = "flex";
+  container.style.gap = "16px";
+  container.style.padding = "10px calc(50% - 150px)";
+  container.style.scrollbarWidth = "none";
+  container.style.cursor = "grab";
+  container.style.touchAction = "pan-x";
+
   if (banksListContainer) {
     const banks = loadBanksFromStorage();
     banksListContainer.innerHTML = banks.map((b, i) => {
@@ -2420,7 +2432,7 @@ function renderBankCards() {
           <div style="display:flex;gap:6px;">
             <button class="btn-sm" onclick="editBankName(${i})">✎</button>
             <button class="btn-sm btn-danger" onclick="deleteBankName(${i})">✕</button>
-            <button class="btn-sm btn-primary" onclick="addCardToBank('${b}')">${hasCard ? '✎' : '➕'}</button>
+            <button class="btn-sm btn-primary" onclick="addCardToBank('${b}')">${hasCard ? '✎ کارت' : '➕ کارت'}</button>
           </div>
         </div>
       `;
@@ -2456,45 +2468,42 @@ function renderBankCards() {
     const isCenter = i === currentCardIndex;
 
     cardsHtml += `
-      <div class="bank-card-item ${isCenter ? 'is-center' : ''}" data-index="${i}" style="${bgStyle}">
-        ${hasImage ? '<div class="bank-card-overlay"></div>' : ''}
-        <div class="bank-card-inner">
-          <div class="bank-card-top">
-            <span class="bank-card-chip">💳</span>
-            <span class="bank-card-type">${card.bankName || 'بانک'}</span>
+      <div class="bank-card-item ${isCenter ? 'is-center' : ''}" 
+           data-index="${i}" 
+           style="${bgStyle} flex: 0 0 280px; max-width: 280px; height: 180px; border-radius: 20px; scroll-snap-align: center; position: relative; box-shadow: 0 12px 30px rgba(0,0,0,0.3);">
+        ${hasImage ? '<div class="bank-card-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.3);border-radius:20px;"></div>' : ''}
+        <div class="bank-card-inner" style="position:relative;width:100%;height:100%;padding:12px 14px;border-radius:20px;background:linear-gradient(145deg,rgba(255,255,255,0.12) 0%,rgba(255,255,255,0.04) 100%);border:1px solid rgba(255,255,255,0.08);display:flex;flex-direction:column;justify-content:space-between;color:#fff;overflow:hidden;z-index:1;">
+          <div class="bank-card-top" style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <span class="bank-card-chip" style="font-size:20px;">💳</span>
+            <span class="bank-card-type" style="font-size:12px;font-weight:600;opacity:0.9;">${card.bankName || 'بانک'}</span>
           </div>
 
-          <div class="bank-card-number" data-field="number">
-            <span class="full-value" dir="ltr">${fullNumber || '••••-••••-••••-••••'}</span>
-            <span class="masked-value" dir="ltr">${masked}</span>
-            <button class="copy-btn" data-field="number" data-value="${card.cardNumber || ''}" type="button">📋</button>
+          <div class="bank-card-number" style="">
+            <span class="full-value" dir="ltr" style="font-size:14px;">${fullNumber || '••••-••••-••••-••••'}</span>
+            <span class="masked-value" dir="ltr" style="font-size:14px;">${masked}</span>
+            <button class="copy-btn" data-field="number" data-value="${card.cardNumber || ''}" type="button" style="background:rgba(255,255,255,0.15);border:none;border-radius:4px;color:#fff;padding:1px 5px;font-size:8px;cursor:pointer;">📋</button>
           </div>
 
-          <div class="bank-card-bottom">
-            <div class="bank-card-expiry" data-field="expiry">
+          <div class="bank-card-bottom" style="display:flex;justify-content:space-between;align-items:center;font-size:10px;opacity:0.85;">
+            <div class="bank-card-expiry" style="display:flex;align-items:center;gap:4px;background:rgba(0,0,0,0.15);padding:2px 6px;border-radius:6px;font-size:9px;">
               <span class="full-value" dir="ltr">${card.expiry || '••/••'}</span>
               <span class="masked-value" dir="ltr">••/••</span>
-              <button class="copy-btn" data-field="expiry" data-value="${card.expiry || ''}" type="button">📋</button>
             </div>
-            <div class="bank-card-cvv" data-field="cvv">
+            <div class="bank-card-cvv" style="display:flex;align-items:center;gap:4px;background:rgba(0,0,0,0.15);padding:2px 6px;border-radius:6px;font-size:9px;">
               <span class="full-value">${card.cvv || '•••'}</span>
               <span class="masked-value">•••</span>
-              <button class="copy-btn" data-field="cvv" data-value="${card.cvv || ''}" type="button">📋</button>
             </div>
           </div>
 
-          <div class="bank-card-iban" data-field="iban">
+          <div class="bank-card-iban" style="font-size:9px;opacity:0.75;display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.15);padding:2px 8px;border-radius:6px;margin-top:2px;font-family:'Courier New',monospace;">
             <span class="full-value" dir="ltr">${card.iban || 'شبا ثبت نشده'}</span>
             <span class="masked-value" dir="ltr">••••-••••-••••-••••</span>
-            <button class="copy-btn" data-field="iban" data-value="${card.iban || ''}" type="button">📋</button>
+            <button class="copy-btn" data-field="iban" data-value="${card.iban || ''}" type="button" style="background:rgba(255,255,255,0.15);border:none;border-radius:4px;color:#fff;padding:1px 5px;font-size:8px;cursor:pointer;">📋</button>
           </div>
 
-          <div class="bank-card-balance">
-            ${card.balance ? Number(card.balance).toLocaleString('fa-IR') + ' ریال' : 'موجودی: ۰ ریال'}
-          </div>
 
-          <button class="bank-card-edit-btn" data-id="${card.id || i}" type="button">✎</button>
-          <button class="bank-card-delete-btn" data-id="${card.id || i}" type="button">🗑️</button>
+          <button class="bank-card-edit-btn" data-id="${card.id || i}" type="button" style="position:absolute;top:6px;left:6px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:24px;height:24px;color:#fff;font-size:10px;cursor:pointer;backdrop-filter:blur(4px);z-index:2;display:flex;align-items:center;justify-content:center;">✎</button>
+          <button class="bank-card-delete-btn" data-id="${card.id || i}" type="button" style="position:absolute;top:6px;left:36px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:24px;height:24px;color:#ff3b30;font-size:12px;cursor:pointer;backdrop-filter:blur(4px);z-index:2;display:flex;align-items:center;justify-content:center;">🗑</button>
         </div>
       </div>
     `;
@@ -2502,6 +2511,13 @@ function renderBankCards() {
 
   container.innerHTML = cardsHtml;
 
+  // ====== این بخش کلیدی برای اسکرول روی گوشی ======
+  // حتماً pointer-events رو active کن
+  container.querySelectorAll('.bank-card-item').forEach(card => {
+    card.style.pointerEvents = 'auto';
+  });
+
+  // کپی کردن
   container.querySelectorAll('.copy-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -2522,6 +2538,7 @@ function renderBankCards() {
     });
   });
 
+  // دکمه‌های ویرایش
   container.querySelectorAll('.bank-card-edit-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -2531,6 +2548,7 @@ function renderBankCards() {
     });
   });
 
+  // دکمه‌های حذف
   container.querySelectorAll('.bank-card-delete-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -2545,25 +2563,32 @@ function renderBankCards() {
     });
   });
 
+  // دات‌ها
   if (dotsContainer) {
     dotsContainer.innerHTML = bankCards.map((_, i) =>
-      `<span class="dot ${i === currentCardIndex ? 'active' : ''}" data-index="${i}"></span>`
+      `<span class="dot ${i === currentCardIndex ? 'active' : ''}" data-index="${i}" style="width:8px;height:8px;border-radius:50%;background:${i === currentCardIndex ? 'var(--primary-light)' : 'var(--border-light)'};cursor:pointer;transition:all 0.3s;display:inline-block;margin:0 3px;"></span>`
     ).join('');
 
     dotsContainer.querySelectorAll('.dot').forEach(dot => {
       dot.addEventListener('click', () => {
         const index = parseInt(dot.dataset.index);
         const card = container.querySelector(`.bank-card-item[data-index="${index}"]`);
-        if (card) card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
       });
     });
   }
 
+  // ====== attach motion (با اولویت اسکرول) ======
   attachCarouselMotion(container);
 
+  // اسکرول به کارت فعلی
   requestAnimationFrame(() => {
     const centerCard = container.querySelector(`.bank-card-item[data-index="${currentCardIndex}"]`);
-    if (centerCard) centerCard.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+    if (centerCard) {
+      centerCard.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+    }
   });
 }
 
@@ -2728,7 +2753,6 @@ function openBankCardModal(card = null, prefillBank = null) {
   const ibanField = document.getElementById("bankCardIban");
   const expiryField = document.getElementById("bankCardExpiry");
   const cvvField = document.getElementById("bankCardCvv");
-  const balanceField = document.getElementById("bankCardBalance");
   const colorField = document.getElementById("bankCardColor");
   const imagePreview = document.getElementById("bankCardImagePreview");
   const imageInput = document.getElementById("bankCardImage");
@@ -2752,7 +2776,6 @@ function openBankCardModal(card = null, prefillBank = null) {
     ibanField.value = card.iban || "";
     expiryField.value = card.expiry || "";
     cvvField.value = card.cvv || "";
-    balanceField.value = card.balance || "";
     colorField.value = card.color || "#1a2332";
     if (card.image) {
       currentCardImageData = card.image;
@@ -2815,7 +2838,6 @@ document.getElementById("bankCardForm")?.addEventListener("submit", function(e) 
   const ibanField = document.getElementById("bankCardIban");
   const expiryField = document.getElementById("bankCardExpiry");
   const cvvField = document.getElementById("bankCardCvv");
-  const balanceField = document.getElementById("bankCardBalance");
   const colorField = document.getElementById("bankCardColor");
 
   const isEditing = !!idField.value;
