@@ -2430,9 +2430,9 @@ function renderBankCards() {
         <div class="bank-manage-item" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
           <span>🏦 ${b}</span>
           <div style="display:flex;gap:6px;">
-            <button class="btn-sm" onclick="editBankName(${i})">✎</button>
-            <button class="btn-sm btn-danger" onclick="deleteBankName(${i})">✕</button>
-            <button class="btn-sm btn-primary" onclick="addCardToBank('${b}')">${hasCard ? '✎ کارت' : '➕ کارت'}</button>
+            <button class="btn-sm" onclick="editBankName(${i})"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/></svg></button>
+            <button class="btn-sm btn-danger" onclick="deleteBankName(${i})"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#EA3323"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg></button>
+            <button class="btn-sm btn-primary" onclick="addCardToBank('${b}')">${hasCard ? '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#75FBFD"><path d="M880-720v480q0 33-23.5 56.5T800-160H160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720Zm-720 80h640v-80H160v80Zm0 160v240h640v-240H160Zm0 240v-480 480Z"/></svg>' : '➕'}</button>
           </div>
         </div>
       `;
@@ -2864,7 +2864,6 @@ document.getElementById("bankCardForm")?.addEventListener("submit", function(e) 
     iban: ibanField.value.trim(),
     expiry: expiryField.value.trim(),
     cvv: cvvField.value.trim(),
-    balance: parseFloat(balanceField.value) || 0,
     color: colorField.value || "#1a2332",
     image: currentCardImageData,
     createdAt: new Date().toISOString()
