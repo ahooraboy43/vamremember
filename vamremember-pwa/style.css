@@ -180,7 +180,6 @@ img {
 }
 
 
-
 /* =========================================================
    PAGE
 ========================================================= */
@@ -1439,6 +1438,7 @@ select:focus {
   font-weight: bold;
   box-shadow: 0 10px 25px rgba(2,132,199,.35);
   transition: transform .2s var(--ease), filter .2s;
+  margin-bottom: 20px;
 }
 
 :root[data-theme="light"] .primary-button,
