@@ -76,12 +76,8 @@ button {
 
 img {
   max-width: 100%;
-}
-
-.img-btn,
-.img-btn1 {
-  width: 32px;
-  height: 32px;
+  width: 26px;
+    height: 26px;
 }
 
 .hidden {
@@ -183,9 +179,7 @@ img {
   transform: scale(.92);
 }
 
-.icon-button:hover {
-  background: rgba(255,255,255,.1);
-}
+
 
 /* =========================================================
    PAGE
@@ -899,67 +893,6 @@ img {
 /* =========================================================
    BOTTOM NAVIGATION - با گودی و دکمه هوم ریسپانسیو
 ========================================================= */
-
-.bottom-nav {
-  position: fixed !important;
-  bottom: 12px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  width: min(100% - 24px, 620px) !important;
-  max-width: 620px !important;
-  z-index: 899 !important;
-  height: 70px !important;
-  background: rgba(17, 24, 39, 0.95) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255,255,255,0.08) !important;
-  border-radius: 20px !important;
-  display: grid !important;
-  grid-template-columns: repeat(5, 1fr) !important;
-  align-items: center !important;
-  justify-items: center !important;
-  padding: 0 8px !important;
-  padding-bottom: env(safe-area-inset-bottom) !important;
-  box-shadow: 0 -4px 30px rgba(0,0,0,0.4), 0 4px 20px rgba(0,0,0,0.2) !important;
-}
-
-/* گودی وسط برای دکمه هوم */
-.bottom-nav::before {
-  content: '' !important;
-  position: absolute !important;
-  top: -18px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  width: 70px !important;
-  height: 36px !important;
-  background: rgba(17, 24, 39, 0.95) !important;
-  border-radius: 50% 50% 0 0 / 100% 100% 0 0 !important;
-  border: 1px solid rgba(255,255,255,0.08) !important;
-  border-bottom: none !important;
-  z-index: 0 !important;
-  pointer-events: none !important;
-}
-
-/* دکمه هوم - دقیقاً وسط گودی */
-.home-button {
-  position: fixed !important;
-  bottom: 61px !important;
-  left: 50% !important;
-  width: 64px !important;
-  height: 64px !important;
-  border-radius: 50% !important;
-  background: linear-gradient(145deg, #38bdf8, #0284c7) !important;
-  box-shadow: 0 8px 30px rgba(2,132,199,0.45), 0 0 0 4px rgba(17, 24, 39, 0.95) !important;
-  border: 2px solid rgba(255,255,255,0.2) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 0 !important;
-  z-index: 960 !important;
-  cursor: pointer !important;
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1) !important;
-}
-
 .home-button .img-btn {
   width: 32px !important;
   height: 32px !important;
@@ -976,38 +909,12 @@ img {
   box-shadow: 0 12px 40px rgba(2,132,199,0.6), 0 0 0 4px rgba(17, 24, 39, 0.95) !important;
 }
 
-.nav-button {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 2px !important;
-  border: none !important;
-  background: transparent !important;
-  color: var(--muted) !important;
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  padding: 4px 6px !important;
-  border-radius: 14px !important;
-  transition: all 0.2s !important;
-  cursor: pointer !important;
-  width: 100% !important;
-  height: 100% !important;
-  position: relative !important;
-  z-index: 1 !important;
-}
 
 .nav-button.active {
   color: var(--primary-light) !important;
   background: rgba(56, 189, 248, 0.1) !important;
 }
 
-.nav-button .img-btn1,
-.nav-button .img-btn {
-  width: 24px !important;
-  height: 24px !important;
-  object-fit: contain !important;
-}
 
 .nav-button small {
   font-size: 9px !important;
@@ -1019,54 +926,11 @@ img {
    BOTTOM NAVIGATION - با گودی و دکمه هوم ریسپانسیو
 ========================================================= */
 
-.bottom-nav {
-  position: fixed !important;
-  bottom: 12px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  width: min(100% - 24px, 620px) !important;
-  max-width: 620px !important;
-  z-index: 899 !important;
-  height: 70px !important;
-  background: rgba(17, 24, 39, 0.95) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255,255,255,0.08) !important;
-  border-radius: 20px !important;
-  display: grid !important;
-  grid-template-columns: repeat(5, 1fr) !important;
-  align-items: center !important;
-  justify-items: center !important;
-  padding: 0 8px !important;
-  padding-bottom: env(safe-area-inset-bottom) !important;
-  box-shadow: 0 -4px 30px rgba(0,0,0,0.4), 0 4px 20px rgba(0,0,0,0.2) !important;
-}
-
-/* گودی وسط برای دکمه هوم - موقعیتش نسبت به خود منو */
-.bottom-nav::before {
-  content: '' !important;
-  position: absolute !important;
-  top: -18px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  width: 70px !important;
-  height: 36px !important;
-  background: rgba(17, 24, 39, 0.95) !important;
-  border-radius: 50% 50% 0 0 / 100% 100% 0 0 !important;
-  border: 1px solid rgba(255,255,255,0.08) !important;
-  border-bottom: none !important;
-  z-index: 0 !important;
-  pointer-events: none !important;
-}
 
 /* دکمه هوم - با استفاده از calc نسبت به عرض منو */
 .home-button {
   position: fixed !important;
-  bottom: 61px !important;
-  left: calc(50% + (min(100% - 24px, 620px) * 0.18)) !important;
   transform: translateX(-50%) !important;
-  width: 64px !important;
-  height: 64px !important;
   border-radius: 50% !important;
   background: linear-gradient(145deg, #38bdf8, #0284c7) !important;
   box-shadow: 0 8px 30px rgba(2,132,199,0.45), 0 0 0 4px rgba(17, 24, 39, 0.95) !important;
@@ -1169,48 +1033,12 @@ img {
     height: 20px !important;
   }
   
+  
   .nav-button small {
     font-size: 8px !important;
   }
 }
 
-/* موبایل کوچک */
-@media (max-width: 380px) {
-  .bottom-nav {
-    height: 56px !important;
-    bottom: 8px !important;
-    border-radius: 14px !important;
-    padding: 0 4px !important;
-  }
-  
-  .bottom-nav::before {
-    width: 50px !important;
-    height: 26px !important;
-    top: -13px !important;
-  }
-  
-  .home-button {
-    width: 48px !important;
-    height: 48px !important;
-    bottom: 48px !important;
-    left: calc(50% + (min(100% - 24px, 620px) * 0.18)) !important;
-  }
-  
-  .home-button .img-btn {
-    width: 24px !important;
-    height: 24px !important;
-  }
-
-  .nav-button .img-btn1,
-  .nav-button .img-btn {
-    width: 18px !important;
-    height: 18px !important;
-  }
-  
-  .nav-button small {
-    font-size: 7px !important;
-  }
-}
 
 /* موبایل بزرگ / تبلت کوچک */
 @media (min-width: 481px) and (max-width: 768px) {
