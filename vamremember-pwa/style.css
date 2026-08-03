@@ -2332,7 +2332,7 @@ label{
 .app-lock-screen{
   position:fixed;
   inset:0;
-  z-index:300;
+  z-index:999;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -2855,3 +2855,22 @@ label{
 .delete-btn:hover {
     background: rgba(239, 68, 68, 0.08); /* فقط هنگام هاور کمی رنگ پس‌زمینه */
 }
+.admin-glass {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    transform: scale(0.95);
+    opacity: 0;
+    margin: 20px;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* وقتی کلاس نمایش فعال شد */
+.admin-show {
+    opacity: 1;
+    transform: scale(1);
+}
+@import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-Variable-font-face.css');
+
+.admin-glass {
+    font-family: 'Vazirmatn', sans-serif; /* این خط خیلی مهم است */
+}
+

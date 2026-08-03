@@ -2357,7 +2357,21 @@ if(saveAppLockPasswordButton){
     alert("رمز عبور اپلیکیشن ذخیره شد");
   });
 }
+// =========================================================
+// ================= کمکی‌ها (فرمت / ماسک شماره کارت) =================
+// =========================================================
 
+function formatCardNumber(value) {
+  const digits = (value || '').replace(/\D/g, '').slice(0, 16);
+  return digits.replace(/(.{4})/g, '$1-').replace(/-$/, '');
+}
+
+function maskCardNumber(cardNumber) {
+  const digits = (cardNumber || '').replace(/\D/g, '');
+  if (!digits) return '••••-••••-••••-••••';
+  const last4 = digits.slice(-4).padStart(4, '•');
+  return `••••-••••-••••-${last4}`;
+}
 // =========================================================
 // ================= کارت‌های بانکی (نسخه جدید با اسکرول native) =================
 // =========================================================
@@ -2383,21 +2397,7 @@ function saveBankCards() {
   renderBankCards();
 }
 
-// =========================================================
-// ================= کمکی‌ها (فرمت / ماسک شماره کارت) =================
-// =========================================================
 
-function formatCardNumber(value) {
-  const digits = (value || '').replace(/\D/g, '').slice(0, 16);
-  return digits.replace(/(.{4})/g, '$1-').replace(/-$/, '');
-}
-
-function maskCardNumber(cardNumber) {
-  const digits = (cardNumber || '').replace(/\D/g, '');
-  if (!digits) return '••••-••••-••••-••••';
-  const last4 = digits.slice(-4).padStart(4, '•');
-  return `••••-••••-••••-${last4}`;
-}
 
 // =========================================================
 // ================= رندر کارت‌ها + لیست بانک‌ها =================
@@ -2558,6 +2558,8 @@ function renderBankCards() {
       if (!confirm(`حذف کارت "${card.bankName}"؟`)) return;
       bankCards = bankCards.filter(c => c.id != id);
       saveBankCards();
+      console.log("بعد از حذف، بانک‌های باقی‌مانده:", bankCards.map(c => c.bankName));
+      saveBankCards();
       showToast("کارت حذف شد", "info");
       renderBankCards();
     });
@@ -2597,8 +2599,6 @@ function renderBankCards() {
 // =========================================================
 
 function attachCarouselMotion(container) {
-  let ticking = false;
-
   function updateCardTransforms() {
     const containerRect = container.getBoundingClientRect();
     const centerX = containerRect.left + containerRect.width / 2;
@@ -2615,55 +2615,172 @@ function attachCarouselMotion(container) {
       card.style.transform = `scale(${scale.toFixed(3)})`;
       card.style.opacity = opacity.toFixed(3);
     });
-    ticking = false;
   }
 
-  const onScroll = () => {
-    if (!ticking) {
-      requestAnimationFrame(updateCardTransforms);
-      ticking = true;
-    }
-  };
+  // فقط یک‌بار listenerها رو وصل کن، حتی اگه این تابع چندبار صدا زده بشه
+  if (!container.dataset.motionAttached) {
+    container.dataset.motionAttached = "1";
 
-  container.addEventListener('scroll', onScroll, { passive: true });
-  updateCardTransforms();
-
-  let scrollEndTimer = null;
-  container.addEventListener('scroll', () => {
-    clearTimeout(scrollEndTimer);
-    scrollEndTimer = setTimeout(() => {
-      const containerRect = container.getBoundingClientRect();
-      const centerX = containerRect.left + containerRect.width / 2;
-      let closestIndex = 0;
-      let closestDistance = Infinity;
-
-      const cards = container.querySelectorAll('.bank-card-item');
-      cards.forEach((card, i) => {
-        const cardRect = card.getBoundingClientRect();
-        const cardCenter = cardRect.left + cardRect.width / 2;
-        const distance = Math.abs(cardCenter - centerX);
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closestIndex = i;
-        }
-      });
-
-      if (closestIndex !== currentCardIndex) {
-        currentCardIndex = closestIndex;
-
-        cards.forEach((card, i) => {
-          card.classList.toggle('is-center', i === closestIndex);
+    let ticking = false;
+    container.addEventListener('scroll', () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          updateCardTransforms();
+          ticking = false;
         });
-
-        document.querySelectorAll('#carouselDots .dot').forEach((dot, i) => {
-          dot.classList.toggle('active', i === closestIndex);
-        });
+        ticking = true;
       }
-    }, 120);
-  }, { passive: true });
+    }, { passive: true });
+
+    let scrollEndTimer = null;
+    container.addEventListener('scroll', () => {
+      clearTimeout(scrollEndTimer);
+      scrollEndTimer = setTimeout(() => {
+        const containerRect = container.getBoundingClientRect();
+        const centerX = containerRect.left + containerRect.width / 2;
+        let closestIndex = 0;
+        let closestDistance = Infinity;
+
+        const cards = container.querySelectorAll('.bank-card-item');
+        cards.forEach((card, i) => {
+          const cardRect = card.getBoundingClientRect();
+          const cardCenter = cardRect.left + cardRect.width / 2;
+          const distance = Math.abs(cardCenter - centerX);
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestIndex = i;
+          }
+        });
+
+        if (closestIndex !== currentCardIndex) {
+          currentCardIndex = closestIndex;
+
+          cards.forEach((card, i) => {
+            card.classList.toggle('is-center', i === closestIndex);
+          });
+
+          document.querySelectorAll('#carouselDots .dot').forEach((dot, i) => {
+            dot.classList.toggle('active', i === closestIndex);
+          });
+        }
+      }, 120);
+    }, { passive: true });
+  }
+
+  // این خط همیشه اجرا بشه (حتی اگه listener جدید attach نشده)
+  // چون بعد از هر render، پوزیشن کارت‌ها عوض شده و باید scale/opacity آپدیت بشه
+  updateCardTransforms();
+}
+// =========================================================
+function openAdminPanel() {
+    const pass = prompt("رمز عبور مدیریت:");
+    if (pass !== "1234") {
+        if (pass !== null) alert("رمز اشتباه است");
+        return;
+    }
+
+    // ۱. بررسی وجود داشتن المنت پنل ادمین در HTML
+    let panel = document.getElementById('admin-panel');
+    
+    // اگر به هر دلیلی این المنت در فایل HTML وجود نداشت، آن را به صورت داینامیک بساز
+    if (!panel) {
+        console.warn("تگ admin-panel در فایل HTML پیدا نشد. در حال ساخت داینامیک...");
+        panel = document.createElement('div');
+        panel.id = 'admin-panel';
+        panel.innerHTML = `
+            <div class="admin-glass">
+                <div class="admin-header">
+                    <h3>مدیریت دیتای LocalStorage</h3>
+                    <button onclick="closeAdminPanel()" class="close-btn">✕</button>
+                </div>
+                <div id="admin-content" class="admin-list"></div>
+            </div>
+        `;
+        document.body.appendChild(panel);
+    }
+
+    const container = document.getElementById('admin-content');
+    
+    // ۲. اعمال استایل‌های نمایش به صورت مستقیم در جاوااسکریپت (بدون نیاز به کلاس‌های CSS خارجی)
+    panel.style.display = 'flex';
+    panel.style.position = 'fixed';
+    panel.style.inset = '0';
+    panel.style.zIndex = '9999999'; // بالاتر از تمام لایه‌ها و مودال‌ها
+    panel.style.background = 'rgba(0, 0, 0, 0.6)';
+    panel.style.backdropFilter = 'blur(10px)';
+    panel.style.webkitBackdropFilter = 'blur(10px)';
+    panel.style.alignItems = 'center';
+    panel.style.justifyContent = 'center';
+    panel.style.padding = '20px';
+    
+    container.innerHTML = '<p style="text-align:center; color:#333;">در حال بارگذاری اطلاعات...</p>';
+
+    // ۳. بارگذاری اطلاعات localstorage
+    setTimeout(() => {
+        container.innerHTML = '';
+        if (localStorage.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#666; padding: 20px;">هیچ داده‌ای در LocalStorage ذخیره نشده است.</p>';
+            return;
+        }
+
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const val = localStorage.getItem(key);
+            
+            let prettyVal = val;
+            try { 
+                prettyVal = JSON.stringify(JSON.parse(val), null, 2); 
+            } catch(e) {}
+
+            const item = document.createElement('div');
+            item.className = 'data-item';
+            item.style.marginBottom = '20px';
+            item.style.background = '#f9f9f9';
+            item.style.padding = '15px';
+            item.style.borderRadius = '15px';
+            item.style.border = '1px solid #e0e0e0';
+            
+            item.innerHTML = `
+                <span class="data-key" style="font-weight:bold; color:#007AFF; display:block; margin-bottom:8px; font-size:14px; direction:ltr; text-align:left;">${key}</span>
+                <textarea id="adm-edit-${key}" class="admin-textarea" style="width:100%; height:150px; border-radius:10px; border:1px solid #ddd; padding:10px; font-family:monospace; font-size:12px; background:#fff; color:#000; direction:ltr; text-align:left; resize:vertical;">${prettyVal}</textarea>
+                <div class="admin-actions" style="margin-top:10px; display:flex; gap:10px;">
+                    <button class="adm-btn-save" style="background:#34c759; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;" onclick="saveAdminData('${key}')">ذخیره تغییرات</button>
+                    <button class="adm-btn-del" style="background:#ff3b30; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;" onclick="deleteAdminData('${key}')">حذف کلید</button>
+                </div>
+            `;
+            container.appendChild(item);
+        }
+    }, 100);
 }
 
-// =========================================================
+function closeAdminPanel() {
+    const panel = document.getElementById('admin-panel');
+    if (panel) {
+        panel.style.display = 'none';
+    }
+}
+
+
+function saveItem(key) {
+  const val = document.getElementById(`edit-${key}`).value;
+  try {
+    // تست می‌کنیم که فرمت JSON سالم باشد
+    JSON.parse(val);
+    localStorage.setItem(key, val);
+    alert('تغییرات با موفقیت ذخیره شد.');
+  } catch(e) {
+    alert('خطا در فرمت JSON! لطفا بررسی کن.');
+  }
+}
+
+function deleteItem(key) {
+  if (confirm(`آیا از حذف ${key} مطمئنی؟`)) {
+    localStorage.removeItem(key);
+    openAdminPanel(); // رفرش لیست
+  }
+}
+
+
 // ================= مدیریت بانک‌ها =================
 // =========================================================
 
@@ -2889,27 +3006,41 @@ document.getElementById("bankCardForm")?.addEventListener("submit", function(e) 
 
 document.getElementById("closeBankCardModal")?.addEventListener("click", closeBankCardModal);
 document.getElementById("bankCardModal")?.querySelector(".modal-backdrop")?.addEventListener("click", closeBankCardModal);
-document.getElementById("addBankCardBtn")?.addEventListener("click", () => openBankCardModal());
+document.addEventListener("click", function (e) {if (e.target.closest("#addBankCardBtn")){openBankCardModal();}});
 document.getElementById("addBankBtn")?.addEventListener("click", openAddBankModal);
 
 // =========================================================
 // ================= منوی همبرگری =================
 // =========================================================
+// =========================================================
+// ================= منوی همبرگری و دیباگ =================
+// =========================================================
 
 function createHamburgerPanel() {
+  // ۱. پیشگیری از ساخت چندباره منو در صفحه
+  if (document.getElementById("hamburgerPanel")) return;
+
   const panel = document.createElement("div");
   panel.id = "hamburgerPanel";
   panel.className = "hamburger-popup hidden";
   panel.innerHTML = `
     <div class="hamburger-items">
-      <button class="hamburger-item" data-action="refresh">
+      <button class="hamburger-item" data-action="refresh" type="button">
         <span>🔄</span> بروزرسانی
       </button>
-      <button class="hamburger-item" data-action="banks">
+      <button class="hamburger-item" data-action="banks" type="button">
         <span>🏦</span> بانک‌ها
       </button>
-      <button class="hamburger-item" data-action="settings">
+      <button class="hamburger-item" data-action="settings" type="button">
         <span>⚙️</span> تنظیمات
+      </button>
+      <button class="hamburger-item" data-action="admin" type="button">
+        <span>
+          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#EA3323">
+            <path d="M480-212q66 0 107-46.71 41-46.7 41-112.29v-137q0-66.41-41-113.71Q546-669 480-669t-107 47.29q-41 47.3-41 113.71v137q0 65.59 41 112.29Q414-212 480-212Zm-80-100h160v-96H400v96Zm0-160h160v-96H400v96Zm80 31Zm.06 355Q404-86 339-125.5T238-232H126v-96h83q-2.25-15.67-2.62-31.33Q206-375 206-392h-80v-96h80q0-17 .38-32.67.37-15.66 2.62-31.33h-83v-96h117q10-27 29-48.5t43-38.5l-66-66 69-68 86 86q34-15 70.5-16t70.5 13l90-89 68 68-64 64q29 19 50 45t34 58h111v88h-83q2.25 15.67 2.63 31.33Q754-505 754-488h80v96h-80q0 17-1 32.5t-3 31.5h84v96H722q-36 67-100.94 106.5t-141 39.5Z"/>
+          </svg>
+        </span>
+        دیباگ
       </button>
     </div>
   `;
@@ -2923,6 +3054,7 @@ function createHamburgerPanel() {
     });
   }
 
+  // بستن منو با کلیک روی هر جای دیگر صفحه
   document.addEventListener("click", function(e) {
     if (!panel.classList.contains("hidden") &&
         !panel.contains(e.target) &&
@@ -2931,6 +3063,7 @@ function createHamburgerPanel() {
     }
   });
 
+  // مدیریت رویداد کلیک روی آیتم‌های منو
   panel.querySelectorAll(".hamburger-item").forEach(function(item) {
     item.addEventListener("click", function() {
       const action = this.dataset.action;
@@ -2944,19 +3077,30 @@ function createHamburgerPanel() {
             window.location.reload();
           }
           break;
+
         case "banks":
-          if (typeof openPage === 'function') {
+          if (typeof openPage === "function") {
             openPage("banksPage", "🏦 بانک‌ها");
-            setTimeout(function() {
-              if (typeof renderBankCards === 'function') {
+            setTimeout(function () {
+              if (typeof renderBankCards === "function") {
                 renderBankCards();
               }
             }, 200);
           }
           break;
+
         case "settings":
-          if (typeof openPage === 'function') {
+          if (typeof openPage === "function") {
             openPage("settingsPage", "⚙️ تنظیمات");
+          }
+          break;
+
+        case "admin":
+          if (typeof openAdminPanel === "function") {
+            openAdminPanel();
+          } else {
+            console.error("تابع openAdminPanel در سطح فایل تعریف نشده یا در دسترس نیست.");
+            alert("خطا: تابع پنل دیباگ پیدا نشد. مطمئن شوید کدهای جاوااسکریپت مربوط به ادمین را به انتهای app.js اضافه کرده‌اید.");
           }
           break;
       }
@@ -2970,16 +3114,29 @@ function createHamburgerPanel() {
 
 function initNewFeatures() {
   createHamburgerPanel();
-  loadBankCards();
+  
+  if (typeof loadBankCards === 'function') {
+    loadBankCards();
+  }
 
   document.addEventListener("click", (e) => {
     if (e.target.id === "emptyAddBankBtn") {
-      openBankCardModal();
+      if (typeof openBankCardModal === 'function') {
+        openBankCardModal();
+      }
     }
   });
 }
 
-setTimeout(initNewFeatures, 300);
+// اطمینان از مقداردهی پس از لود شدن کامل
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initNewFeatures, 300);
+  });
+} else {
+  setTimeout(initNewFeatures, 300);
+}
 
-initAppLock();
-initSettingsUI();
+// صدا زدن توابع امنیتی پیش‌فرض
+if (typeof initAppLock === 'function') initAppLock();
+if (typeof initSettingsUI === 'function') initSettingsUI();

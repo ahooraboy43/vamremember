@@ -1,4 +1,4 @@
-const CACHE_NAME = "aghsat-cache-v2";
+const CACHE_NAME = "aghsat-cache-v3"; // از v2 به v3
 const OFFLINE_URLS = [
   "./",
   "./index.html",
@@ -49,34 +49,19 @@ self.addEventListener('notificationclick', e => {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
-  // فقط درخواست‌های http/https قابل کش شدن هستند
-  // (مثلاً درخواست‌های chrome-extension:// باید نادیده گرفته شوند)
-  if (!request.url.startsWith("http")) {
-    return;
-  }
-
-  // درخواست‌های به Supabase همیشه از شبکه بروند (داده زنده)
-  if (request.url.includes("supabase.co")) {
-    return;
-  }
-
-  if (request.method !== "GET") {
-    return;
-  }
+  if (!request.url.startsWith("http")) return;
+  if (request.url.includes("supabase.co")) return;
+  if (request.method !== "GET") return;
 
   event.respondWith(
-    caches.match(request).then((cached) => {
-      const networkFetch = fetch(request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
-        .catch(() => cached);
-
-      return cached || networkFetch;
-    })
+    fetch(request)
+      .then((response) => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(request)) // فقط اگه آفلاین بود، از کش استفاده کن
   );
 });
