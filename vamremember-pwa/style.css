@@ -873,7 +873,8 @@ img {
   --a: 30deg; /* control the depth of the curvature */
   --p: 68%;   /* control the position */
 
-  height: 70px;<div>  width: 440px;<br><div><div>  aspect-ratio: 1/2;
+  height: 70px;  width: 440px;
+  aspect-ratio: 1/2;
   background: #ED303C;
   border-radius: var(--r);
   --_m:var(--r),#000 calc(100% - 1px),#0000;
