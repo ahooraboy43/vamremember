@@ -1665,7 +1665,7 @@ label {
 
 @media(max-width:480px) {
   .home-gharz {
-    height: min(390px, calc(100dvh - 345px));
+    height: min(460px, calc(100dvh - 345px));
   }
 }
 
