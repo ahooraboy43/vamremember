@@ -2414,13 +2414,15 @@ function renderBankCards() {
   container.style.overflowX = "auto";
   container.style.overflowY = "hidden";
   container.style.webkitOverflowScrolling = "touch";
-  container.style.scrollSnapType = "x mandatory";
+  container.style.scrollSnapType = "x proximity";
   container.style.display = "flex";
   container.style.gap = "16px";
-  container.style.padding = "10px calc(50% - 150px)";
+  container.style.padding = "10px calc(50% - 140px)";
   container.style.scrollbarWidth = "none";
   container.style.cursor = "grab";
   container.style.touchAction = "pan-x";
+  container.style.position = "relative";
+container.style.zIndex = "1";
 
   if (banksListContainer) {
     const banks = loadBanksFromStorage();
@@ -2666,118 +2668,214 @@ function attachCarouselMotion(container) {
       }, 120);
     }, { passive: true });
   }
+// پشتیبانی از درگ با ماوس (دسکتاپ)
+    let isDragging = false;
+    let dragStartX = 0;
+    let scrollStartLeft = 0;
 
+    container.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      container.style.cursor = 'grabbing';
+      dragStartX = e.pageX;
+      scrollStartLeft = container.scrollLeft;
+      container.style.scrollSnapType = 'none'; // موقع درگ، اسنپ رو غیرفعال کن
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const dx = e.pageX - dragStartX;
+      container.scrollLeft = scrollStartLeft - dx;
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      container.style.cursor = 'grab';
+      container.style.scrollSnapType = "x proximity"; // دوباره فعالش کن تا snap بشه
+    });
+
+    container.addEventListener('mouseleave', () => {
+      if (isDragging) {
+        isDragging = false;
+        container.style.cursor = 'grab';
+        container.style.scrollSnapType = "x proximity";
+      }
+    });
   // این خط همیشه اجرا بشه (حتی اگه listener جدید attach نشده)
   // چون بعد از هر render، پوزیشن کارت‌ها عوض شده و باید scale/opacity آپدیت بشه
   updateCardTransforms();
 }
 // =========================================================
+
+
+
+// =========================================================
+// ================= پنل دیباگ تب‌دار =================
+// =========================================================
+
 function openAdminPanel() {
-    const pass = prompt("رمز عبور مدیریت:");
-    if (pass !== "1234") {
-        if (pass !== null) alert("رمز اشتباه است");
-        return;
-    }
+  const pass = prompt("رمز عبور مدیریت:");
+  if (pass !== "1234") {
+    if (pass !== null) alert("رمز اشتباه است");
+    return;
+  }
 
-    // ۱. بررسی وجود داشتن المنت پنل ادمین در HTML
-    let panel = document.getElementById('admin-panel');
-    
-    // اگر به هر دلیلی این المنت در فایل HTML وجود نداشت، آن را به صورت داینامیک بساز
-    if (!panel) {
-        console.warn("تگ admin-panel در فایل HTML پیدا نشد. در حال ساخت داینامیک...");
-        panel = document.createElement('div');
-        panel.id = 'admin-panel';
-        panel.innerHTML = `
-            <div class="admin-glass">
-                <div class="admin-header">
-                    <h3>مدیریت دیتای LocalStorage</h3>
-                    <button onclick="closeAdminPanel()" class="close-btn">✕</button>
-                </div>
-                <div id="admin-content" class="admin-list"></div>
-            </div>
-        `;
-        document.body.appendChild(panel);
-    }
+  let panel = document.getElementById('admin-panel');
+  if (panel) panel.remove(); // همیشه از نو بساز تا مطمئن باشیم ساختار درسته
 
-    const container = document.getElementById('admin-content');
-    
-    // ۲. اعمال استایل‌های نمایش به صورت مستقیم در جاوااسکریپت (بدون نیاز به کلاس‌های CSS خارجی)
-    panel.style.display = 'flex';
-    panel.style.position = 'fixed';
-    panel.style.inset = '0';
-    panel.style.zIndex = '9999999'; // بالاتر از تمام لایه‌ها و مودال‌ها
-    panel.style.background = 'rgba(0, 0, 0, 0.6)';
-    panel.style.backdropFilter = 'blur(10px)';
-    panel.style.webkitBackdropFilter = 'blur(10px)';
-    panel.style.alignItems = 'center';
-    panel.style.justifyContent = 'center';
-    panel.style.padding = '20px';
-    
-    container.innerHTML = '<p style="text-align:center; color:#333;">در حال بارگذاری اطلاعات...</p>';
+  panel = document.createElement('div');
+  panel.id = 'admin-panel';
+  panel.innerHTML = `
+    <div class="admin-glass" style="width:100%;max-width:480px;max-height:80vh;background:#fff;border-radius:16px;display:flex;flex-direction:column;overflow:hidden;">
+      <div class="admin-header" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #eee;">
+        <h3 style="margin:0;font-size:15px;">پنل دیباگ</h3>
+        <button onclick="closeAdminPanel()" class="close-btn" style="border:none;background:none;font-size:18px;cursor:pointer;">✕</button>
+      </div>
+      <div class="admin-tabs" id="admin-tabs" style="display:flex;border-bottom:1px solid #eee;overflow-x:auto;">
+        <button class="admin-tab" data-tab="banks" style="flex:1;padding:10px;border:none;background:none;cursor:pointer;font-size:13px;border-bottom:2px solid #007AFF;">🏦 بانک‌ها</button>
+        <button class="admin-tab" data-tab="raw" style="flex:1;padding:10px;border:none;background:none;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;">🗄 داده خام</button>
+      </div>
+      <div id="admin-body" style="overflow-y:auto;padding:14px 16px;flex:1;"></div>
+    </div>
+  `;
+  document.body.appendChild(panel);
 
-    // ۳. بارگذاری اطلاعات localstorage
-    setTimeout(() => {
-        container.innerHTML = '';
-        if (localStorage.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#666; padding: 20px;">هیچ داده‌ای در LocalStorage ذخیره نشده است.</p>';
-            return;
-        }
+  panel.style.display = 'flex';
+  panel.style.position = 'fixed';
+  panel.style.inset = '0';
+  panel.style.zIndex = '9999999';
+  panel.style.background = 'rgba(0,0,0,0.6)';
+  panel.style.backdropFilter = 'blur(10px)';
+  panel.style.webkitBackdropFilter = 'blur(10px)';
+  panel.style.alignItems = 'center';
+  panel.style.justifyContent = 'center';
+  panel.style.padding = '20px';
 
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            const val = localStorage.getItem(key);
-            
-            let prettyVal = val;
-            try { 
-                prettyVal = JSON.stringify(JSON.parse(val), null, 2); 
-            } catch(e) {}
+  panel.querySelectorAll('.admin-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      panel.querySelectorAll('.admin-tab').forEach(t => t.style.borderBottomColor = 'transparent');
+      tab.style.borderBottomColor = '#007AFF';
+      renderAdminTab(tab.dataset.tab);
+    });
+  });
 
-            const item = document.createElement('div');
-            item.className = 'data-item';
-            item.style.marginBottom = '20px';
-            item.style.background = '#f9f9f9';
-            item.style.padding = '15px';
-            item.style.borderRadius = '15px';
-            item.style.border = '1px solid #e0e0e0';
-            
-            item.innerHTML = `
-                <span class="data-key" style="font-weight:bold; color:#007AFF; display:block; margin-bottom:8px; font-size:14px; direction:ltr; text-align:left;">${key}</span>
-                <textarea id="adm-edit-${key}" class="admin-textarea" style="width:100%; height:150px; border-radius:10px; border:1px solid #ddd; padding:10px; font-family:monospace; font-size:12px; background:#fff; color:#000; direction:ltr; text-align:left; resize:vertical;">${prettyVal}</textarea>
-                <div class="admin-actions" style="margin-top:10px; display:flex; gap:10px;">
-                    <button class="adm-btn-save" style="background:#34c759; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;" onclick="saveAdminData('${key}')">ذخیره تغییرات</button>
-                    <button class="adm-btn-del" style="background:#ff3b30; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;" onclick="deleteAdminData('${key}')">حذف کلید</button>
-                </div>
-            `;
-            container.appendChild(item);
-        }
-    }, 100);
+  renderAdminTab('banks');
 }
 
 function closeAdminPanel() {
-    const panel = document.getElementById('admin-panel');
-    if (panel) {
-        panel.style.display = 'none';
-    }
+  const panel = document.getElementById('admin-panel');
+  if (panel) panel.style.display = 'none';
 }
 
-
-function saveItem(key) {
-  const val = document.getElementById(`edit-${key}`).value;
-  try {
-    // تست می‌کنیم که فرمت JSON سالم باشد
-    JSON.parse(val);
-    localStorage.setItem(key, val);
-    alert('تغییرات با موفقیت ذخیره شد.');
-  } catch(e) {
-    alert('خطا در فرمت JSON! لطفا بررسی کن.');
-  }
+function renderAdminTab(tab) {
+  const body = document.getElementById('admin-body');
+  if (!body) return;
+  if (tab === 'banks') renderAdminBanksTab(body);
+  else renderAdminRawTab(body);
 }
 
-function deleteItem(key) {
-  if (confirm(`آیا از حذف ${key} مطمئنی؟`)) {
-    localStorage.removeItem(key);
-    openAdminPanel(); // رفرش لیست
+// ---------- تب بانک‌ها ----------
+function renderAdminBanksTab(body) {
+  const banks = loadBanksFromStorage();
+  const cards = JSON.parse(localStorage.getItem(BANK_CARDS_KEY) || "[]");
+
+  let html = `<h4 style="font-size:13px;color:#666;margin:0 0 8px;">بانک‌ها (${banks.length})</h4>`;
+  banks.forEach((b, i) => {
+    html += `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:#f9f9f9;border-radius:8px;margin-bottom:6px;">
+        <span style="font-size:13px;">🏦 ${b}</span>
+        <div style="display:flex;gap:6px;">
+          <button onclick="editBankName(${i});renderAdminBanksTab(document.getElementById('admin-body'))" style="border:none;background:#eee;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">ویرایش</button>
+          <button onclick="deleteBankName(${i});renderAdminBanksTab(document.getElementById('admin-body'))" style="border:none;background:#ffdddd;color:#c00;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">حذف</button>
+        </div>
+      </div>`;
+  });
+
+  html += `<h4 style="font-size:13px;color:#666;margin:16px 0 8px;">کارت‌های ثبت‌شده (${cards.length})</h4>`;
+  if (cards.length === 0) {
+    html += `<p style="font-size:12px;color:#999;">هیچ کارتی ثبت نشده.</p>`;
   }
+  cards.forEach(c => {
+    html += `
+      <div style="padding:10px;background:#f9f9f9;border-radius:8px;margin-bottom:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:bold;">${c.bankName}</span>
+          <div style="display:flex;gap:6px;">
+            <button data-edit-card="${c.id}" style="border:none;background:#eee;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">ویرایش</button>
+            <button data-del-card="${c.id}" style="border:none;background:#ffdddd;color:#c00;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">حذف</button>
+          </div>
+        </div>
+        <span style="font-size:11px;color:#666;direction:ltr;display:block;">${maskCardNumber(c.cardNumber)}</span>
+      </div>`;
+  });
+
+  body.innerHTML = html;
+
+  body.querySelectorAll('[data-edit-card]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const card = bankCards.find(c => c.id === btn.dataset.editCard);
+      closeAdminPanel();
+      if (card) openBankCardModal(card);
+    });
+  });
+  body.querySelectorAll('[data-del-card]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!confirm("این کارت حذف بشه؟")) return;
+      bankCards = bankCards.filter(c => c.id !== btn.dataset.delCard);
+      saveBankCards();
+      renderAdminBanksTab(body);
+    });
+  });
+}
+
+// ---------- تب داده خام (برای بقیه صفحه‌ها) ----------
+function renderAdminRawTab(body) {
+  if (localStorage.length === 0) {
+    body.innerHTML = '<p style="font-size:12px;color:#999;">هیچ داده‌ای ذخیره نشده.</p>';
+    return;
+  }
+  let html = '';
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    const val = localStorage.getItem(key);
+    let pretty = val;
+    try { pretty = JSON.stringify(JSON.parse(val), null, 2); } catch (e) {}
+    html += `
+      <div style="margin-bottom:14px;background:#f9f9f9;padding:10px;border-radius:10px;">
+        <span style="font-weight:bold;color:#007AFF;display:block;margin-bottom:6px;font-size:12px;direction:ltr;text-align:left;">${key}</span>
+        <textarea data-raw-key="${key}" style="width:100%;height:100px;border-radius:8px;border:1px solid #ddd;padding:8px;font-family:monospace;font-size:11px;direction:ltr;text-align:left;">${pretty}</textarea>
+        <div style="margin-top:6px;display:flex;gap:8px;">
+          <button data-raw-save="${key}" style="background:#34c759;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer;">ذخیره</button>
+          <button data-raw-del="${key}" style="background:#ff3b30;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer;">حذف</button>
+        </div>
+      </div>`;
+  }
+  body.innerHTML = html;
+
+  body.querySelectorAll('[data-raw-save]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.rawSave;
+      const val = body.querySelector(`[data-raw-key="${key}"]`).value;
+      try {
+        JSON.parse(val);
+        localStorage.setItem(key, val);
+        alert('ذخیره شد.');
+        if (key === BANK_CARDS_KEY) loadBankCards();
+      } catch (e) {
+        alert('فرمت JSON اشتباه است.');
+      }
+    });
+  });
+  body.querySelectorAll('[data-raw-del]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.rawDel;
+      if (!confirm(`حذف ${key}؟`)) return;
+      localStorage.removeItem(key);
+      if (key === BANK_CARDS_KEY) loadBankCards();
+      renderAdminRawTab(body);
+    });
+  });
 }
 
 
