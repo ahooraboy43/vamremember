@@ -1869,7 +1869,6 @@ label{
   box-sizing: border-box;
 }
 
-/* اسکرول افقی native با اسنپ - جای منطق دستی transform قبلی */
 .bank-carousel {
   position: relative;
   width: 100%;
@@ -1897,8 +1896,8 @@ label{
 }
 
 .bank-card-item {
-  flex: 0 0 300px;
-  max-width: 300px;
+  flex: 0 0 280px;
+  max-width: 280px;
   height: 190px;
   border-radius: 22px;
   position: relative;
@@ -1922,7 +1921,6 @@ label{
   padding: 14px 16px;
   border-radius: 22px;
   background: linear-gradient(145deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
- 
   border: 1px solid rgba(255,255,255,0.08);
   display: flex;
   flex-direction: column;
@@ -1963,7 +1961,6 @@ label{
   display: none;
 }
 
-/* نمایش مقدار کامل فقط روی کارت وسط، بقیه ماسک‌شده - بدون رندر مجدد کل کارت */
 .bank-card-item .full-value { display: none; }
 .bank-card-item .masked-value { display: inline; }
 .bank-card-item.is-center .full-value { display: inline; }
@@ -2858,7 +2855,6 @@ label{
 .admin-glass {
     transition: transform 0.3s ease, opacity 0.3s ease;
     transform: scale(0.95);
-    opacity: 0;
     margin: 20px;
     padding-bottom: env(safe-area-inset-bottom);
 }
@@ -2874,3 +2870,451 @@ label{
     font-family: 'Vazirmatn', sans-serif; /* این خط خیلی مهم است */
 }
 
+/* =========================================================
+   ADMIN PANEL - استایل‌های اصلاح شده
+========================================================= */
+
+#admin-panel {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  padding: 20px !important;
+  animation: adminFadeIn 0.25s ease !important;
+}
+
+@keyframes adminFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.admin-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+}
+
+.admin-glass {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 500px !important;
+  max-height: 85vh !important;
+  background: #0f172a !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.7) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  animation: adminSlideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+@keyframes adminSlideUp {
+  from { 
+    transform: translateY(30px) scale(0.95); 
+    opacity: 0; 
+  }
+  to { 
+    transform: translateY(0) scale(1); 
+    opacity: 1; 
+  }
+}
+
+.admin-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 18px 22px !important;
+  background: rgba(255,255,255,0.02) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+  flex-shrink: 0 !important;
+}
+
+.admin-header h3 {
+  margin: 0 !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #f1f5f9 !important;
+}
+
+.admin-close-btn {
+  background: rgba(255,255,255,0.06) !important;
+  border: none !important;
+  color: #94a3b8 !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  font-size: 18px !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.admin-close-btn:hover {
+  background: rgba(255,255,255,0.12) !important;
+  color: #fff !important;
+}
+
+.admin-tabs {
+  display: flex !important;
+  gap: 4px !important;
+  padding: 10px 14px !important;
+  background: rgba(0,0,0,0.15) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.03) !important;
+  overflow-x: auto !important;
+  flex-shrink: 0 !important;
+  scrollbar-width: none !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.admin-tabs::-webkit-scrollbar {
+  display: none !important;
+}
+
+.admin-tab {
+  padding: 8px 16px !important;
+  border: none !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  color: #94a3b8 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: all 0.25s !important;
+  font-family: inherit !important;
+}
+
+.admin-tab:hover {
+  color: #e2e8f0 !important;
+  background: rgba(255,255,255,0.04) !important;
+}
+
+.admin-tab.active {
+  color: #38bdf8 !important;
+  background: rgba(56,189,248,0.1) !important;
+}
+
+.admin-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 18px 20px !important;
+  min-height: 200px !important;
+  max-height: calc(85vh - 140px) !important;
+  background: rgba(0,0,0,0.05) !important;
+}
+
+.admin-body::-webkit-scrollbar {
+  width: 3px !important;
+}
+
+.admin-body::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.admin-body::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1) !important;
+  border-radius: 10px !important;
+}
+
+/* ========== بخش‌های داخلی ========== */
+
+.admin-section {
+  margin-bottom: 16px !important;
+}
+
+.admin-section:last-child {
+  margin-bottom: 0 !important;
+}
+
+.admin-section-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 10px !important;
+  color: #94a3b8 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+.admin-add-btn {
+  padding: 5px 14px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  background: rgba(56,189,248,0.12) !important;
+  color: #38bdf8 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  font-family: inherit !important;
+}
+
+.admin-add-btn:hover {
+  background: rgba(56,189,248,0.2) !important;
+}
+
+.admin-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.admin-item {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 10px 14px !important;
+  background: rgba(255,255,255,0.03) !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+  transition: all 0.2s !important;
+}
+
+.admin-item:hover {
+  background: rgba(255,255,255,0.06) !important;
+}
+
+.admin-item-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.admin-item-title {
+  color: #f1f5f9 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.admin-item-sub {
+  color: #64748b !important;
+  font-size: 11px !important;
+}
+
+.admin-item-actions {
+  display: flex !important;
+  gap: 4px !important;
+  flex-shrink: 0 !important;
+}
+
+.admin-edit-btn,
+.admin-delete-btn {
+  width: 30px !important;
+  height: 30px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.admin-edit-btn {
+  background: rgba(56,189,248,0.08) !important;
+  color: #38bdf8 !important;
+}
+
+.admin-edit-btn:hover {
+  background: rgba(56,189,248,0.18) !important;
+}
+
+.admin-delete-btn {
+  background: rgba(239,68,68,0.08) !important;
+  color: #ef4444 !important;
+}
+
+.admin-delete-btn:hover {
+  background: rgba(239,68,68,0.18) !important;
+}
+
+.admin-empty {
+  padding: 24px !important;
+  text-align: center !important;
+  color: #64748b !important;
+  font-size: 13px !important;
+}
+
+.admin-more {
+  padding: 10px !important;
+  text-align: center !important;
+  color: #64748b !important;
+  font-size: 12px !important;
+}
+
+/* ========== آیتم‌های اختصاصی ========== */
+
+.admin-card-item .admin-item-sub {
+  font-family: 'Courier New', monospace !important;
+  direction: ltr !important;
+}
+
+.admin-debt-lent {
+  border-right: 3px solid #22b6c5 !important;
+}
+
+.admin-debt-borrowed {
+  border-right: 3px solid #ef4444 !important;
+}
+
+.admin-expense-item .admin-item-sub {
+  color: #a78bfa !important;
+}
+
+/* ========== تنظیمات ========== */
+
+.admin-settings-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.admin-setting-item {
+  display: flex !important;
+  justify-content: space-between !important;
+  padding: 10px 14px !important;
+  background: rgba(255,255,255,0.03) !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+  color: #cbd5e1 !important;
+  font-size: 13px !important;
+}
+
+.admin-setting-item span:last-child {
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+}
+
+/* ========== دیتابیس ========== */
+
+.admin-storage-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.admin-storage-item {
+  padding: 12px 14px !important;
+  background: rgba(255,255,255,0.03) !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+.admin-storage-key {
+  color: #38bdf8 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  margin-bottom: 4px !important;
+  direction: ltr !important;
+}
+
+.admin-storage-value {
+  color: #64748b !important;
+  font-size: 11px !important;
+  font-family: monospace !important;
+  word-break: break-all !important;
+  margin-bottom: 6px !important;
+  direction: ltr !important;
+  max-height: 60px !important;
+  overflow-y: auto !important;
+}
+
+.admin-storage-actions {
+  display: flex !important;
+  gap: 4px !important;
+}
+
+.admin-storage-actions button {
+  padding: 3px 12px !important;
+  border: none !important;
+  border-radius: 6px !important;
+  font-size: 10px !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+}
+
+.admin-danger-btn {
+  transition: all 0.2s !important;
+  font-family: inherit !important;
+}
+
+.admin-danger-btn:hover {
+  opacity: 0.85 !important;
+  transform: scale(0.98) !important;
+}
+
+/* ========== ریسپانسیو ========== */
+
+@media (max-width: 480px) {
+  #admin-panel {
+    padding: 12px !important;
+  }
+  
+  .admin-glass {
+    max-width: 100% !important;
+    max-height: 92vh !important;
+    border-radius: 20px !important;
+  }
+  
+  .admin-body {
+    padding: 14px 16px !important;
+    max-height: calc(92vh - 130px) !important;
+  }
+  
+  .admin-tab {
+    font-size: 11px !important;
+    padding: 6px 12px !important;
+  }
+  
+  .admin-header h3 {
+    font-size: 16px !important;
+  }
+  
+  .admin-item {
+    padding: 8px 12px !important;
+  }
+  
+  .admin-item-title {
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .admin-glass {
+    border-radius: 16px !important;
+  }
+  
+  .admin-header {
+    padding: 14px 16px !important;
+  }
+  
+  .admin-tabs {
+    padding: 8px 10px !important;
+  }
+  
+  .admin-tab {
+    font-size: 10px !important;
+    padding: 5px 10px !important;
+  }
+  
+  .admin-body {
+    padding: 12px 14px !important;
+  }
+}

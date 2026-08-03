@@ -2398,7 +2398,6 @@ function saveBankCards() {
 }
 
 
-
 // =========================================================
 // ================= رندر کارت‌ها + لیست بانک‌ها =================
 // =========================================================
@@ -2410,11 +2409,11 @@ function renderBankCards() {
 
   if (!container) return;
 
-  // حتماً استایل‌های اسکرول روی خود المان باشه
+  // تنظیمات اسکرول
   container.style.overflowX = "auto";
   container.style.overflowY = "hidden";
   container.style.webkitOverflowScrolling = "touch";
-  container.style.scrollSnapType = "x proximity";
+  container.style.scrollSnapType = "x mandatory";
   container.style.display = "flex";
   container.style.gap = "16px";
   container.style.padding = "10px calc(50% - 140px)";
@@ -2422,7 +2421,7 @@ function renderBankCards() {
   container.style.cursor = "grab";
   container.style.touchAction = "pan-x";
   container.style.position = "relative";
-container.style.zIndex = "1";
+  container.style.zIndex = "1";
 
   if (banksListContainer) {
     const banks = loadBanksFromStorage();
@@ -2619,7 +2618,7 @@ function attachCarouselMotion(container) {
     });
   }
 
-  // فقط یک‌بار listenerها رو وصل کن، حتی اگه این تابع چندبار صدا زده بشه
+  // فقط یک‌بار listener‌ها رو وصل کن، حتی اگه این تابع چندبار صدا زده بشه
   if (!container.dataset.motionAttached) {
     container.dataset.motionAttached = "1";
 
@@ -2692,14 +2691,14 @@ function attachCarouselMotion(container) {
       if (!isDragging) return;
       isDragging = false;
       container.style.cursor = 'grab';
-      container.style.scrollSnapType = "x proximity"; // دوباره فعالش کن تا snap بشه
+      container.style.scrollSnapType = "x mandatory"; // دوباره فعالش کن تا snap بشه
     });
 
     container.addEventListener('mouseleave', () => {
       if (isDragging) {
         isDragging = false;
         container.style.cursor = 'grab';
-        container.style.scrollSnapType = "x proximity";
+        container.style.scrollSnapType = "x mandatory";
       }
     });
   // این خط همیشه اجرا بشه (حتی اگه listener جدید attach نشده)
@@ -2714,6 +2713,10 @@ function attachCarouselMotion(container) {
 // ================= پنل دیباگ تب‌دار =================
 // =========================================================
 
+// =========================================================
+// ================= پنل دیباگ جدید با تب‌بندی =================
+// =========================================================
+
 function openAdminPanel() {
   const pass = prompt("رمز عبور مدیریت:");
   if (pass !== "1234") {
@@ -2721,161 +2724,323 @@ function openAdminPanel() {
     return;
   }
 
-  let panel = document.getElementById('admin-panel');
-  if (panel) panel.remove(); // همیشه از نو بساز تا مطمئن باشیم ساختار درسته
+  // حذف پنل قبلی اگر وجود داشته
+  const oldPanel = document.getElementById('admin-panel');
+  if (oldPanel) oldPanel.remove();
 
-  panel = document.createElement('div');
+  // ساخت پنل جدید
+  const panel = document.createElement('div');
   panel.id = 'admin-panel';
   panel.innerHTML = `
-    <div class="admin-glass" style="width:100%;max-width:480px;max-height:80vh;background:#fff;border-radius:16px;display:flex;flex-direction:column;overflow:hidden;">
-      <div class="admin-header" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #eee;">
-        <h3 style="margin:0;font-size:15px;">پنل دیباگ</h3>
-        <button onclick="closeAdminPanel()" class="close-btn" style="border:none;background:none;font-size:18px;cursor:pointer;">✕</button>
+    <div class="admin-overlay">
+      <div class="admin-glass">
+        <div class="admin-header">
+          <h3>🛠 پنل دیباگ</h3>
+          <button onclick="closeAdminPanel()" class="admin-close-btn">✕</button>
+        </div>
+        
+        <div class="admin-tabs">
+          <button class="admin-tab active" data-tab="banks">🏦 بانک‌ها</button>
+          <button class="admin-tab" data-tab="debts">🤝 قرض‌ها</button>
+          <button class="admin-tab" data-tab="expenses">💳 هزینه‌ها</button>
+          <button class="admin-tab" data-tab="settings">⚙️ تنظیمات</button>
+          <button class="admin-tab" data-tab="storage">💾 دیتابیس</button>
+        </div>
+        
+        <div class="admin-body" id="adminBody">
+          <div style="color:#94a3b8;text-align:center;padding:40px 0;">در حال بارگذاری...</div>
+        </div>
       </div>
-      <div class="admin-tabs" id="admin-tabs" style="display:flex;border-bottom:1px solid #eee;overflow-x:auto;">
-        <button class="admin-tab" data-tab="banks" style="flex:1;padding:10px;border:none;background:none;cursor:pointer;font-size:13px;border-bottom:2px solid #007AFF;">🏦 بانک‌ها</button>
-        <button class="admin-tab" data-tab="raw" style="flex:1;padding:10px;border:none;background:none;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;">🗄 داده خام</button>
-      </div>
-      <div id="admin-body" style="overflow-y:auto;padding:14px 16px;flex:1;"></div>
     </div>
   `;
+
   document.body.appendChild(panel);
 
-  panel.style.display = 'flex';
-  panel.style.position = 'fixed';
-  panel.style.inset = '0';
-  panel.style.zIndex = '9999999';
-  panel.style.background = 'rgba(0,0,0,0.6)';
-  panel.style.backdropFilter = 'blur(10px)';
-  panel.style.webkitBackdropFilter = 'blur(10px)';
-  panel.style.alignItems = 'center';
-  panel.style.justifyContent = 'center';
-  panel.style.padding = '20px';
-
+  // مدیریت تب‌ها
   panel.querySelectorAll('.admin-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      panel.querySelectorAll('.admin-tab').forEach(t => t.style.borderBottomColor = 'transparent');
-      tab.style.borderBottomColor = '#007AFF';
-      renderAdminTab(tab.dataset.tab);
+    tab.addEventListener('click', function() {
+      panel.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      renderAdminTab(this.dataset.tab);
     });
   });
 
-  renderAdminTab('banks');
+  // رندر تب پیش‌فرض با تاخیر کم
+  setTimeout(() => {
+    renderAdminTab('banks');
+  }, 50);
 }
 
 function closeAdminPanel() {
   const panel = document.getElementById('admin-panel');
-  if (panel) panel.style.display = 'none';
+  if (panel) panel.remove();
 }
 
 function renderAdminTab(tab) {
-  const body = document.getElementById('admin-body');
-  if (!body) return;
-  if (tab === 'banks') renderAdminBanksTab(body);
-  else renderAdminRawTab(body);
-}
-
-// ---------- تب بانک‌ها ----------
-function renderAdminBanksTab(body) {
-  const banks = loadBanksFromStorage();
-  const cards = JSON.parse(localStorage.getItem(BANK_CARDS_KEY) || "[]");
-
-  let html = `<h4 style="font-size:13px;color:#666;margin:0 0 8px;">بانک‌ها (${banks.length})</h4>`;
-  banks.forEach((b, i) => {
-    html += `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:#f9f9f9;border-radius:8px;margin-bottom:6px;">
-        <span style="font-size:13px;">🏦 ${b}</span>
-        <div style="display:flex;gap:6px;">
-          <button onclick="editBankName(${i});renderAdminBanksTab(document.getElementById('admin-body'))" style="border:none;background:#eee;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">ویرایش</button>
-          <button onclick="deleteBankName(${i});renderAdminBanksTab(document.getElementById('admin-body'))" style="border:none;background:#ffdddd;color:#c00;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">حذف</button>
-        </div>
-      </div>`;
-  });
-
-  html += `<h4 style="font-size:13px;color:#666;margin:16px 0 8px;">کارت‌های ثبت‌شده (${cards.length})</h4>`;
-  if (cards.length === 0) {
-    html += `<p style="font-size:12px;color:#999;">هیچ کارتی ثبت نشده.</p>`;
-  }
-  cards.forEach(c => {
-    html += `
-      <div style="padding:10px;background:#f9f9f9;border-radius:8px;margin-bottom:6px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <span style="font-size:13px;font-weight:bold;">${c.bankName}</span>
-          <div style="display:flex;gap:6px;">
-            <button data-edit-card="${c.id}" style="border:none;background:#eee;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">ویرایش</button>
-            <button data-del-card="${c.id}" style="border:none;background:#ffdddd;color:#c00;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">حذف</button>
-          </div>
-        </div>
-        <span style="font-size:11px;color:#666;direction:ltr;display:block;">${maskCardNumber(c.cardNumber)}</span>
-      </div>`;
-  });
-
-  body.innerHTML = html;
-
-  body.querySelectorAll('[data-edit-card]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const card = bankCards.find(c => c.id === btn.dataset.editCard);
-      closeAdminPanel();
-      if (card) openBankCardModal(card);
-    });
-  });
-  body.querySelectorAll('[data-del-card]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!confirm("این کارت حذف بشه؟")) return;
-      bankCards = bankCards.filter(c => c.id !== btn.dataset.delCard);
-      saveBankCards();
-      renderAdminBanksTab(body);
-    });
-  });
-}
-
-// ---------- تب داده خام (برای بقیه صفحه‌ها) ----------
-function renderAdminRawTab(body) {
-  if (localStorage.length === 0) {
-    body.innerHTML = '<p style="font-size:12px;color:#999;">هیچ داده‌ای ذخیره نشده.</p>';
+  const body = document.getElementById('adminBody');
+  if (!body) {
+    console.error('adminBody پیدا نشد');
     return;
   }
-  let html = '';
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    const val = localStorage.getItem(key);
-    let pretty = val;
-    try { pretty = JSON.stringify(JSON.parse(val), null, 2); } catch (e) {}
-    html += `
-      <div style="margin-bottom:14px;background:#f9f9f9;padding:10px;border-radius:10px;">
-        <span style="font-weight:bold;color:#007AFF;display:block;margin-bottom:6px;font-size:12px;direction:ltr;text-align:left;">${key}</span>
-        <textarea data-raw-key="${key}" style="width:100%;height:100px;border-radius:8px;border:1px solid #ddd;padding:8px;font-family:monospace;font-size:11px;direction:ltr;text-align:left;">${pretty}</textarea>
-        <div style="margin-top:6px;display:flex;gap:8px;">
-          <button data-raw-save="${key}" style="background:#34c759;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer;">ذخیره</button>
-          <button data-raw-del="${key}" style="background:#ff3b30;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer;">حذف</button>
-        </div>
-      </div>`;
-  }
-  body.innerHTML = html;
 
-  body.querySelectorAll('[data-raw-save]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const key = btn.dataset.rawSave;
-      const val = body.querySelector(`[data-raw-key="${key}"]`).value;
-      try {
-        JSON.parse(val);
-        localStorage.setItem(key, val);
-        alert('ذخیره شد.');
-        if (key === BANK_CARDS_KEY) loadBankCards();
-      } catch (e) {
-        alert('فرمت JSON اشتباه است.');
+  try {
+    switch(tab) {
+      case 'banks':
+        renderAdminBanks(body);
+        break;
+      case 'debts':
+        renderAdminDebts(body);
+        break;
+      case 'expenses':
+        renderAdminExpenses(body);
+        break;
+      case 'settings':
+        renderAdminSettings(body);
+        break;
+      case 'storage':
+        renderAdminStorage(body);
+        break;
+      default:
+        body.innerHTML = '<div style="color:#94a3b8;text-align:center;padding:20px;">تب نامعتبر</div>';
+    }
+  } catch(e) {
+    console.error('خطا در رندر تب:', e);
+    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا: ${e.message}</div>`;
+  }
+}
+
+// ========== تب بانک‌ها ==========
+function renderAdminBanks(body) {
+  try {
+    const banks = loadBanksFromStorage();
+    const cards = JSON.parse(localStorage.getItem(BANK_CARDS_KEY) || "[]");
+
+    body.innerHTML = `
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <span>🏦 بانک‌ها (${banks.length})</span>
+          <button onclick="openAddBankModal(); setTimeout(()=>renderAdminTab('banks'),100);" class="admin-add-btn">➕ افزودن</button>
+        </div>
+        <div class="admin-list">
+          ${banks.length === 0 ? '<div class="admin-empty">هیچ بانکی ثبت نشده</div>' : banks.map((b, i) => `
+            <div class="admin-item">
+              <span class="admin-item-title">${b}</span>
+              <div class="admin-item-actions">
+                <button onclick="editBankName(${i}); setTimeout(()=>renderAdminTab('banks'),100);" class="admin-edit-btn">✎</button>
+                <button onclick="deleteBankName(${i}); setTimeout(()=>renderAdminTab('banks'),100);" class="admin-delete-btn">✕</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="admin-section" style="margin-top:16px;">
+        <div class="admin-section-header">
+          <span>💳 کارت‌های بانکی (${cards.length})</span>
+          <button onclick="closeAdminPanel(); setTimeout(()=>openBankCardModal(),200);" class="admin-add-btn">➕ افزودن</button>
+        </div>
+        <div class="admin-list">
+          ${cards.length === 0 ? '<div class="admin-empty">هیچ کارتی ثبت نشده</div>' : cards.map(c => `
+            <div class="admin-item admin-card-item">
+              <div class="admin-item-info">
+                <span class="admin-item-title">${c.bankName}</span>
+                <span class="admin-item-sub" dir="ltr">${maskCardNumber(c.cardNumber)}</span>
+              </div>
+              <div class="admin-item-actions">
+                <button onclick="closeAdminPanel(); setTimeout(()=>openBankCardModal(bankCards.find(card=>card.id=='${c.id}')),200);" class="admin-edit-btn">✎</button>
+                <button onclick="deleteCardFromAdmin('${c.id}')" class="admin-delete-btn">✕</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا: ${e.message}</div>`;
+  }
+}
+
+function deleteCardFromAdmin(id) {
+  if (!confirm("این کارت حذف شود؟")) return;
+  bankCards = bankCards.filter(c => c.id != id);
+  saveBankCards();
+  renderAdminTab('banks');
+  showToast("کارت حذف شد", "success");
+}
+
+// ========== تب قرض‌ها ==========
+function renderAdminDebts(body) {
+  try {
+    const debts = allDebts || [];
+    
+    body.innerHTML = `
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <span>🤝 قرض و دیون (${debts.length})</span>
+        </div>
+        <div class="admin-list">
+          ${debts.length === 0 ? '<div class="admin-empty">هیچ قرضی ثبت نشده</div>' : debts.map(d => `
+            <div class="admin-item admin-debt-item ${d.direction === 'lent' ? 'admin-debt-lent' : 'admin-debt-borrowed'}">
+              <div class="admin-item-info">
+                <span class="admin-item-title">${d.counterparty || 'بدون نام'}</span>
+                <span class="admin-item-sub">${d.direction === 'lent' ? '📤 طلب' : '📥 بدهی'} • ${formatMoney(d.amount)}</span>
+              </div>
+              <div class="admin-item-actions">
+                <button onclick="closeAdminPanel(); setTimeout(()=>openEditDebtModal(allDebts.find(debt=>debt.id=='${d.id}')),200);" class="admin-edit-btn">✎</button>
+                <button onclick="deleteDebtFromAdmin('${d.id}')" class="admin-delete-btn">✕</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا: ${e.message}</div>`;
+  }
+}
+
+function deleteDebtFromAdmin(id) {
+  if (!confirm("این قرض حذف شود؟")) return;
+  deleteDebt(id);
+}
+
+// ========== تب هزینه‌ها ==========
+function renderAdminExpenses(body) {
+  try {
+    const expenses = allExpenses || [];
+    
+    body.innerHTML = `
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <span>💳 همه موارد (${expenses.length})</span>
+        </div>
+        <div class="admin-list">
+          ${expenses.length === 0 ? '<div class="admin-empty">موردی ثبت نشده</div>' : expenses.slice(0, 20).map(e => `
+            <div class="admin-item admin-expense-item">
+              <div class="admin-item-info">
+                <span class="admin-item-title">#${e.id} ${e.title || 'بدون عنوان'}</span>
+                <span class="admin-item-sub">${e.type || 'نامشخص'} • ${formatMoney(e.amount || 0)}</span>
+              </div>
+              <div class="admin-item-actions">
+                <button onclick="closeAdminPanel(); setTimeout(()=>openEditModal(allExpenses.find(item=>item.id=='${e.id}')),200);" class="admin-edit-btn">✎</button>
+              </div>
+            </div>
+          `).join('')}
+          ${expenses.length > 20 ? `<div class="admin-more">... و ${expenses.length - 20} مورد دیگر</div>` : ''}
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا: ${e.message}</div>`;
+  }
+}
+
+// ========== تب تنظیمات ==========
+function renderAdminSettings(body) {
+  try {
+    const settings = loadSettings();
+    
+    body.innerHTML = `
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <span>⚙️ تنظیمات برنامه</span>
+        </div>
+        <div class="admin-settings-list">
+          <div class="admin-setting-item">
+            <span>تم</span>
+            <span>${settings.theme === 'light' ? '☀️ روشن' : '🌙 تیره'}</span>
+          </div>
+          <div class="admin-setting-item">
+            <span>قفل اپلیکیشن</span>
+            <span>${settings.appLockEnabled ? '✅ فعال' : '❌ غیرفعال'}</span>
+          </div>
+          <div class="admin-setting-item">
+            <span>قفل تنظیمات</span>
+            <span>${settings.lockEnabled ? '✅ فعال' : '❌ غیرفعال'}</span>
+          </div>
+          <div class="admin-setting-item">
+            <span>کلیدهای ذخیره شده</span>
+            <span>${Object.keys(settings).length} کلید</span>
+          </div>
+        </div>
+        <button onclick="if(confirm('همه داده‌ها پاک شوند؟')){localStorage.clear();alert('داده‌ها پاک شد!');location.reload();}" class="admin-danger-btn" style="margin-top:12px;width:100%;padding:10px;border:none;border-radius:10px;background:#ef4444;color:#fff;font-weight:bold;cursor:pointer;">
+          🗑 پاک کردن کل دیتا
+        </button>
+      </div>
+    `;
+  } catch(e) {
+    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا: ${e.message}</div>`;
+  }
+}
+
+// ========== تب دیتابیس ==========
+function renderAdminStorage(body) {
+  try {
+    let html = `
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <span>💾 دیتای ذخیره شده در مرورگر (${localStorage.length} مورد)</span>
+        </div>
+        <div class="admin-storage-list">
+    `;
+
+    if (localStorage.length === 0) {
+      html += `<div class="admin-empty">هیچ داده‌ای ذخیره نشده</div>`;
+    } else {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const val = localStorage.getItem(key);
+        let preview = val;
+        try {
+          const parsed = JSON.parse(val);
+          preview = JSON.stringify(parsed, null, 2);
+          if (preview.length > 100) preview = preview.substring(0, 100) + '...';
+        } catch(e) {}
+        
+        html += `
+          <div class="admin-storage-item">
+            <div class="admin-storage-key">${key}</div>
+            <div class="admin-storage-value" dir="ltr">${preview}</div>
+            <div class="admin-storage-actions">
+              <button onclick="copyStorageKey('${key}')" class="admin-edit-btn" style="font-size:10px;padding:2px 8px;border-radius:4px;">📋 کپی</button>
+              <button onclick="deleteStorageKey('${key}')" class="admin-delete-btn" style="font-size:10px;padding:2px 8px;border-radius:4px;">✕</button>
+            </div>
+          </div>
+        `;
       }
-    });
+    }
+
+    html += `
+        </div>
+      </div>
+    `;
+
+    body.innerHTML = html;
+  } catch(e) {
+    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا: ${e.message}</div>`;
+  }
+}
+
+function copyStorageKey(key) {
+  const val = localStorage.getItem(key);
+  navigator.clipboard?.writeText(val).then(() => {
+    showToast('کپی شد!', 'success');
+  }).catch(() => {
+    const input = document.createElement('input');
+    input.value = val;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    input.remove();
+    showToast('کپی شد!', 'success');
   });
-  body.querySelectorAll('[data-raw-del]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const key = btn.dataset.rawDel;
-      if (!confirm(`حذف ${key}؟`)) return;
-      localStorage.removeItem(key);
-      if (key === BANK_CARDS_KEY) loadBankCards();
-      renderAdminRawTab(body);
-    });
-  });
+}
+
+function deleteStorageKey(key) {
+  if (!confirm(`حذف "${key}"؟`)) return;
+  localStorage.removeItem(key);
+  renderAdminTab('storage');
+  showToast('حذف شد', 'info');
 }
 
 
