@@ -186,8 +186,22 @@ try {
   banks = [...DEFAULT_BANKS];
 }
 
-
-function saveBanks() {
+function handleError(error, context = 'عملیات') {
+  console.error(`خطا در ${context}:`, error);
+  
+  // نمایش توست خطا
+  showToast(`❌ ${context} با خطا مواجه شد: ${error.message || 'خطای ناشناخته'}`, 'error');
+  
+  // لاگ به کنسول برای دیباگ
+  console.error('Stack trace:', error.stack);
+  
+  // بازگشت خطا برای استفاده در try-catch
+  return { success: false, error };
+}
+function saveBanks(banksData) {
+  if (banksData) {
+    banks = banksData;
+  }
   localStorage.setItem("banks", JSON.stringify(banks));
 }
 
@@ -222,13 +236,28 @@ function deleteBank(i) {
   renderBanks();
   renderPaymentBanks();
 }
-
+function getBanks() {
+  try {
+    const saved = localStorage.getItem("banks");
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    return ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
+  } catch {
+    return ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
+  }
+}
 function renderPaymentBanks() {
   const container = document.getElementById("paymentBanksContainer");
   if (!container) return;
-  container.innerHTML = banks.map(b =>
+  
+  // دریافت لیست بانک‌ها از localStorage
+  const banksList = getBanks();
+  
+  container.innerHTML = banksList.map(b =>
     `<button type="button" class="tag-btn payment-bank" data-bank="${b}">${b}</button>`
   ).join("");
+  
   container.querySelectorAll(".payment-bank").forEach(btn => {
     btn.addEventListener("click", () => {
       container.querySelectorAll(".payment-bank").forEach(b => b.classList.remove("active"));
@@ -243,8 +272,10 @@ document.getElementById("addBankButton")?.addEventListener("click", () => {
   const input = document.getElementById("bankNameInput");
   const name = input.value.trim();
   if (!name) return;
-  banks.push(name);
-  saveBanks();
+  const currentBanks = getBanks();
+  currentBanks.push(name);
+  banks = currentBanks;
+  saveBanks(banks);
   renderBanks();
   renderPaymentBanks();
   input.value = "";
@@ -468,7 +499,7 @@ return`
 <textarea class="payment-note" placeholder="توضیح پرداخت..."></textarea>
 
 <div class="quick-tags">
-  ${(JSON.parse(localStorage.getItem('banks')||'[]')).map(b=>`<button type="button" class="tag-btn bank-tag" data-bank="${b}">${b}</button>`).join('')}
+ ${getBanks().map(b=>`<button type="button" class="tag-btn bank-tag" data-bank="${b}">${b}</button>`).join('')}
 </div>
 
 <label class="date-option">
@@ -564,41 +595,23 @@ function getFilteredItems() {
       String(i.note || "").toLowerCase().includes(s)
     );
   });
-}function renderAllCards(){const filtered=getFilteredItems(),items=filtered.slice(0,visibleCount);allCards.innerHTML="";if(!items.length){allCards.innerHTML='<div class="empty">موردی پیدا نشد</div>';loadMoreButton.classList.add("hidden");allStatus.textContent="۰ مورد نمایش داده می‌شود";return}items.forEach(i=>allCards.appendChild(createAllItemCard(i)));loadMoreButton.classList.toggle("hidden",visibleCount>=filtered.length);allStatus.textContent=`${filtered.length.toLocaleString("fa-IR")} مورد نمایش داده می‌شود`}
-function createAllItemCard(item){
- const expense=isExpense(item);
-const income=isIncome(item);
-const usesMonthlyAmounts=expense||income;
-const card=document.createElement("article");
-const v=item[currentMonthKey];
-  const cardTypeClass=expense?"expense-card":income?"income-card":(isPaidValue(v)?"paid-card":"");
-  card.className=`card compact-card ${cardTypeClass}`;
-  const mainAmount=usesMonthlyAmounts?getLatestExpenseAmount(item):Number(item.amount||0);
-  const secondary=usesMonthlyAmounts?`جمع کل: ${formatMoney(getExpenseTotal(item))}`:`${getRemainingInstallments(item).toLocaleString("fa-IR")} مانده`;
-  const counter=usesMonthlyAmounts?`${getPaidCount(item).toLocaleString("fa-IR")} ${income?"دریافت":"پرداخت"}`:`${getRemainingInstallments(item).toLocaleString("fa-IR")} قسط باقی‌مانده`;
-  const amountPrefix=income?"+ ":"";
-  card.innerHTML=`<div class="card-main compact-main">
-    <div class="compact-head"><div class="compact-amount-wrap"><div class="amount compact-amount ${income?"income-amount":""}">${amountPrefix}${formatMoney(mainAmount)}</div></div><div class="compact-side">${counter}</div><div class="id-badge">ID ${Number(item.id).toLocaleString("fa-IR")}</div></div>
-    <div class="compact-foot"><div class="compact-title">${escapeHtml(item.title)}</div><div class="badge-row">
-    <span class="${
-expense
-?"expense-badge"
-:income
-?"income-badge"
-:"installment-badge"
-}">
-${
-expense
-?"🧾 هزینه"
-:income
-?"💰 درآمد"
-:"💳 قسط"
 }
-</span>
-    <span class="status-badge">${income?(isPaidValue(v)?"دریافت‌شده":"دریافت‌نشده"):currentStatus(item)}</span></div></div>
-    <div class="all-card-actions"><button type="button" class="edit-expense">ویرایش</button></div>
-  </div>`;
-  card.querySelector(".edit-expense").addEventListener("click",e=>{e.stopPropagation();openEditModal(item)});return card
+
+function renderAllCards(){
+  const filtered = getFilteredItems();
+  const items = filtered.slice(0, visibleCount);
+  allCards.innerHTML = "";
+  
+  if(!items.length){
+    allCards.innerHTML = '<div class="empty">موردی پیدا نشد</div>';
+    loadMoreButton.classList.add("hidden");
+    allStatus.textContent = "۰ مورد نمایش داده می‌شود";
+    return;
+  }
+  
+  items.forEach(i => allCards.appendChild(createCard(i, { showActions: true })));
+  loadMoreButton.classList.toggle("hidden", visibleCount >= filtered.length);
+  allStatus.textContent = `${filtered.length.toLocaleString("fa-IR")} مورد نمایش داده می‌شود`;
 }
 function getExpenseAmount(item){return getLatestExpenseAmount(item)}
 function setExpenseType(type){
@@ -1031,9 +1044,11 @@ async function saveExpense(e){
 
     saveExpenseButton.disabled = true;
     try{
-        const debtPath = editingDebtId
-  ? `${DEBT_TABLE}?id=eq.${encodeURIComponent(editingDebtId)}`
-  : DEBT_TABLE;
+       // کد جدید:
+let debtPath = DEBT_TABLE;
+if (editingDebtId && editingDebtId !== null && editingDebtId !== undefined) {
+  debtPath = `${DEBT_TABLE}?id=eq.${encodeURIComponent(String(editingDebtId))}`;
+}
 
 console.log("Saving debt:", {
   editingDebtId,
@@ -1355,135 +1370,75 @@ function openReportDetails(kind){
 function closeReportModal(){reportDetailsModal.classList.remove("open");document.body.style.overflow=""}
 
 function renderReports(){
-  const installments=allExpenses.filter(isInstallment),
-        expenses=allExpenses.filter(isExpense),
-        incomes=allExpenses.filter(isIncome);
+  const installments = allExpenses.filter(isInstallment);
+  const expenses = allExpenses.filter(isExpense);
+  const incomes = allExpenses.filter(isIncome);
 
-  let monthInstallmentTotal=0,
-      paidInstallmentTotal=0,
-      remainingInstallmentTotal=0,
-      monthExpenseTotal=0,
-      monthIncomeTotal=0;
+  // استفاده از reduce برای محاسبه همزمان
+  const totals = installments.reduce((acc, item) => {
+    const currentValue = item[currentMonthKey];
+    const amount = Number(item.amount || 0);
+    
+    if (!isClosedValue(currentValue)) {
+      acc.monthInstallmentTotal += amount;
+      if (isPaidValue(currentValue)) acc.paidInstallmentTotal += amount;
+      if (isNullValue(currentValue)) acc.remainingInstallmentTotal += amount;
+    }
+    return acc;
+  }, { monthInstallmentTotal: 0, paidInstallmentTotal: 0, remainingInstallmentTotal: 0 });
 
-  for(const item of installments){
-    const currentValue=item[currentMonthKey],
-          amount=Number(item.amount||0);
+  const monthExpenseTotal = expenses.reduce((sum, item) => {
+    const amount = parseMoney(item[currentMonthKey]);
+    return amount !== null ? sum + amount : sum;
+  }, 0);
 
-    if(isClosedValue(currentValue))continue;
+  const monthIncomeTotal = incomes.reduce((sum, item) => {
+    const amount = parseMoney(item[currentMonthKey]);
+    return amount !== null ? sum + amount : sum;
+  }, 0);
 
-    monthInstallmentTotal+=amount;
+  const allPaidTotal = totals.paidInstallmentTotal + monthExpenseTotal;
+  const balanceTotal = monthIncomeTotal - allPaidTotal;
 
-    if(isPaidValue(currentValue))paidInstallmentTotal+=amount;
-    if(isNullValue(currentValue))remainingInstallmentTotal+=amount;
-  }
-
-  for(const item of expenses){
-    const amount=parseMoney(item[currentMonthKey]);
-    if(amount!==null)monthExpenseTotal+=amount;
-  }
-
-  for(const item of incomes){
-    const amount=parseMoney(item[currentMonthKey]);
-    if(amount!==null)monthIncomeTotal+=amount;
-  }
-
-  const allPaidTotal=paidInstallmentTotal+monthExpenseTotal;
-  const balanceTotal=monthIncomeTotal-allPaidTotal;
-
-  reportMonthTotal.textContent=formatMoney(monthInstallmentTotal);
-  reportPaidTotal.textContent=formatMoney(paidInstallmentTotal);
-  reportRemainingTotal.textContent=formatMoney(remainingInstallmentTotal);
-  reportExpensesTotal.textContent=formatMoney(monthExpenseTotal);
-  reportAllTotal.textContent=formatMoney(allPaidTotal);
-
-  if(reportIncomeTotal)reportIncomeTotal.textContent=formatMoney(monthIncomeTotal);
-
+  // نمایش در UI (بقیه کدها مثل قبل)
+  reportMonthTotal.textContent = formatMoney(totals.monthInstallmentTotal);
+  reportPaidTotal.textContent = formatMoney(totals.paidInstallmentTotal);
+  reportRemainingTotal.textContent = formatMoney(totals.remainingInstallmentTotal);
+  reportExpensesTotal.textContent = formatMoney(monthExpenseTotal);
+  reportAllTotal.textContent = formatMoney(allPaidTotal);
+  
+  if(reportIncomeTotal) reportIncomeTotal.textContent = formatMoney(monthIncomeTotal);
+  
   if(reportBalanceTotal){
-    reportBalanceTotal.textContent=(balanceTotal<0?"− ":"")+formatMoney(Math.abs(balanceTotal));
-    reportBalanceTotal.style.color=balanceTotal<0?"var(--danger)":"var(--success)";
+    reportBalanceTotal.textContent = (balanceTotal < 0 ? "− " : "") + formatMoney(Math.abs(balanceTotal));
+    reportBalanceTotal.style.color = balanceTotal < 0 ? "var(--danger)" : "var(--success)";
   }
 
-  const chartTotal=paidInstallmentTotal+remainingInstallmentTotal;
+  // درصدها (بقیه کدها مثل قبل)
+  const chartTotal = totals.paidInstallmentTotal + totals.remainingInstallmentTotal;
+  const paidPercentage = chartTotal ? Math.round(totals.paidInstallmentTotal / chartTotal * 100) : 0;
+  const remainingPercentage = chartTotal ? Math.round(totals.remainingInstallmentTotal / chartTotal * 100) : 0;
 
-  const paidPercentage=chartTotal
-    ? Math.round(paidInstallmentTotal/chartTotal*100)
-    : 0;
+  if (paidPercent) paidPercent.textContent = `${paidPercentage.toLocaleString("fa-IR")}٪`;
+  if (remainingPercent) remainingPercent.textContent = `${remainingPercentage.toLocaleString("fa-IR")}٪`;
+  if (paidBar) paidBar.style.width = `${paidPercentage}%`;
+  if (remainingBar) remainingBar.style.width = `${remainingPercentage}%`;
 
-  const remainingPercentage=chartTotal
-    ? Math.round(remainingInstallmentTotal/chartTotal*100)
-    : 0;
+  const incomeChartTotal = monthIncomeTotal + totals.paidInstallmentTotal + monthExpenseTotal + totals.remainingInstallmentTotal;
+  const incomePercentage = incomeChartTotal ? Math.round((monthIncomeTotal / incomeChartTotal) * 100) : 0;
+  const paidInstallmentPercentage = incomeChartTotal ? Math.round((totals.paidInstallmentTotal / incomeChartTotal) * 100) : 0;
+  const expensePercentage = incomeChartTotal ? Math.round((monthExpenseTotal / incomeChartTotal) * 100) : 0;
+  const unpaidInstallmentPercentage = Math.max(0, 100 - incomePercentage - paidInstallmentPercentage - expensePercentage);
 
- if (paidPercent) {
-  paidPercent.textContent =
-    `${paidPercentage.toLocaleString("fa-IR")}٪`;
-}
-
-if (remainingPercent) {
-  remainingPercent.textContent =
-    `${remainingPercentage.toLocaleString("fa-IR")}٪`;
-}
-
-if (paidBar) {
-  paidBar.style.width = `${paidPercentage}%`;
-}
-
-if (remainingBar) {
-  remainingBar.style.width = `${remainingPercentage}%`;
-}
-
-  const incomeChartTotal =
-    monthIncomeTotal +
-    paidInstallmentTotal +
-    monthExpenseTotal +
-    remainingInstallmentTotal;
-
-  const incomePercentage = incomeChartTotal
-    ? Math.round((monthIncomeTotal / incomeChartTotal) * 100)
-    : 0;
-
-  const paidInstallmentPercentage = incomeChartTotal
-    ? Math.round((paidInstallmentTotal / incomeChartTotal) * 100)
-    : 0;
-
-  const expensePercentage = incomeChartTotal
-    ? Math.round((monthExpenseTotal / incomeChartTotal) * 100)
-    : 0;
-
-  const unpaidInstallmentPercentage = incomeChartTotal
-    ? Math.max(0, 100 - incomePercentage - paidInstallmentPercentage - expensePercentage)
-    : 0;
-
-  if(incomePercent){
-    incomePercent.textContent=`${incomePercentage.toLocaleString("fa-IR")}٪`;
-  }
-
-  if($("paidInstallmentPercent")){
-    $("paidInstallmentPercent").textContent=`${paidInstallmentPercentage.toLocaleString("fa-IR")}٪`;
-  }
-
-  if($("expensePercent")){
-    $("expensePercent").textContent=`${expensePercentage.toLocaleString("fa-IR")}٪`;
-  }
-
-  if($("unpaidInstallmentPercent")){
-    $("unpaidInstallmentPercent").textContent=`${unpaidInstallmentPercentage.toLocaleString("fa-IR")}٪`;
-  }
-
-  if(incomeBar){
-    incomeBar.style.width=`${incomePercentage}%`;
-  }
-
-  if($("paidInstallmentBar")){
-    $("paidInstallmentBar").style.width=`${paidInstallmentPercentage}%`;
-  }
-
-  if($("expenseBar")){
-    $("expenseBar").style.width=`${expensePercentage}%`;
-  }
-
-  if($("unpaidInstallmentBar")){
-    $("unpaidInstallmentBar").style.width=`${unpaidInstallmentPercentage}%`;
-  }
+  if(incomePercent) incomePercent.textContent = `${incomePercentage.toLocaleString("fa-IR")}٪`;
+  if($("paidInstallmentPercent")) $("paidInstallmentPercent").textContent = `${paidInstallmentPercentage.toLocaleString("fa-IR")}٪`;
+  if($("expensePercent")) $("expensePercent").textContent = `${expensePercentage.toLocaleString("fa-IR")}٪`;
+  if($("unpaidInstallmentPercent")) $("unpaidInstallmentPercent").textContent = `${unpaidInstallmentPercentage.toLocaleString("fa-IR")}٪`;
+  
+  if(incomeBar) incomeBar.style.width = `${incomePercentage}%`;
+  if($("paidInstallmentBar")) $("paidInstallmentBar").style.width = `${paidInstallmentPercentage}%`;
+  if($("expenseBar")) $("expenseBar").style.width = `${expensePercentage}%`;
+  if($("unpaidInstallmentBar")) $("unpaidInstallmentBar").style.width = `${unpaidInstallmentPercentage}%`;
 }
 async function loadDebts(){
   try{
@@ -1551,7 +1506,65 @@ function renderDebtsPanel(){
   });
 }
 let activeDebtDetails = null;
-
+function createCard(item, options = {}) {
+  const { type = 'default', showActions = true } = options;
+  const card = document.createElement("article");
+  const isExpenseItem = isExpense(item);
+  const isIncomeItem = isIncome(item);
+  const v = item[currentMonthKey];
+  
+  let cardClass = "card compact-card";
+  if (isExpenseItem) cardClass += " expense-card";
+  else if (isIncomeItem) cardClass += " income-card";
+  else if (isPaidValue(v)) cardClass += " paid-card";
+  
+  card.className = cardClass;
+  
+  let html = `
+    <div class="card-main compact-main">
+      <div class="compact-head">
+        <div class="compact-amount-wrap">
+          <div class="amount compact-amount ${isIncomeItem ? 'income-amount' : ''}">
+            ${isIncomeItem ? '+ ' : ''}${formatMoney(getLatestExpenseAmount(item))}
+          </div>
+        </div>
+        <div class="compact-side">
+          ${isIncomeItem ? getPaidCount(item).toLocaleString("fa-IR") + ' دریافت' : 
+            isExpenseItem ? getPaidCount(item).toLocaleString("fa-IR") + ' پرداخت' : 
+            getRemainingInstallments(item).toLocaleString("fa-IR") + ' قسط باقی‌مانده'}
+        </div>
+        <div class="id-badge">ID ${Number(item.id).toLocaleString("fa-IR")}</div>
+      </div>
+      <div class="compact-foot">
+        <div class="compact-title">${escapeHtml(item.title)}</div>
+        <div class="badge-row">
+          <span class="${isExpenseItem ? 'expense-badge' : isIncomeItem ? 'income-badge' : 'installment-badge'}">
+            ${isExpenseItem ? '🧾 هزینه' : isIncomeItem ? '💰 درآمد' : '💳 قسط'}
+          </span>
+          <span class="status-badge">
+            ${isIncomeItem ? (isPaidValue(v) ? 'دریافت‌شده' : 'دریافت‌نشده') : currentStatus(item)}
+          </span>
+        </div>
+      </div>
+      ${showActions ? `
+        <div class="all-card-actions">
+          <button type="button" class="edit-expense">ویرایش</button>
+        </div>
+      ` : ''}
+    </div>
+  `;
+  
+  card.innerHTML = html;
+  
+  if (showActions) {
+    card.querySelector(".edit-expense").addEventListener("click", e => {
+      e.stopPropagation();
+      openEditModal(item);
+    });
+  }
+  
+  return card;
+}
 function openDebtDetailsModal(d){
   activeDebtDetails = d;
 
@@ -1735,6 +1748,23 @@ function openEditDebtModal(d){
 function openPage(id,title){
 
   pages.forEach(p=>p.classList.toggle("active",p.id===id));
+  // بعد از خطی که می‌نویسه pages.forEach...
+// این کد رو اضافه کن:
+
+// مدیریت ناوبری با event listener
+document.querySelectorAll('.nav-button').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const pageId = this.dataset.page;
+    const titles = {
+      duePage: '⏰ سررسیدها',
+      homePage: '🏠 داشبورد',
+      banksPage: '📋 بانک‌ها',
+      allPage: '📋 همه اقساط',
+      reportPage: '📊 گزارش‌ها'
+    };
+    openPage(pageId, titles[pageId] || pageId);
+  });
+});
   navButtons.forEach(b=>b.classList.toggle("active",b.dataset.page===id));
   pageTitle.textContent=title;
 
@@ -2560,7 +2590,6 @@ function renderBankCards() {
       bankCards = bankCards.filter(c => c.id != id);
       saveBankCards();
       console.log("بعد از حذف، بانک‌های باقی‌مانده:", bankCards.map(c => c.bankName));
-      saveBankCards();
       showToast("کارت حذف شد", "info");
       renderBankCards();
     });
@@ -2804,17 +2833,45 @@ function renderAdminTab(tab) {
         body.innerHTML = '<div style="color:#94a3b8;text-align:center;padding:20px;">تب نامعتبر</div>';
     }
   } catch(e) {
-    console.error('خطا در رندر تب:', e);
-    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا: ${e.message}</div>`;
+    // اینجا خطا رو کامل نمایش بده
+    console.error('❌ خطای کامل در renderAdminTab:', e);
+    console.error('📚 Stack trace:', e.stack);
+    body.innerHTML = `
+      <div style="color:#ef4444;text-align:center;padding:20px;background:rgba(239,68,68,0.1);border-radius:12px;">
+        <strong>❌ خطا در تب ${tab}</strong>
+        <br><br>
+        <span style="font-size:13px;color:#94a3b8;">${e.message}</span>
+        <br><br>
+        <button onclick="console.log('دوباره تلاش کن')" style="padding:8px 16px;background:#3b82f6;border:none;border-radius:8px;color:#fff;cursor:pointer;">
+          🔄 دوباره تلاش
+        </button>
+      </div>
+    `;
   }
 }
 
 // ========== تب بانک‌ها ==========
 function renderAdminBanks(body) {
   try {
-    const banks = loadBanksFromStorage();
-    const cards = JSON.parse(localStorage.getItem(BANK_CARDS_KEY) || "[]");
-
+    // دریافت بانک‌ها با تابع امن
+    let banks = [];
+    try {
+      const saved = localStorage.getItem("banks");
+      banks = saved ? JSON.parse(saved) : ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
+    } catch(e) {
+      console.warn('خطا در خواندن بانک‌ها:', e);
+      banks = ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
+    }
+    
+    // دریافت کارت‌ها
+    let cards = [];
+    try {
+      const saved = localStorage.getItem("bankCardsV1");
+      cards = saved ? JSON.parse(saved) : [];
+    } catch(e) {
+      console.warn('خطا در خواندن کارت‌ها:', e);
+      cards = [];
+    }
     body.innerHTML = `
       <div class="admin-section">
         <div class="admin-section-header">
@@ -2855,11 +2912,11 @@ function renderAdminBanks(body) {
         </div>
       </div>
     `;
-  } catch(e) {
-    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا: ${e.message}</div>`;
+  }  catch(e) {
+    console.error('❌ خطا در renderAdminBanks:', e);
+    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا در بارگذاری بانک‌ها: ${e.message}</div>`;
   }
 }
-
 function deleteCardFromAdmin(id) {
   if (!confirm("این کارت حذف شود؟")) return;
   bankCards = bankCards.filter(c => c.id != id);
@@ -2895,9 +2952,11 @@ function renderAdminDebts(body) {
       </div>
     `;
   } catch(e) {
-    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا: ${e.message}</div>`;
+    console.error('❌ خطا در renderAdminDebts:', e);
+    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا در بارگذاری قرض‌ها: ${e.message}</div>`;
   }
 }
+
 
 function deleteDebtFromAdmin(id) {
   if (!confirm("این قرض حذف شود؟")) return;
@@ -2931,10 +2990,10 @@ function renderAdminExpenses(body) {
       </div>
     `;
   } catch(e) {
-    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا: ${e.message}</div>`;
+    console.error('❌ خطا در renderAdminExpenses:', e);
+    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا در بارگذاری هزینه‌ها: ${e.message}</div>`;
   }
 }
-
 // ========== تب تنظیمات ==========
 function renderAdminSettings(body) {
   try {
@@ -2968,8 +3027,9 @@ function renderAdminSettings(body) {
         </button>
       </div>
     `;
-  } catch(e) {
-    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا: ${e.message}</div>`;
+  }catch(e) {
+    console.error('❌ خطا در renderAdminSettings:', e);
+    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا در بارگذاری تنظیمات: ${e.message}</div>`;
   }
 }
 
@@ -3017,7 +3077,8 @@ function renderAdminStorage(body) {
 
     body.innerHTML = html;
   } catch(e) {
-    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا: ${e.message}</div>`;
+    console.error('❌ خطا در renderAdminStorage:', e);
+    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا در بارگذاری دیتابیس: ${e.message}</div>`;
   }
 }
 

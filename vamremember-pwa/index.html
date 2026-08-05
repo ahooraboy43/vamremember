@@ -68,6 +68,24 @@
 </div>
 </div>
 <div class="cards" id="cards"></div>
+<!-- Skeleton Loading برای کارت‌ها -->
+<div class="skeleton-wrapper" id="skeletonCards" style="display:none;">
+  <div class="skeleton-card">
+    <div class="skeleton-line"></div>
+    <div class="skeleton-line short"></div>
+    <div class="skeleton-line medium"></div>
+  </div>
+  <div class="skeleton-card">
+    <div class="skeleton-line"></div>
+    <div class="skeleton-line short"></div>
+    <div class="skeleton-line medium"></div>
+  </div>
+  <div class="skeleton-card">
+    <div class="skeleton-line"></div>
+    <div class="skeleton-line short"></div>
+    <div class="skeleton-line medium"></div>
+  </div>
+</div>
 </section>
 
 <!-- صفحه داشبورد -->
@@ -265,25 +283,25 @@
 <img class="img-btn" src="assets/home.png" alt="صفحه اصلی">
 </button>
 <nav class="bottom-nav">
-<button class="nav-button" data-page="" onclick="openPage('duePage','⏰ سررسیدها')">
-<img class="img-btn1" src="assets/book.png" alt="">
-<small>سررسیدها</small>
+<button class="nav-button" data-page="duePage">
+  <img class="img-btn1" src="assets/book.png" alt="">
+  <small>سررسیدها</small>
 </button>
-<button class="nav-button" data-page="" >
-<img class="inszz img-btn1" src="assets/book.png" alt="">
-<small></small>
+<button class="nav-button" data-page="">
+  <img class="img-btn1"style="display:none;"  alt="">
+
 </button>
-<button class="nav-button" data-page="banksPage" onclick="openPage('banksPage','📋 بانک ها')">
-<img class="img-btn1" src="assets/bank.png" alt="">
-<small>بانک‌ها</small>
+<button class="nav-button" data-page="banksPage">
+  <img class="img-btn1" src="assets/bank.png" alt="">
+  <small>بانک‌ها</small>
 </button>
-<button class="nav-button" data-page="allPage" onclick="openPage('allPage','📋 همه اقساط')">
-<img class="img-btn1" src="assets/vam.png" alt="">
-<small>اقساط</small>
+<button class="nav-button" data-page="allPage">
+  <img class="img-btn1" src="assets/vam.png" alt="">
+  <small>اقساط</small>
 </button>
-<button class="nav-button" data-page="reportPage" onclick="openPage('reportPage','📊 گزارش‌ها')">
-<img class="img-btn1" src="assets/fin.png" alt="">
-<small>گزارش</small>
+<button class="nav-button" data-page="reportPage">
+  <img class="img-btn1" src="assets/fin.png" alt="">
+  <small>گزارش</small>
 </button>
 </nav>
 

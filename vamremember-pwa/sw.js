@@ -9,7 +9,11 @@ const OFFLINE_URLS = [
   "assets/danger.png",
   "assets/home.png",
   "assets/vam.png",
-  "assets/fin.png"
+  "assets/fin.png",
+  "assets/bank.png",
+  "assets/V1.png",    
+  "assets/v2.png",    
+  "assets/a.png"     
 ];
 
 self.addEventListener("install", (event) => {
