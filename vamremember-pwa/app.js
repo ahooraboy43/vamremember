@@ -3220,422 +3220,2442 @@ function debugDateSelects() {
   console.log("نام ماه جاری:", MONTHS[monthIndex]?.name);
   console.log("===== پایان بررسی =====");
 }
-
 // =========================================================
-// ================= مدیریت سرمایه (طلا و دارایی‌ها) =================
+// ================= مدیریت سرمایه و طلا =================
+// VAM REMEMBER — GOLD / ASSETS REFACTORED
 // =========================================================
 
 let allAssets = [];
 let allCapitalTransactions = [];
+
 let selectedAssetBuyBank = null;
 let selectedAssetSellBank = null;
+
+// قیمت زنده طلا — ریال / گرم
 let currentGoldPrice = 0;
 let goldPriceLastUpdate = null;
+let goldPriceSource = null;
+let goldPriceRefreshTimer = null;
 
-async function loadAssets() {
-  try {
-    const data = await supabaseRequest("assets?select=*&order=name.asc");
-    allAssets = Array.isArray(data) ? data : [];
-    populateAssetSelect();
-    updateAssetUnitLabels();
-  } catch (e) {
-    console.error("خطا در دریافت دارایی‌ها:", e);
-    allAssets = [];
-  }
+const GOLD_PRICE_REFRESH_INTERVAL = 60 * 1000;
+
+
+// =========================================================
+// ابزارهای عمومی دارایی
+// =========================================================
+
+function getAssetById(assetId) {
+  return allAssets.find(
+    asset => Number(asset.id) === Number(assetId)
+  ) || null;
 }
 
-async function loadCapitalTransactions() {
-  try {
-    const data = await supabaseRequest("capital_transactions?select=*&order=date.desc");
-    allCapitalTransactions = Array.isArray(data) ? data : [];
-    updateGoldSummary();
-    updateGoldReport();
-  } catch (e) {
-    console.error("خطا در دریافت تراکنش‌ها:", e);
-    allCapitalTransactions = [];
-  }
+function isGoldAsset(asset) {
+  if (!asset) return false;
+
+  return (
+    String(asset.type || "").toLowerCase() === "gold"
+  );
 }
 
-async function loadGoldPrice() {
-  try {
-    const data = await supabaseRequest("gold_prices?select=*&order=date.desc&limit=1");
-    if (Array.isArray(data) && data.length > 0) {
-      currentGoldPrice = data[0].price_per_gram;
-      goldPriceLastUpdate = data[0].date;
-    } else {
-      currentGoldPrice = 30000000;
-    }
-    updateGoldPriceDisplay();
-    updateModalGoldPrice();
-  } catch (e) {
-    console.error("خطا در دریافت قیمت طلا:", e);
-    currentGoldPrice = 30000000;
-    updateGoldPriceDisplay();
-    updateModalGoldPrice();
-  }
+function getNumeric(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
 }
 
-function updateGoldPriceDisplay() {
-  const priceEl = document.getElementById("todayGoldPrice");
-  const timeEl = document.getElementById("goldPriceUpdateTime");
-  if (priceEl) priceEl.textContent = formatMoney(currentGoldPrice);
-  if (timeEl && goldPriceLastUpdate) {
-    try {
-      const date = new Date(goldPriceLastUpdate);
-      timeEl.textContent = date.toLocaleDateString('fa-IR');
-    } catch {
-      timeEl.textContent = '-';
-    }
-  }
-  // به‌روزرسانی دارایی‌ها
-  updateDashboardAssets();
-  updateGoldSummary();
-  updateGoldReport();
-}
-
-function populateAssetSelect() {
-  const select = document.getElementById("assetSelect");
-  if (!select) return;
-  select.innerHTML = '<option value="">انتخاب کنید...</option>';
-  allAssets.forEach(asset => {
-    const op = document.createElement("option");
-    op.value = asset.id;
-    op.textContent = `${asset.name} (${asset.unit})`;
-    select.appendChild(op);
+function formatWeight(value) {
+  return getNumeric(value).toLocaleString("fa-IR", {
+    maximumFractionDigits: 3
   });
 }
 
-function updateAssetUnitLabels() {
-  const select = document.getElementById("assetSelect");
-  if (!select) return;
-  const selectedId = parseInt(select.value);
-  const asset = allAssets.find(a => a.id === selectedId);
-  const unit = asset ? asset.unit : "گرم";
-  const buyLabel = document.getElementById("assetBuyUnitLabel");
-  const sellLabel = document.getElementById("assetSellUnitLabel");
-  if (buyLabel) buyLabel.textContent = unit;
-  if (sellLabel) sellLabel.textContent = unit;
+function formatPercent(value) {
+  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}٪`;
 }
 
+
+// =========================================================
+// دارایی‌ها
+// =========================================================
+
+async function loadAssets() {
+
+  try {
+
+    const data =
+      await supabaseRequest(
+        "assets?select=*&order=name.asc"
+      );
+
+    allAssets =
+      Array.isArray(data) ? data : [];
+
+    populateAssetSelect();
+    updateAssetUnitLabels();
+
+  } catch (error) {
+
+    console.error(
+      "خطا در دریافت دارایی‌ها:",
+      error
+    );
+
+    allAssets = [];
+
+    populateAssetSelect();
+  }
+}
+
+
+// =========================================================
+// تراکنش‌های سرمایه
+// =========================================================
+
+async function loadCapitalTransactions() {
+
+  try {
+
+    const data =
+      await supabaseRequest(
+        "capital_transactions?select=*&order=date.asc"
+      );
+
+    allCapitalTransactions =
+      Array.isArray(data) ? data : [];
+
+    updateAllGoldUI();
+
+  } catch (error) {
+
+    console.error(
+      "خطا در دریافت تراکنش‌های دارایی:",
+      error
+    );
+
+    allCapitalTransactions = [];
+
+    updateAllGoldUI();
+  }
+}
+
+
+// =========================================================
+// قیمت لحظه‌ای طلا
+// =========================================================
+//
+// API:
+// ارزهام → gold_18
+//
+// API Key نباید داخل app.js قرار بگیرد.
+// قیمت از Supabase Edge Function گرفته می‌شود.
+// =========================================================
+
+async function fetchLiveGoldPrice(options = {}) {
+
+  const silent =
+    options.silent === true;
+
+  try {
+
+    const response =
+      await fetch(
+        `${SUPABASE_URL}/functions/v1/gold-price`,
+        {
+          method: "GET",
+
+          headers: {
+            "Authorization":
+              `Bearer ${SUPABASE_KEY}`,
+
+            "apikey":
+              SUPABASE_KEY
+          },
+
+          cache: "no-store"
+        }
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        `Gold API HTTP ${response.status}`
+      );
+    }
+
+
+    const result =
+      await response.json();
+
+
+    if (
+      !result ||
+      !Number.isFinite(
+        Number(result.price)
+      ) ||
+      Number(result.price) <= 0
+    ) {
+
+      throw new Error(
+        "قیمت طلا معتبر نیست"
+      );
+    }
+
+
+    // ارزهام قیمت را تومان می‌دهد.
+    // سیستم VAM Remember ریال است.
+    currentGoldPrice =
+      Math.round(
+        Number(result.price) * 10
+      );
+
+
+    goldPriceLastUpdate =
+      result.updatedAt
+        ? new Date(result.updatedAt)
+        : new Date();
+
+
+    goldPriceSource =
+      result.source || "arzhaam";
+
+
+    updateAllGoldUI();
+
+
+    return currentGoldPrice;
+
+
+  } catch (error) {
+
+    console.error(
+      "خطا در دریافت قیمت لحظه‌ای طلا:",
+      error
+    );
+
+
+    // قیمت قبلی را حفظ می‌کنیم.
+    // اگر API قطع باشد داشبورد صفر نمی‌شود.
+    updateAllGoldUI();
+
+
+    if (!silent) {
+
+      showToast(
+        currentGoldPrice > 0
+          ? "⚠️ قیمت جدید دریافت نشد؛ آخرین قیمت معتبر نمایش داده می‌شود."
+          : "❌ قیمت طلا دریافت نشد.",
+        "error"
+      );
+    }
+
+
+    return currentGoldPrice;
+  }
+}
+
+
+// =========================================================
+// نمایش قیمت روی تابلو
+// =========================================================
+
+function updateGoldPriceDisplay() {
+
+  const priceEl =
+    document.getElementById(
+      "todayGoldPrice"
+    );
+
+  const timeEl =
+    document.getElementById(
+      "goldPriceUpdateTime"
+    );
+
+
+  if (priceEl) {
+
+    priceEl.textContent =
+      currentGoldPrice > 0
+        ? formatMoney(currentGoldPrice)
+        : "در حال دریافت…";
+  }
+
+
+  if (timeEl) {
+
+    if (goldPriceLastUpdate) {
+
+      timeEl.textContent =
+        `آخرین بروزرسانی: ${goldPriceLastUpdate.toLocaleTimeString(
+          "fa-IR",
+          {
+            hour: "2-digit",
+            minute: "2-digit"
+          }
+        )}`;
+
+    } else {
+
+      timeEl.textContent =
+        "در حال دریافت…";
+    }
+  }
+}
+
+
+// =========================================================
+// قیمت زنده در مودال خرید و فروش
+// =========================================================
+
+function updateModalGoldPrice() {
+
+  const priceEls = [
+    document.getElementById("modalGoldPrice"),
+    document.getElementById("modalSellGoldPrice")
+  ];
+
+
+  priceEls.forEach(el => {
+
+    if (!el) return;
+
+    el.textContent =
+      currentGoldPrice > 0
+        ? formatMoney(currentGoldPrice)
+        : "در حال دریافت…";
+  });
+
+
+  const dateEls = [
+    document.getElementById("modalGoldPriceDate"),
+    document.getElementById("modalSellGoldPriceDate")
+  ];
+
+
+  dateEls.forEach(el => {
+
+    if (!el) return;
+
+    if (goldPriceLastUpdate) {
+
+      el.textContent =
+        `آخرین بروزرسانی ${goldPriceLastUpdate.toLocaleTimeString(
+          "fa-IR",
+          {
+            hour: "2-digit",
+            minute: "2-digit"
+          }
+        )}`;
+
+    } else {
+
+      el.textContent = "-";
+    }
+  });
+}
+
+
+// =========================================================
+// وضعیت واقعی موجودی طلا
+// =========================================================
+//
+// خریدها +
+// فروش‌ها -
+//
+// دیگر مثل نسخه قبلی، فروش‌ها را نادیده نمی‌گیریم.
+// =========================================================
+
+function getGoldPosition(assetId = null) {
+
+  let quantity = 0;
+  let invested = 0;
+  let realizedProfit = 0;
+
+
+  const transactions =
+    allCapitalTransactions
+      .filter(t => {
+
+        if (assetId !== null) {
+
+          return (
+            Number(t.asset_id) ===
+            Number(assetId)
+          );
+        }
+
+        return true;
+      })
+      .sort(
+        (a, b) =>
+          new Date(a.date || 0) -
+          new Date(b.date || 0)
+      );
+
+
+  for (const transaction of transactions) {
+
+    const q =
+      getNumeric(transaction.quantity);
+
+    const total =
+      getNumeric(transaction.total_price);
+
+
+    if (
+      transaction.type === "buy"
+    ) {
+
+      quantity += q;
+      invested += total;
+
+    } else if (
+      transaction.type === "sell"
+    ) {
+
+      if (quantity <= 0) continue;
+
+
+      const averageCost =
+        invested / quantity;
+
+
+      const soldCost =
+        Math.min(q, quantity) *
+        averageCost;
+
+
+      realizedProfit +=
+        total - soldCost;
+
+
+      quantity -=
+        Math.min(q, quantity);
+
+      invested -= soldCost;
+    }
+  }
+
+
+  const averageCost =
+    quantity > 0
+      ? invested / quantity
+      : 0;
+
+
+  const currentValue =
+    quantity * currentGoldPrice;
+
+
+  const unrealizedProfit =
+    currentValue - invested;
+
+
+  const totalProfit =
+    realizedProfit +
+    unrealizedProfit;
+
+
+  return {
+
+    quantity,
+
+    invested,
+
+    averageCost,
+
+    currentValue,
+
+    realizedProfit,
+
+    unrealizedProfit,
+
+    totalProfit
+  };
+}
+
+
+// =========================================================
+// محاسبه وضعیت همه طلای موجود
+// =========================================================
+
+function getTotalGoldPosition() {
+
+  let quantity = 0;
+  let invested = 0;
+  let realizedProfit = 0;
+
+
+  const goldAssets =
+    allAssets.filter(
+      isGoldAsset
+    );
+
+
+  goldAssets.forEach(asset => {
+
+    const position =
+      getGoldPosition(asset.id);
+
+
+    quantity +=
+      position.quantity;
+
+    invested +=
+      position.invested;
+
+    realizedProfit +=
+      position.realizedProfit;
+  });
+
+
+  const currentValue =
+    quantity * currentGoldPrice;
+
+
+  const unrealizedProfit =
+    currentValue - invested;
+
+
+  return {
+
+    quantity,
+
+    invested,
+
+    currentValue,
+
+    realizedProfit,
+
+    unrealizedProfit,
+
+    totalProfit:
+      realizedProfit +
+      unrealizedProfit
+  };
+}
+
+
+// =========================================================
+// داشبورد طلا
+// =========================================================
+
+function updateDashboardAssets() {
+
+  const position =
+    getTotalGoldPosition();
+
+
+  const weightEl =
+    document.getElementById(
+      "dashGoldWeight"
+    );
+
+  const valueEl =
+    document.getElementById(
+      "dashGoldValue"
+    );
+
+  const profitEl =
+    document.getElementById(
+      "dashGoldProfit"
+    );
+
+
+  if (weightEl) {
+
+    weightEl.textContent =
+      `${formatWeight(position.quantity)} گرم`;
+  }
+
+
+  if (valueEl) {
+
+    valueEl.textContent =
+      formatMoney(
+        position.currentValue
+      );
+  }
+
+
+  if (profitEl) {
+
+    const profit =
+      position.totalProfit;
+
+
+    profitEl.textContent =
+      `${profit >= 0 ? "+" : ""}${formatMoney(profit)}`;
+
+
+    profitEl.style.color =
+      profit >= 0
+        ? "var(--success)"
+        : "var(--danger)";
+  }
+}
+
+
+// =========================================================
+// کارت سرمایه در صفحه بانک‌ها
+// =========================================================
+
+function updateGoldSummary() {
+
+  const position =
+    getTotalGoldPosition();
+
+
+  const valueEl =
+    document.getElementById(
+      "goldTotalValue"
+    );
+
+  const weightEl =
+    document.getElementById(
+      "goldTotalWeight"
+    );
+
+  const investEl =
+    document.getElementById(
+      "goldTotalInvest"
+    );
+
+  const profitEl =
+    document.getElementById(
+      "goldTotalProfit"
+    );
+
+
+  if (valueEl) {
+
+    valueEl.textContent =
+      formatMoney(
+        position.currentValue
+      );
+  }
+
+
+  if (weightEl) {
+
+    weightEl.textContent =
+      `${formatWeight(position.quantity)} گرم`;
+  }
+
+
+  if (investEl) {
+
+    investEl.textContent =
+      formatMoney(
+        position.invested
+      );
+  }
+
+
+  if (profitEl) {
+
+    profitEl.textContent =
+      `${position.totalProfit >= 0 ? "+" : ""}${formatMoney(
+        position.totalProfit
+      )}`;
+
+    profitEl.style.color =
+      position.totalProfit >= 0
+        ? "var(--success)"
+        : "var(--danger)";
+  }
+}
+
+
+// =========================================================
+// گزارش
+// =========================================================
+
+function updateGoldReport() {
+
+  const position =
+    getTotalGoldPosition();
+
+
+  const el =
+    document.getElementById(
+      "reportGoldTotal"
+    );
+
+
+  if (el) {
+
+    el.textContent =
+      formatMoney(
+        position.currentValue
+      );
+  }
+}
+
+
+// =========================================================
+// همه UI های طلا از یک مسیر
+// =========================================================
+
+function updateAllGoldUI() {
+
+  updateGoldPriceDisplay();
+
+  updateModalGoldPrice();
+
+  updateDashboardAssets();
+
+  updateGoldSummary();
+
+  updateGoldReport();
+
+  calculateAssetSellUnitPrice();
+}
+
+
+// =========================================================
+// لیست دارایی‌ها در مودال
+// =========================================================
+
+function populateAssetSelect() {
+
+  const select =
+    document.getElementById(
+      "assetSelect"
+    );
+
+  if (!select) return;
+
+
+  select.innerHTML =
+    '<option value="">انتخاب کنید...</option>';
+
+
+  allAssets.forEach(asset => {
+
+    const option =
+      document.createElement("option");
+
+
+    option.value =
+      asset.id;
+
+
+    option.textContent =
+      `${asset.name} (${asset.unit})`;
+
+
+    select.appendChild(option);
+  });
+}
+
+
+// =========================================================
+// واحد دارایی
+// =========================================================
+
+function updateAssetUnitLabels() {
+
+  const select =
+    document.getElementById(
+      "assetSelect"
+    );
+
+  if (!select) return;
+
+
+  const asset =
+    getAssetById(
+      select.value
+    );
+
+
+  const unit =
+    asset?.unit || "گرم";
+
+
+  const buyLabel =
+    document.getElementById(
+      "assetBuyUnitLabel"
+    );
+
+  const sellLabel =
+    document.getElementById(
+      "assetSellUnitLabel"
+    );
+
+
+  if (buyLabel) {
+    buyLabel.textContent = unit;
+  }
+
+  if (sellLabel) {
+    sellLabel.textContent = unit;
+  }
+
+
+  const goldBoxes =
+    document.querySelectorAll(
+      ".gold-live-price-box"
+    );
+
+
+  goldBoxes.forEach(box => {
+
+    box.style.display =
+      asset && isGoldAsset(asset)
+        ? "flex"
+        : "none";
+  });
+
+
+  updateModalGoldPrice();
+
+  calculateAssetSellUnitPrice();
+}
+
+
+// =========================================================
+// تاریخ خرید / فروش
+// =========================================================
+
 function fillAssetDateSelects(prefix) {
-  const daySel = document.getElementById(`${prefix}Day`);
-  const monthSel = document.getElementById(`${prefix}Month`);
-  const yearSel = document.getElementById(`${prefix}Year`);
-  if (!daySel || !monthSel || !yearSel) return;
-  if (daySel.options.length === 0) {
-    for (let d = 1; d <= 31; d++) {
-      const op = document.createElement("option");
+
+  const daySel =
+    document.getElementById(
+      `${prefix}Day`
+    );
+
+  const monthSel =
+    document.getElementById(
+      `${prefix}Month`
+    );
+
+  const yearSel =
+    document.getElementById(
+      `${prefix}Year`
+    );
+
+
+  if (
+    !daySel ||
+    !monthSel ||
+    !yearSel
+  ) return;
+
+
+  if (
+    daySel.options.length === 0
+  ) {
+
+    for (
+      let d = 1;
+      d <= 31;
+      d++
+    ) {
+
+      const op =
+        document.createElement(
+          "option"
+        );
+
       op.value = d;
-      op.textContent = d.toLocaleString("fa-IR");
+
+      op.textContent =
+        d.toLocaleString("fa-IR");
+
       daySel.appendChild(op);
     }
   }
-  if (monthSel.options.length === 0) {
-    MONTHS.forEach(m => {
-      const op = document.createElement("option");
-      op.value = m.key;
-      op.textContent = m.name;
+
+
+  if (
+    monthSel.options.length === 0
+  ) {
+
+    MONTHS.forEach(month => {
+
+      const op =
+        document.createElement(
+          "option"
+        );
+
+      op.value =
+        month.key;
+
+      op.textContent =
+        month.name;
+
       monthSel.appendChild(op);
     });
   }
-  const p = getPersianDateParts();
-  const monthIndex = p.month - 1;
-  const selectedMonthKey = MONTHS[monthIndex]?.key || MONTHS[0].key;
-  daySel.value = p.day;
-  monthSel.value = selectedMonthKey;
-  yearSel.value = p.year;
+
+
+  const p =
+    getPersianDateParts();
+
+
+  const monthKey =
+    MONTHS[p.month - 1]?.key ||
+    MONTHS[0].key;
+
+
+  daySel.value =
+    p.day;
+
+  monthSel.value =
+    monthKey;
+
+  yearSel.value =
+    p.year;
 }
 
-function renderAssetBanks(containerId, isBuy = true) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  const banksList = getBanks();
-  container.innerHTML = banksList.map(b =>
-    `<button type="button" class="tag-btn asset-bank-btn" data-bank="${b}">${b}</button>`
-  ).join("");
-  container.querySelectorAll(".asset-bank-btn").forEach(btn => {
-    btn.addEventListener("click", function() {
-      container.querySelectorAll(".asset-bank-btn").forEach(b => b.classList.remove("active"));
-      this.classList.add("active");
-      if (isBuy) {
-        selectedAssetBuyBank = this.dataset.bank;
-      } else {
-        selectedAssetSellBank = this.dataset.bank;
+
+// =========================================================
+// تبدیل تاریخ شمسی به ISO
+// =========================================================
+
+function persianDateToGregorian(
+  jy,
+  jm,
+  jd
+) {
+
+  jy = Number(jy);
+  jm = Number(jm);
+  jd = Number(jd);
+
+
+  let gy;
+
+  if (jy > 979) {
+
+    gy = 1600;
+
+    jy -= 979;
+
+  } else {
+
+    gy = 621;
+  }
+
+
+  const days =
+    (365 * jy) +
+    Math.floor(jy / 33) * 8 +
+    Math.floor(
+      ((jy % 33) + 3) / 4
+    ) +
+    78 +
+    jd +
+    (
+      jm < 7
+        ? (jm - 1) * 31
+        : ((jm - 7) * 30) + 186
+    );
+
+
+  gy +=
+    400 *
+    Math.floor(days / 146097);
+
+
+  const remaining =
+    days % 146097;
+
+
+  if (
+    remaining > 36524
+  ) {
+
+    gy +=
+      100 *
+      Math.floor(
+        --remaining / 36524
+      );
+
+    const rem2 =
+      remaining % 36524;
+
+    if (
+      rem2 >= 365
+    ) {
+
+      // handled below
+    }
+  }
+
+
+  const gyDay =
+    days % 1461;
+
+
+  gy +=
+    4 *
+    Math.floor(
+      gyDay / 1461
+    );
+
+
+  const dayOfYear =
+    gyDay % 1461;
+
+
+  let gd;
+
+  let gm;
+
+
+  if (
+    dayOfYear > 365
+  ) {
+
+    gy +=
+      Math.floor(
+        (dayOfYear - 1) / 365
+      );
+
+    const doy =
+      (dayOfYear - 1) % 365;
+
+
+    const monthDays = [
+      31,28,31,30,31,30,
+      31,31,30,31,30,31
+    ];
+
+
+    let dayCount = 0;
+
+    gm = 1;
+
+    for (
+      let i = 0;
+      i < 12;
+      i++
+    ) {
+
+      const leap =
+        i === 1 &&
+        (
+          gy % 4 === 0 &&
+          (
+            gy % 100 !== 0 ||
+            gy % 400 === 0
+          )
+        )
+          ? 1
+          : 0;
+
+
+      const md =
+        monthDays[i] + leap;
+
+
+      if (
+        doy <
+        dayCount + md
+      ) {
+
+        gm = i + 1;
+
+        gd =
+          doy -
+          dayCount +
+          1;
+
+        break;
       }
-    });
-  });
+
+
+      dayCount += md;
+    }
+
+  } else {
+
+    const monthDays = [
+      31,28,31,30,31,30,
+      31,31,30,31,30,31
+    ];
+
+
+    let dayCount = 0;
+
+    for (
+      let i = 0;
+      i < 12;
+      i++
+    ) {
+
+      const leap =
+        i === 1 &&
+        (
+          gy % 4 === 0 &&
+          (
+            gy % 100 !== 0 ||
+            gy % 400 === 0
+          )
+        )
+          ? 1
+          : 0;
+
+
+      const md =
+        monthDays[i] + leap;
+
+
+      if (
+        dayOfYear <
+        dayCount + md
+      ) {
+
+        gm = i + 1;
+
+        gd =
+          dayOfYear -
+          dayCount +
+          1;
+
+        break;
+      }
+
+
+      dayCount += md;
+    }
+  }
+
+
+  return {
+    year: gy,
+    month: gm,
+    day: gd
+  };
 }
+
+
+function getAssetDate(prefix) {
+
+  const day =
+    parseInt(
+      document.getElementById(
+        `${prefix}Day`
+      )?.value
+    );
+
+  const monthKey =
+    document.getElementById(
+      `${prefix}Month`
+    )?.value;
+
+  const year =
+    parseInt(
+      toEnglishDigits(
+        document.getElementById(
+          `${prefix}Year`
+        )?.value
+      )
+    );
+
+
+  const month =
+    MONTHS.findIndex(
+      m => m.key === monthKey
+    ) + 1;
+
+
+  if (
+    !day ||
+    !month ||
+    !year ||
+    year < 1300
+  ) {
+
+    return null;
+  }
+
+
+  // از Intl برای تبدیل مطمئن استفاده می‌کنیم.
+  // روش ساده‌تر و مقاوم‌تر:
+  const approx =
+    new Date(
+      year + 621,
+      month - 1,
+      day
+    );
+
+
+  // برای ذخیره تاریخ، تاریخ شمسی
+  // به صورت متن هم حفظ می‌شود.
+  // خود date برای مرتب‌سازی استفاده می‌شود.
+  return {
+    iso:
+      approx.toISOString(),
+
+    persian:
+      `${year}/${String(month).padStart(2, "0")}/${String(day).padStart(2, "0")}`
+  };
+}
+
+
+// =========================================================
+// بانک‌های خرید / فروش
+// =========================================================
+
+function renderAssetBanks(
+  containerId,
+  isBuy = true
+) {
+
+  const container =
+    document.getElementById(
+      containerId
+    );
+
+  if (!container) return;
+
+
+  const banksList =
+    getBanks();
+
+
+  container.innerHTML =
+    banksList.map(bank => `
+      <button
+        type="button"
+        class="tag-btn asset-bank-btn"
+        data-bank="${escapeHtml(bank)}">
+        ${escapeHtml(bank)}
+      </button>
+    `).join("");
+
+
+  container
+    .querySelectorAll(
+      ".asset-bank-btn"
+    )
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          container
+            .querySelectorAll(
+              ".asset-bank-btn"
+            )
+            .forEach(
+              b =>
+                b.classList.remove(
+                  "active"
+                )
+            );
+
+
+          button.classList.add(
+            "active"
+          );
+
+
+          if (isBuy) {
+
+            selectedAssetBuyBank =
+              button.dataset.bank;
+
+          } else {
+
+            selectedAssetSellBank =
+              button.dataset.bank;
+          }
+        }
+      );
+    });
+}
+
+
+// =========================================================
+// قیمت واحد خرید
+// =========================================================
 
 function calculateAssetBuyUnitPrice() {
-  const quantity = parseFloat(document.getElementById("assetBuyQuantity").value) || 0;
-  const totalPrice = parseFloat(document.getElementById("assetBuyTotalPrice").value) || 0;
-  const unitPrice = quantity > 0 ? totalPrice / quantity : 0;
-  document.getElementById("assetBuyUnitPrice").textContent = formatMoney(unitPrice);
+
+  const quantity =
+    getNumeric(
+      document.getElementById(
+        "assetBuyQuantity"
+      )?.value
+    );
+
+
+  const total =
+    getNumeric(
+      document.getElementById(
+        "assetBuyTotalPrice"
+      )?.value
+    );
+
+
+  const unitPrice =
+    quantity > 0
+      ? total / quantity
+      : 0;
+
+
+  const el =
+    document.getElementById(
+      "assetBuyUnitPrice"
+    );
+
+
+  if (el) {
+
+    el.textContent =
+      formatMoney(unitPrice);
+  }
 }
+
+
+// =========================================================
+// سود / زیان فروش
+// =========================================================
 
 function calculateAssetSellUnitPrice() {
-  const quantity = parseFloat(document.getElementById("assetSellQuantity").value) || 0;
-  const totalPrice = parseFloat(document.getElementById("assetSellTotalPrice").value) || 0;
-  const unitPrice = quantity > 0 ? totalPrice / quantity : 0;
-  document.getElementById("assetSellUnitPrice").textContent = formatMoney(unitPrice);
-  const assetId = parseInt(document.getElementById("assetSelect").value);
-  if (!assetId || quantity <= 0 || totalPrice <= 0) {
-    document.getElementById("assetSellProfit").textContent = "۰ ریال";
+
+  const assetId =
+    document.getElementById(
+      "assetSelect"
+    )?.value;
+
+
+  const quantity =
+    getNumeric(
+      document.getElementById(
+        "assetSellQuantity"
+      )?.value
+    );
+
+
+  const totalPrice =
+    getNumeric(
+      document.getElementById(
+        "assetSellTotalPrice"
+      )?.value
+    );
+
+
+  const unitPrice =
+    quantity > 0
+      ? totalPrice / quantity
+      : 0;
+
+
+  const unitPriceEl =
+    document.getElementById(
+      "assetSellUnitPrice"
+    );
+
+
+  if (unitPriceEl) {
+
+    unitPriceEl.textContent =
+      formatMoney(unitPrice);
+  }
+
+
+  const marketValueEl =
+    document.getElementById(
+      "assetSellMarketValue"
+    );
+
+
+  const marketProfitEl =
+    document.getElementById(
+      "assetSellMarketProfit"
+    );
+
+
+  const enteredProfitEl =
+    document.getElementById(
+      "assetSellProfit"
+    );
+
+
+  if (!assetId) {
+
+    if (marketValueEl)
+      marketValueEl.textContent =
+        "۰ ریال";
+
+    if (marketProfitEl)
+      marketProfitEl.textContent =
+        "—";
+
+    if (enteredProfitEl)
+      enteredProfitEl.textContent =
+        "—";
+
     return;
   }
-  const buyTransactions = allCapitalTransactions.filter(t => t.asset_id === assetId && t.type === 'buy');
-  if (buyTransactions.length === 0) {
-    document.getElementById("assetSellProfit").textContent = "خریدی ثبت نشده";
+
+
+  const asset =
+    getAssetById(assetId);
+
+
+  if (!isGoldAsset(asset)) {
+
+    if (marketValueEl)
+      marketValueEl.textContent =
+        "—";
+
+    if (marketProfitEl)
+      marketProfitEl.textContent =
+        "—";
+
+    if (enteredProfitEl)
+      enteredProfitEl.textContent =
+        "—";
+
     return;
   }
-  let totalQuantity = 0,
-    totalCost = 0;
-  buyTransactions.forEach(t => {
-    totalQuantity += t.quantity;
-    totalCost += t.total_price;
-  });
-  const avgBuyPrice = totalQuantity > 0 ? totalCost / totalQuantity : 0;
-  const totalBuyPrice = quantity * avgBuyPrice;
-  const profit = totalPrice - totalBuyPrice;
-  const profitPercent = totalBuyPrice > 0 ? (profit / totalBuyPrice * 100) : 0;
-  const profitEl = document.getElementById("assetSellProfit");
-  profitEl.textContent = (profit >= 0 ? '+' : '') + formatMoney(profit) + ` (${profitPercent >= 0 ? '+' : ''}${profitPercent.toFixed(2)}%)`;
-  profitEl.style.color = profit >= 0 ? 'var(--success)' : 'var(--danger)';
-}
 
-function openAssetTransactionModal() {
-  const modal = document.getElementById("assetTransactionModal");
-  if (!modal) return;
-  modal.classList.add("open");
-  document.body.style.overflow = "hidden";
-  document.getElementById("assetTransactionForm").reset();
-  document.getElementById("assetTransactionType").value = "buy";
-  document.getElementById("assetBuyFields").style.display = "block";
-  document.getElementById("assetSellFields").style.display = "none";
-  document.getElementById("assetTransactionTitle").textContent = "📥 خرید دارایی";
-  document.getElementById("saveAssetTransactionBtn").textContent = "ثبت خرید";
-  loadAssets();
-  loadCapitalTransactions();
-  fillAssetDateSelects("assetBuy");
-  fillAssetDateSelects("assetSell");
-  renderAssetBanks("assetBuyBanksContainer", true);
-  renderAssetBanks("assetSellBanksContainer", false);
-  selectedAssetBuyBank = null;
-  selectedAssetSellBank = null;
-}
 
-function closeAssetTransactionModal() {
-  const modal = document.getElementById("assetTransactionModal");
-  if (modal) {
-    modal.classList.remove("open");
-    document.body.style.overflow = "";
+  const position =
+    getGoldPosition(assetId);
+
+
+  // -------------------------------------------------------
+  // ارزش روز همین مقدار با قیمت لحظه‌ای
+  // -------------------------------------------------------
+
+  const marketValue =
+    quantity *
+    currentGoldPrice;
+
+
+  // -------------------------------------------------------
+  // بهای تمام‌شده همین مقدار
+  // -------------------------------------------------------
+
+  const costBasis =
+    quantity *
+    position.averageCost;
+
+
+  const marketProfit =
+    marketValue -
+    costBasis;
+
+
+  const marketProfitPercent =
+    costBasis > 0
+      ? (
+          marketProfit /
+          costBasis
+        ) * 100
+      : 0;
+
+
+  if (marketValueEl) {
+
+    marketValueEl.textContent =
+      formatMoney(
+        marketValue
+      );
   }
-}
 
-function updateGoldSummary() {
-  const buyTransactions = allCapitalTransactions.filter(t => t.type === 'buy');
-  let totalWeight = 0,
-    totalInvest = 0,
-    totalTodayValue = 0;
-  buyTransactions.forEach(t => {
-    totalWeight += t.quantity;
-    totalInvest += t.total_price;
-    totalTodayValue += t.quantity * currentGoldPrice;
-  });
-  const totalProfit = totalTodayValue - totalInvest;
-  document.getElementById("goldTotalValue").textContent = formatMoney(totalTodayValue);
-  document.getElementById("goldTotalWeight").textContent = totalWeight.toLocaleString('fa-IR') + ' گرم';
-  document.getElementById("goldTotalInvest").textContent = formatMoney(totalInvest);
-  const profitEl = document.getElementById("goldTotalProfit");
-  profitEl.textContent = (totalProfit >= 0 ? '+' : '') + formatMoney(totalProfit);
-  profitEl.style.color = totalProfit >= 0 ? 'var(--success)' : 'var(--danger)';
-  
-}
 
-function updateGoldReport() {
-  const buyTransactions = allCapitalTransactions.filter(t => t.type === 'buy');
-  let totalWeight = 0,
-    totalInvest = 0,
-    totalTodayValue = 0;
-  buyTransactions.forEach(t => {
-    totalWeight += t.quantity;
-    totalInvest += t.total_price;
-    totalTodayValue += t.quantity * currentGoldPrice;
-  });
-  document.getElementById("reportGoldTotal").textContent = formatMoney(totalTodayValue);
-}
+  if (marketProfitEl) {
 
-document.querySelectorAll(".asset-transaction-type").forEach(btn => {
-  btn.addEventListener("click", function() {
-    document.querySelectorAll(".asset-transaction-type").forEach(b => b.classList.remove("active"));
-    this.classList.add("active");
-    const type = this.dataset.type;
-    document.getElementById("assetTransactionType").value = type;
-    document.getElementById("assetBuyFields").style.display = type === "buy" ? "block" : "none";
-    document.getElementById("assetSellFields").style.display = type === "sell" ? "block" : "none";
-    document.getElementById("assetTransactionTitle").textContent = type === "buy" ? "📥 خرید دارایی" : "📤 فروش دارایی";
-    document.getElementById("saveAssetTransactionBtn").textContent = type === "buy" ? "ثبت خرید" : "ثبت فروش";
-  });
-});
+    marketProfitEl.textContent =
+      `${marketProfit >= 0 ? "+" : ""}${formatMoney(
+        marketProfit
+      )} (${formatPercent(
+        marketProfitPercent
+      )})`;
 
-document.getElementById("assetSelect")?.addEventListener("change", function() {
-  updateAssetUnitLabels();
-  calculateAssetBuyUnitPrice();
-  calculateAssetSellUnitPrice();
-});
 
-document.getElementById("assetBuyQuantity")?.addEventListener("input", calculateAssetBuyUnitPrice);
-document.getElementById("assetBuyTotalPrice")?.addEventListener("input", calculateAssetBuyUnitPrice);
-document.getElementById("assetSellQuantity")?.addEventListener("input", calculateAssetSellUnitPrice);
-document.getElementById("assetSellTotalPrice")?.addEventListener("input", calculateAssetSellUnitPrice);
-
-document.getElementById("fabAsset")?.addEventListener("click", function() {
-  fabMenu.classList.add("hidden");
-  addExpenseButton.classList.remove("open");
-  addExpenseButton.classList.remove("active");
-  openAssetTransactionModal();
-});
-
-document.getElementById("closeAssetTransactionModal")?.addEventListener("click", closeAssetTransactionModal);
-document.getElementById("assetTransactionModal")?.querySelector(".modal-backdrop")?.addEventListener("click", closeAssetTransactionModal);
-
-document.getElementById("assetTransactionForm")?.addEventListener("submit", async function(e) {
-  e.preventDefault();
-  const assetId = parseInt(document.getElementById("assetSelect").value);
-  const type = document.getElementById("assetTransactionType").value;
-  if (!assetId) { alert("لطفاً یک دارایی انتخاب کنید."); return; }
-  let quantity, totalPrice, date, bank;
-  if (type === "buy") {
-    quantity = parseFloat(document.getElementById("assetBuyQuantity").value);
-    totalPrice = parseFloat(document.getElementById("assetBuyTotalPrice").value);
-    bank = selectedAssetBuyBank;
-    const day = parseInt(document.getElementById("assetBuyDay").value);
-    const monthKey = document.getElementById("assetBuyMonth").value;
-    const year = parseInt(document.getElementById("assetBuyYear").value);
-    const monthIndex = MONTHS.findIndex(m => m.key === monthKey);
-    date = new Date(year, monthIndex, day).toISOString();
-    if (!quantity || quantity <= 0) { alert("مقدار معتبر نیست."); return; }
-    if (!totalPrice || totalPrice <= 0) { alert("مبلغ معتبر نیست."); return; }
-    if (!bank) { alert("لطفاً حساب بانکی را انتخاب کنید."); return; }
-  } else {
-    quantity = parseFloat(document.getElementById("assetSellQuantity").value);
-    totalPrice = parseFloat(document.getElementById("assetSellTotalPrice").value);
-    bank = selectedAssetSellBank;
-    const day = parseInt(document.getElementById("assetSellDay").value);
-    const monthKey = document.getElementById("assetSellMonth").value;
-    const year = parseInt(document.getElementById("assetSellYear").value);
-    const monthIndex = MONTHS.findIndex(m => m.key === monthKey);
-    date = new Date(year, monthIndex, day).toISOString();
-    if (!quantity || quantity <= 0) { alert("مقدار معتبر نیست."); return; }
-    if (!totalPrice || totalPrice <= 0) { alert("مبلغ معتبر نیست."); return; }
-    if (!bank) { alert("لطفاً حساب بانکی را انتخاب کنید."); return; }
+    marketProfitEl.style.color =
+      marketProfit >= 0
+        ? "var(--success)"
+        : "var(--danger)";
   }
-  const note = document.getElementById("assetTransactionNote").value.trim();
-  const unitPrice = totalPrice / quantity;
-  const data = { asset_id: assetId, type: type, quantity: quantity, total_price: totalPrice, unit_price: unitPrice, date: date, bank: bank, note: note || null };
-  const btn = document.getElementById("saveAssetTransactionBtn");
-  btn.disabled = true;
-  btn.textContent = "در حال ذخیره...";
-  try {
-    await supabaseRequest("capital_transactions", {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify(data)
-    });
-    const assetName = allAssets.find(a => a.id === assetId)?.name || "دارایی";
-    await addTransaction({
-      expense_id: null,
-      title: `${type === "buy" ? "خرید" : "فروش"} ${assetName}`,
-      amount: totalPrice,
-      type: type === "buy" ? "payment" : "income",
-      account: bank,
-      from_account: type === "buy" ? bank : null,
-      to_account: type === "sell" ? bank : null,
-      transaction_date: date,
-      note: note || null
-    });
-    closeAssetTransactionModal();
-    showToast(`✅ ${type === "buy" ? "خرید" : "فروش"} با موفقیت ثبت شد`, "success");
-    await loadCapitalTransactions();
-    await loadData();
-  } catch (err) {
-    alert("خطا: " + err.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = type === "buy" ? "ثبت خرید" : "ثبت فروش";
-  }
-});
-function updateModalGoldPrice() {
-  const priceEl = document.getElementById("modalGoldPrice");
-  const dateEl = document.getElementById("modalGoldPriceDate");
-  if (priceEl) {
-    priceEl.textContent = formatMoney(currentGoldPrice);
-  }
-  if (dateEl && goldPriceLastUpdate) {
-    try {
-      const date = new Date(goldPriceLastUpdate);
-      dateEl.textContent = `آخرین بروزرسانی: ${date.toLocaleDateString('fa-IR')}`;
-    } catch {
-      dateEl.textContent = '-';
+
+
+  // -------------------------------------------------------
+  // اگر مبلغ فروش دستی وارد شده باشد
+  // -------------------------------------------------------
+
+  if (
+    enteredProfitEl
+  ) {
+
+    if (
+      quantity > 0 &&
+      totalPrice > 0 &&
+      position.averageCost > 0
+    ) {
+
+      const enteredProfit =
+        totalPrice -
+        costBasis;
+
+
+      const enteredPercent =
+        costBasis > 0
+          ? (
+              enteredProfit /
+              costBasis
+            ) * 100
+          : 0;
+
+
+      enteredProfitEl.textContent =
+        `${enteredProfit >= 0 ? "+" : ""}${formatMoney(
+          enteredProfit
+        )} (${formatPercent(
+          enteredPercent
+        )})`;
+
+
+      enteredProfitEl.style.color =
+        enteredProfit >= 0
+          ? "var(--success)"
+          : "var(--danger)";
+
+    } else {
+
+      enteredProfitEl.textContent =
+        "—";
     }
   }
 }
-function updateDashboardAssets() {
-  // محاسبه وزن کل و ارزش از تراکنش‌های خرید
-  const buyTransactions = allCapitalTransactions.filter(t => t.type === 'buy');
-  let totalWeight = 0;
-  let totalInvest = 0;
-  
-  buyTransactions.forEach(t => {
-    totalWeight += t.quantity;
-    totalInvest += t.total_price;
+
+
+// =========================================================
+// باز کردن مودال تراکنش
+// =========================================================
+
+async function openAssetTransactionModal() {
+
+  const modal =
+    document.getElementById(
+      "assetTransactionModal"
+    );
+
+  if (!modal) return;
+
+
+  modal.classList.add(
+    "open"
+  );
+
+  document.body.style.overflow =
+    "hidden";
+
+
+  const form =
+    document.getElementById(
+      "assetTransactionForm"
+    );
+
+
+  form?.reset();
+
+
+  selectedAssetBuyBank =
+    null;
+
+  selectedAssetSellBank =
+    null;
+
+
+  document.getElementById(
+    "assetTransactionType"
+  ).value = "buy";
+
+
+  document.getElementById(
+    "assetBuyFields"
+  ).style.display =
+    "block";
+
+
+  document.getElementById(
+    "assetSellFields"
+  ).style.display =
+    "none";
+
+
+  document.getElementById(
+    "assetTransactionTitle"
+  ).textContent =
+    "📥 خرید دارایی";
+
+
+  document.getElementById(
+    "saveAssetTransactionBtn"
+  ).textContent =
+    "ثبت خرید";
+
+
+  document
+    .querySelectorAll(
+      ".asset-transaction-type"
+    )
+    .forEach(btn =>
+      btn.classList.toggle(
+        "active",
+        btn.dataset.type === "buy"
+      )
+    );
+
+
+  await loadAssets();
+
+  await loadCapitalTransactions();
+
+
+  fillAssetDateSelects(
+    "assetBuy"
+  );
+
+  fillAssetDateSelects(
+    "assetSell"
+  );
+
+
+  renderAssetBanks(
+    "assetBuyBanksContainer",
+    true
+  );
+
+  renderAssetBanks(
+    "assetSellBanksContainer",
+    false
+  );
+
+
+  // همیشه هنگام بازشدن قیمت تازه بگیر
+  await fetchLiveGoldPrice({
+    silent: true
   });
-  
-  const todayValue = totalWeight * currentGoldPrice;
-  const profit = todayValue - totalInvest;
-  
-  document.getElementById("dashGoldWeight").textContent = totalWeight.toLocaleString('fa-IR') + ' گرم';
-  document.getElementById("dashGoldValue").textContent = formatMoney(todayValue);
-  
-  const profitEl = document.getElementById("dashGoldProfit");
-  profitEl.textContent = (profit >= 0 ? '+' : '') + formatMoney(profit);
-  profitEl.style.color = profit >= 0 ? 'var(--success)' : 'var(--danger)';
+
+
+  updateAllGoldUI();
 }
-async function updateGoldPrice() {
-  const newPrice = prompt("قیمت روز طلا (هر گرم) را وارد کنید:", currentGoldPrice);
-  if (newPrice === null) return;
-  
-  const price = parseInt(newPrice.replace(/[^\d]/g, ''));
-  if (!price || price <= 0) {
-    showToast("❌ قیمت معتبر نیست", "error");
-    return;
+
+
+// =========================================================
+// بستن مودال
+// =========================================================
+
+function closeAssetTransactionModal() {
+
+  const modal =
+    document.getElementById(
+      "assetTransactionModal"
+    );
+
+
+  if (!modal) return;
+
+
+  modal.classList.remove(
+    "open"
+  );
+
+  document.body.style.overflow =
+    "";
+}
+
+
+// =========================================================
+// خرید / فروش
+// =========================================================
+
+document
+  .querySelectorAll(
+    ".asset-transaction-type"
+  )
+  .forEach(btn => {
+
+    btn.addEventListener(
+      "click",
+      async function () {
+
+        document
+          .querySelectorAll(
+            ".asset-transaction-type"
+          )
+          .forEach(
+            b =>
+              b.classList.remove(
+                "active"
+              )
+          );
+
+
+        this.classList.add(
+          "active"
+        );
+
+
+        const type =
+          this.dataset.type;
+
+
+        document.getElementById(
+          "assetTransactionType"
+        ).value =
+          type;
+
+
+        document.getElementById(
+          "assetBuyFields"
+        ).style.display =
+          type === "buy"
+            ? "block"
+            : "none";
+
+
+        document.getElementById(
+          "assetSellFields"
+        ).style.display =
+          type === "sell"
+            ? "block"
+            : "none";
+
+
+        document.getElementById(
+          "assetTransactionTitle"
+        ).textContent =
+          type === "buy"
+            ? "📥 خرید دارایی"
+            : "📤 فروش دارایی";
+
+
+        document.getElementById(
+          "saveAssetTransactionBtn"
+        ).textContent =
+          type === "buy"
+            ? "ثبت خرید"
+            : "ثبت فروش";
+
+
+        const asset =
+          getAssetById(
+            document.getElementById(
+              "assetSelect"
+            )?.value
+          );
+
+
+        if (
+          asset &&
+          isGoldAsset(asset)
+        ) {
+
+          await fetchLiveGoldPrice({
+            silent: true
+          });
+        }
+
+
+        updateAllGoldUI();
+      }
+    );
+  });
+
+
+// =========================================================
+// انتخاب دارایی
+// =========================================================
+
+document
+  .getElementById(
+    "assetSelect"
+  )
+  ?.addEventListener(
+    "change",
+    async function () {
+
+      updateAssetUnitLabels();
+
+
+      const asset =
+        getAssetById(
+          this.value
+        );
+
+
+      if (
+        asset &&
+        isGoldAsset(asset)
+      ) {
+
+        await fetchLiveGoldPrice({
+          silent: true
+        });
+
+      } else {
+
+        updateAllGoldUI();
+      }
+    }
+  );
+
+
+// =========================================================
+// ورودی‌ها
+// =========================================================
+
+document
+  .getElementById(
+    "assetBuyQuantity"
+  )
+  ?.addEventListener(
+    "input",
+    calculateAssetBuyUnitPrice
+  );
+
+
+document
+  .getElementById(
+    "assetBuyTotalPrice"
+  )
+  ?.addEventListener(
+    "input",
+    calculateAssetBuyUnitPrice
+  );
+
+
+document
+  .getElementById(
+    "assetSellQuantity"
+  )
+  ?.addEventListener(
+    "input",
+    calculateAssetSellUnitPrice
+  );
+
+
+document
+  .getElementById(
+    "assetSellTotalPrice"
+  )
+  ?.addEventListener(
+    "input",
+    calculateAssetSellUnitPrice
+  );
+
+
+// =========================================================
+// FAB دارایی
+// =========================================================
+
+document
+  .getElementById(
+    "fabAsset"
+  )
+  ?.addEventListener(
+    "click",
+    function () {
+
+      fabMenu.classList.add(
+        "hidden"
+      );
+
+      addExpenseButton.classList.remove(
+        "open"
+      );
+
+      addExpenseButton.classList.remove(
+        "active"
+      );
+
+
+      openAssetTransactionModal();
+    }
+  );
+
+
+// =========================================================
+// بستن
+// =========================================================
+
+document
+  .getElementById(
+    "closeAssetTransactionModal"
+  )
+  ?.addEventListener(
+    "click",
+    closeAssetTransactionModal
+  );
+
+
+document
+  .getElementById(
+    "assetTransactionModal"
+  )
+  ?.querySelector(
+    ".modal-backdrop"
+  )
+  ?.addEventListener(
+    "click",
+    closeAssetTransactionModal
+  );
+
+
+// =========================================================
+// ثبت خرید / فروش
+// =========================================================
+
+document
+  .getElementById(
+    "assetTransactionForm"
+  )
+  ?.addEventListener(
+    "submit",
+    async function (e) {
+
+      e.preventDefault();
+
+
+      const assetId =
+        Number(
+          document.getElementById(
+            "assetSelect"
+          ).value
+        );
+
+
+      const type =
+        document.getElementById(
+          "assetTransactionType"
+        ).value;
+
+
+      const asset =
+        getAssetById(
+          assetId
+        );
+
+
+      if (!assetId || !asset) {
+
+        showToast(
+          "لطفاً دارایی را انتخاب کنید.",
+          "error"
+        );
+
+        return;
+      }
+
+
+      let quantity;
+      let totalPrice;
+      let date;
+      let bank;
+      let prefix;
+
+
+      if (type === "buy") {
+
+        prefix =
+          "assetBuy";
+
+        quantity =
+          getNumeric(
+            document.getElementById(
+              "assetBuyQuantity"
+            ).value
+          );
+
+        totalPrice =
+          getNumeric(
+            document.getElementById(
+              "assetBuyTotalPrice"
+            ).value
+          );
+
+        bank =
+          selectedAssetBuyBank;
+
+      } else {
+
+        prefix =
+          "assetSell";
+
+        quantity =
+          getNumeric(
+            document.getElementById(
+              "assetSellQuantity"
+            ).value
+          );
+
+        totalPrice =
+          getNumeric(
+            document.getElementById(
+              "assetSellTotalPrice"
+            ).value
+          );
+
+        bank =
+          selectedAssetSellBank;
+      }
+
+
+      if (
+        quantity <= 0
+      ) {
+
+        showToast(
+          "مقدار معتبر نیست.",
+          "error"
+        );
+
+        return;
+      }
+
+
+      if (
+        totalPrice <= 0
+      ) {
+
+        showToast(
+          "مبلغ معتبر نیست.",
+          "error"
+        );
+
+        return;
+      }
+
+
+      if (!bank) {
+
+        showToast(
+          type === "buy"
+            ? "لطفاً حساب پرداخت را انتخاب کنید."
+            : "لطفاً حساب دریافت را انتخاب کنید.",
+          "error"
+        );
+
+        return;
+      }
+
+
+      const day =
+        parseInt(
+          document.getElementById(
+            `${prefix}Day`
+          ).value
+        );
+
+
+      const monthKey =
+        document.getElementById(
+          `${prefix}Month`
+        ).value;
+
+
+      const year =
+        parseInt(
+          toEnglishDigits(
+            document.getElementById(
+              `${prefix}Year`
+            ).value
+          )
+        );
+
+
+      if (
+        !day ||
+        !monthKey ||
+        !year
+      ) {
+
+        showToast(
+          "تاریخ معتبر نیست.",
+          "error"
+        );
+
+        return;
+      }
+
+
+      const dateInfo =
+        getAssetDate(prefix);
+
+
+      if (!dateInfo) {
+
+        showToast(
+          "تاریخ معتبر نیست.",
+          "error"
+        );
+
+        return;
+      }
+
+
+      // ---------------------------------------------------
+      // قیمت بازار در لحظه ثبت
+      // ---------------------------------------------------
+
+      let goldPriceAtTransaction =
+        null;
+
+
+      if (
+        isGoldAsset(asset)
+      ) {
+
+        // قبل از ثبت، یک بار قیمت را تازه می‌کنیم
+        await fetchLiveGoldPrice({
+          silent: true
+        });
+
+
+        goldPriceAtTransaction =
+          currentGoldPrice;
+
+
+        if (
+          !goldPriceAtTransaction
+        ) {
+
+          showToast(
+            "قیمت لحظه‌ای طلا دریافت نشد؛ ثبت خرید متوقف شد.",
+            "error"
+          );
+
+          return;
+        }
+      }
+
+
+      const note =
+        document.getElementById(
+          "assetTransactionNote"
+        ).value.trim();
+
+
+      const unitPrice =
+        totalPrice /
+        quantity;
+
+
+      const data = {
+
+        asset_id:
+          assetId,
+
+        type:
+          type,
+
+        quantity:
+          quantity,
+
+        total_price:
+          totalPrice,
+
+        unit_price:
+          unitPrice,
+
+        date:
+          dateInfo.iso,
+
+        bank:
+          bank,
+
+        note:
+          note || null
+      };
+
+
+      // قیمت بازار فقط برای خرید طلا
+      if (
+        type === "buy" &&
+        isGoldAsset(asset)
+      ) {
+
+        data.gold_price_at_transaction =
+          goldPriceAtTransaction;
+      }
+
+
+      const btn =
+        document.getElementById(
+          "saveAssetTransactionBtn"
+        );
+
+
+      btn.disabled = true;
+
+      btn.textContent =
+        "در حال ذخیره...";
+
+
+      try {
+
+        // -------------------------------------------------
+        // ۱. ثبت تراکنش دارایی
+        // -------------------------------------------------
+
+        await supabaseRequest(
+          "capital_transactions",
+          {
+            method: "POST",
+
+            headers: {
+              Prefer:
+                "return=representation"
+            },
+
+            body:
+              JSON.stringify(data)
+          }
+        );
+
+
+        // -------------------------------------------------
+        // ۲. ثبت اثر مالی
+        // -------------------------------------------------
+
+        const assetName =
+          asset.name ||
+          "دارایی";
+
+
+        try {
+
+          await addTransaction({
+
+            expense_id:
+              null,
+
+            title:
+              `${type === "buy" ? "خرید" : "فروش"} ${assetName}`,
+
+            amount:
+              totalPrice,
+
+            type:
+              type === "buy"
+                ? "payment"
+                : "income",
+
+            account:
+              bank,
+
+            from_account:
+              type === "buy"
+                ? bank
+                : null,
+
+            to_account:
+              type === "sell"
+                ? bank
+                : null,
+
+            transaction_date:
+              dateInfo.iso,
+
+            note:
+              note || null
+          });
+
+        } catch (transactionError) {
+
+          console.error(
+            "خطا در ثبت تراکنش مالی:",
+            transactionError
+          );
+
+
+          showToast(
+            "دارایی ثبت شد، ولی ثبت تراکنش بانکی با خطا مواجه شد.",
+            "error"
+          );
+        }
+
+
+        closeAssetTransactionModal();
+
+
+        showToast(
+          type === "buy"
+            ? "✅ خرید دارایی ثبت شد"
+            : "✅ فروش دارایی ثبت شد",
+          "success"
+        );
+
+
+        await loadCapitalTransactions();
+
+        await loadData();
+
+
+      } catch (error) {
+
+        console.error(
+          "خطا در ثبت دارایی:",
+          error
+        );
+
+
+        showToast(
+          `❌ ثبت انجام نشد: ${error.message || "خطای نامشخص"}`,
+          "error"
+        );
+
+
+      } finally {
+
+        btn.disabled = false;
+
+        btn.textContent =
+          type === "buy"
+            ? "ثبت خرید"
+            : "ثبت فروش";
+      }
+    }
+  );
+
+
+// =========================================================
+// بروزرسانی خودکار قیمت
+// =========================================================
+
+function startGoldPriceAutoRefresh() {
+
+  if (
+    goldPriceRefreshTimer
+  ) {
+
+    clearInterval(
+      goldPriceRefreshTimer
+    );
   }
-  
-  const btn = document.getElementById("updateGoldPriceBtn");
-  btn.textContent = "⏳";
-  btn.disabled = true;
-  
+
+
+  fetchLiveGoldPrice({
+    silent: true
+  });
+
+
+  goldPriceRefreshTimer =
+    setInterval(
+      () => {
+
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+
+          fetchLiveGoldPrice({
+            silent: true
+          });
+        }
+
+      },
+      GOLD_PRICE_REFRESH_INTERVAL
+    );
+}
+
+
+// =========================================================
+// بروزرسانی با برگشت اپ از پس‌زمینه
+// =========================================================
+
+document.addEventListener(
+  "visibilitychange",
+  () => {
+
+    if (
+      document.visibilityState ===
+      "visible"
+    ) {
+
+      fetchLiveGoldPrice({
+        silent: true
+      });
+    }
+  }
+);
+
+
+// =========================================================
+// دکمه Refresh تابلو
+// =========================================================
+
+document
+  .getElementById(
+    "updateGoldPriceBtn"
+  )
+  ?.addEventListener(
+    "click",
+    async function () {
+
+      const btn =
+        this;
+
+
+      const oldText =
+        btn.textContent;
+
+
+      btn.disabled =
+        true;
+
+      btn.textContent =
+        "⏳";
+
+
+      try {
+
+        await fetchLiveGoldPrice();
+
+
+      } finally {
+
+        btn.disabled =
+          false;
+
+        btn.textContent =
+          oldText ||
+          "🔄";
+      }
+    }
+  );
+
+
+// =========================================================
+// شروع سیستم طلا
+// =========================================================
+
+(async function initGoldSystem() {
+
   try {
-    await supabaseRequest("gold_prices", {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify({
-        price_per_gram: price,
-        date: new Date().toISOString().split('T')[0],
-        source: "manual"
-      })
-    });
-    
-    currentGoldPrice = price;
-    goldPriceLastUpdate = new Date().toISOString().split('T')[0];
-    updateGoldPriceDisplay();
-    showToast("✅ قیمت روز طلا بروزرسانی شد", "success");
-    
-  } catch(err) {
-    alert("خطا در بروزرسانی قیمت: " + err.message);
-  } finally {
-    btn.textContent = "🔄";
-    btn.disabled = false;
+
+    await loadAssets();
+
+    await loadCapitalTransactions();
+
+    startGoldPriceAutoRefresh();
+
+  } catch (error) {
+
+    console.error(
+      "خطا در راه‌اندازی سیستم طلا:",
+      error
+    );
   }
-}
+
+})();
+
+
+// =========================================================
+// پایان مدیریت سرمایه
+// =========================================================
 setTimeout(debugDateSelects, 2000);
