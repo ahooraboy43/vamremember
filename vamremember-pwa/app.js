@@ -364,14 +364,23 @@ function getHeaders() {
 }
 
 async function supabaseRequest(path, options = {}) {
+  const headers = { ...getHeaders(), ...(options.headers || {}) };
+
+  console.log("SUPABASE_KEY exists:", !!SUPABASE_KEY);
+  console.log("SUPABASE_KEY length:", SUPABASE_KEY?.length);
+  console.log("Supabase request path:", path);
+  console.log("Final headers:", headers);
+
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
-    headers: { ...getHeaders(), ...(options.headers || {}) }
+    headers
   });
+
   const text = await response.text();
   if (!response.ok) throw new Error(text || `HTTP ${response.status}`);
   return text ? JSON.parse(text) : null;
 }
+
 
 function toEnglishDigits(value) {
   return String(value).replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
