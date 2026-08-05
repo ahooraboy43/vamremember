@@ -2498,22 +2498,28 @@ label {
 .toast {
   position: fixed;
   z-index: 9999;
-  bottom: calc(env(safe-area-inset-bottom) + 80px);
+  bottom: calc(env(safe-area-inset-bottom) + 100px);
   left: 50%;
   transform: translateX(-50%);
   max-width: 90vw;
+  width: auto;
+  min-width: 200px;
   text-align: center;
-  background: #1e2d45;
+  background: rgba(30, 45, 69, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: #fff;
   padding: 12px 20px;
-  border-radius: 12px;
+  border-radius: 14px;
   font-size: 14px;
-  box-shadow: 0 4px 20px rgba(0,0,0,.4);
-  transition: opacity .3s;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  border: 1px solid rgba(255,255,255,0.08);
 }
 
 .toast.hidden {
   opacity: 0;
+  transform: translateX(-50%) translateY(20px);
   pointer-events: none;
 }
 
@@ -2527,6 +2533,17 @@ label {
 
 .toast.info {
   border-right: 4px solid #3b82f6;
+}
+
+/* بهبود نمایش toast در موبایل */
+@media (max-width: 480px) {
+  .toast {
+    bottom: calc(env(safe-area-inset-bottom) + 90px);
+    padding: 10px 16px;
+    font-size: 13px;
+    max-width: 95vw;
+    border-radius: 12px;
+  }
 }
 
 /* =========================================================
@@ -3431,4 +3448,42 @@ label {
 
 :root[data-theme="light"] .skeleton-line {
   background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+}
+/* =========================================================
+   بهبود نمایش اعداد در ورودی‌ها
+========================================================= */
+
+input[type="number"],
+input[inputmode="numeric"] {
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  text-align: right;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* بهبود placeholder در فارسی */
+::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+/* بهبود select در موبایل */
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b94a3' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 12px center;
+  padding-right: 12px;
+  padding-left: 36px;
 }

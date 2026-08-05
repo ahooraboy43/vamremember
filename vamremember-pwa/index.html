@@ -41,7 +41,6 @@
 <p id="today">در حال دریافت تاریخ…</p>
 </div>
 <div class="header-actions">
-  <button id="refresh" class="icon-button" type="button" aria-label="بروزرسانی">↻</button>
 <button id="hamburgerMenuBtn" class="icon-button" type="button" aria-label="منو">☰</button>
 </div>
 </header>
@@ -327,11 +326,11 @@
 <!-- ================= مودال‌ها ================= -->
 
 <!-- مودال جزئیات گزارش -->
-<div class="modal" id="reportDetailsModal">
-<div class="modal-backdrop"></div>
-<div class="modal-sheet">
-<div class="modal-handle"></div>
-<div class="modal-header">
+<div class="modal" id="reportDetailsModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">>
+<div class="modal-backdrop"  role="dialog" aria-modal="true" aria-labelledby="modalTitle"></div>
+<div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+<div class="modal-handle" role="dialog" aria-modal="true" aria-labelledby="modalTitle"></div>
+<div class="modal-header" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
 <h2 id="reportDetailsTitle">جزئیات گزارش</h2>
 <button class="close-modal" id="closeReportDetails" type="button">✕</button>
 </div>
@@ -477,8 +476,12 @@
 <div class="quick-tags" id="paymentBanksContainer"></div>
 </div>
 <label class="field">
-<span>تاریخ</span>
-<input id="paymentDate" type="text">
+  <span>تاریخ پرداخت</span>
+  <div class="field-grid" style="grid-template-columns:1fr 1.4fr 1fr">
+    <select id="paymentDay"></select>
+    <select id="paymentMonth"></select>
+    <input type="number" id="paymentYear" placeholder="۱۴۰۵" inputmode="numeric">
+  </div>
 </label>
 <label class="field">
 <span>یادداشت</span>

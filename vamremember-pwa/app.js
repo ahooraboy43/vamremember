@@ -19,22 +19,234 @@ const MONTHS = [
 const DEBT_TABLE = "debts";
 let allDebts = [];
 let editingDebtId = null;
+// =========================================================
+// سیستم مدیریت داده مرکزی
+// =========================================================
 
-function fillDebtDateSelects(){
-  const daySel = $("debtDueDay"), monthSel = $("debtDueMonth");
-  if(daySel && !daySel.options.length){
-    for(let d=1; d<=31; d++){
+const DataManager = {
+  // کلیدهای ذخیره‌سازی
+  KEYS: {
+    BANKS: 'banks',
+    BANK_CARDS: 'bankCardsV1',
+    SETTINGS: 'appSettingsV1',
+    SESSION: 'appUnlockedV1'
+  },
+  
+  // ===== ذخیره‌سازی امن =====
+  save(key, data) {
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+      return true;
+    } catch(e) {
+      console.error('❌ خطا در ذخیره:', e);
+      return false;
+    }
+  },
+  
+  // ===== دریافت امن =====
+  load(key, defaultValue = null) {
+    try {
+      const data = localStorage.getItem(key);
+      if (data === null) return defaultValue;
+      return JSON.parse(data);
+    } catch(e) {
+      console.error('❌ خطا در خواندن:', e);
+      return defaultValue;
+    }
+  },
+  
+  // ===== حذف امن =====
+  remove(key) {
+    try {
+      localStorage.removeItem(key);
+      return true;
+    } catch(e) {
+      console.error('❌ خطا در حذف:', e);
+      return false;
+    }
+  },
+  
+  // ===== بانک‌ها =====
+  getBanks() {
+    return this.load(this.KEYS.BANKS, ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"]);
+  },
+  
+  saveBanks(banks) {
+    return this.save(this.KEYS.BANKS, banks);
+  },
+  
+  addBank(name) {
+    const banks = this.getBanks();
+    if (!banks.includes(name)) {
+      banks.push(name);
+      this.saveBanks(banks);
+      return true;
+    }
+    return false;
+  },
+  
+  removeBank(name) {
+    let banks = this.getBanks();
+    banks = banks.filter(b => b !== name);
+    this.saveBanks(banks);
+    return banks;
+  },
+  
+  // ===== کارت‌های بانکی =====
+  getBankCards() {
+    return this.load(this.KEYS.BANK_CARDS, []);
+  },
+  
+  saveBankCards(cards) {
+    return this.save(this.KEYS.BANK_CARDS, cards);
+  },
+  
+  addBankCard(card) {
+    const cards = this.getBankCards();
+    const index = cards.findIndex(c => c.bankName === card.bankName);
+    if (index !== -1) {
+      cards[index] = { ...cards[index], ...card };
+    } else {
+      cards.push(card);
+    }
+    this.saveBankCards(cards);
+    return cards;
+  },
+  
+  removeBankCard(id) {
+    let cards = this.getBankCards();
+    cards = cards.filter(c => c.id !== id);
+    this.saveBankCards(cards);
+    return cards;
+  },
+  
+  // ===== تنظیمات =====
+  getSettings() {
+    return this.load(this.KEYS.SETTINGS, {});
+  },
+  
+  saveSettings(settings) {
+    return this.save(this.KEYS.SETTINGS, settings);
+  },
+  
+  // ===== پاک کردن همه داده‌ها =====
+  clearAll() {
+    try {
+      localStorage.clear();
+      return true;
+    } catch(e) {
+      console.error('❌ خطا در پاک کردن:', e);
+      return false;
+    }
+  },
+  
+  // ===== پشتیبان‌گیری =====
+  backup() {
+    try {
+      const backup = {
+        version: '1.0',
+        date: new Date().toISOString(),
+        data: {
+          banks: this.getBanks(),
+          bankCards: this.getBankCards(),
+          settings: this.getSettings(),
+          expenses: typeof allExpenses !== 'undefined' ? allExpenses : [],
+          debts: typeof allDebts !== 'undefined' ? allDebts : []
+        }
+      };
+      
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      showToast('✅ پشتیبان‌گیری انجام شد', 'success');
+      return true;
+    } catch(e) {
+      console.error('❌ خطا در پشتیبان‌گیری:', e);
+      showToast('❌ خطا در پشتیبان‌گیری', 'error');
+      return false;
+    }
+  },
+  
+  // ===== بازیابی از پشتیبان =====
+  restore(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const backup = JSON.parse(e.target.result);
+          if (!backup.version || !backup.data) {
+            throw new Error('فایل پشتیبان معتبر نیست');
+          }
+          
+          if (backup.data.banks) this.saveBanks(backup.data.banks);
+          if (backup.data.bankCards) this.saveBankCards(backup.data.bankCards);
+          if (backup.data.settings) this.saveSettings(backup.data.settings);
+          
+          if (backup.data.expenses && typeof allExpenses !== 'undefined') {
+            allExpenses = backup.data.expenses;
+          }
+          if (backup.data.debts && typeof allDebts !== 'undefined') {
+            allDebts = backup.data.debts;
+          }
+          
+          showToast('✅ بازیابی انجام شد', 'success');
+          resolve(true);
+        } catch(err) {
+          console.error('❌ خطا در بازیابی:', err);
+          showToast('❌ خطا در بازیابی', 'error');
+          reject(err);
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+};
+
+function fillDebtDateSelects() {
+  const daySel = document.getElementById("debtDueDay");
+  const monthSel = document.getElementById("debtDueMonth");
+  const yearSel = document.getElementById("debtDueYear");
+  
+  if (!daySel || !monthSel || !yearSel) {
+    console.warn("❌ عناصر تاریخ قرض پیدا نشدند");
+    return;
+  }
+  
+  // پر کردن روزها
+  if (daySel.options.length === 0) {
+    for (let d = 1; d <= 31; d++) {
       const op = document.createElement("option");
-      op.value = d; op.textContent = d.toLocaleString("fa-IR");
+      op.value = d;
+      op.textContent = d.toLocaleString("fa-IR");
       daySel.appendChild(op);
     }
   }
-  if(monthSel && !monthSel.options.length){
-    MONTHS.forEach(m=>{
+  
+  // پر کردن ماه‌ها
+  if (monthSel.options.length === 0) {
+    MONTHS.forEach(m => {
       const op = document.createElement("option");
-      op.value = m.key; op.textContent = m.name;
+      op.value = m.key;
+      op.textContent = m.name;
       monthSel.appendChild(op);
     });
+  }
+  
+  // تنظیم تاریخ امروز
+  const p = getPersianDateParts();
+  const monthIndex = p.month - 1;
+  const selectedMonthKey = MONTHS[monthIndex]?.key || MONTHS[0].key;
+  
+  // فقط در حالت جدید (نه ویرایش)
+  if (!document.getElementById("editExpenseId")?.value && !editingDebtId) {
+    daySel.value = p.day;
+    monthSel.value = selectedMonthKey;
+    yearSel.value = p.year;
   }
 }
 const PAGE_SIZE = 10;
@@ -50,9 +262,8 @@ const $ = id => document.getElementById(id);
 
 const cards = $("cards"),
     statusBox = $("status"),
-    refreshButton = $("refresh"),
+    refreshButton = null, // دکمه حذف شده
     todayElement = $("today");
-    
 let swRegistration = null;
 let currentAppVersionText = "در حال بررسی نسخه…";
 
@@ -132,10 +343,50 @@ function showToast(msg, type = 'info') {
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => el.classList.add('hidden'), 3000);
 }
-
-function closeModalEl(modalEl){
-    modalEl.classList.remove("open");
-    document.body.style.overflow="";
+function fillPaymentDateSelects() {
+  const daySel = document.getElementById("paymentDay");
+  const monthSel = document.getElementById("paymentMonth");
+  const yearSel = document.getElementById("paymentYear");
+  
+  if (!daySel || !monthSel || !yearSel) {
+    console.warn("❌ عناصر تاریخ پرداخت پیدا نشدند");
+    return;
+  }
+  
+  // پر کردن روزها
+  if (daySel.options.length === 0) {
+    for (let d = 1; d <= 31; d++) {
+      const op = document.createElement("option");
+      op.value = d;
+      op.textContent = d.toLocaleString("fa-IR");
+      daySel.appendChild(op);
+    }
+  }
+  
+  // پر کردن ماه‌ها
+  if (monthSel.options.length === 0) {
+    MONTHS.forEach(m => {
+      const op = document.createElement("option");
+      op.value = m.key;
+      op.textContent = m.name;
+      monthSel.appendChild(op);
+    });
+  }
+  
+  // تنظیم تاریخ امروز (همیشه در مودال پرداخت)
+  const p = getPersianDateParts();
+  const monthIndex = p.month - 1;
+  const selectedMonthKey = MONTHS[monthIndex]?.key || MONTHS[0].key;
+  
+  daySel.value = p.day;
+  monthSel.value = selectedMonthKey;
+  yearSel.value = p.year;
+  
+  console.log("✅ تاریخ پرداخت تنظیم شد:", {
+    day: p.day,
+    month: selectedMonthKey,
+    year: p.year
+  });
 }
 
 closeExpenseModal?.addEventListener("click", closeModal);
@@ -168,11 +419,63 @@ async function addTransaction(data){
         }
     );
 }
-function getHeaders(){return{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`,"Content-Type":"application/json"}}
+function getHeaders() {
+  return {
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${SUPABASE_KEY}`,
+    "Content-Type": "application/json",
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0"
+  };
+}
 async function supabaseRequest(path,options={}){const response=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,headers:{...getHeaders(),...(options.headers||{})}});const text=await response.text();if(!response.ok)throw new Error(text||`HTTP ${response.status}`);return text?JSON.parse(text):null}
 function toEnglishDigits(value){return String(value).replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d))}
-function getPersianDateParts(){const parts=new Intl.DateTimeFormat("fa-IR-u-ca-persian",{year:"numeric",month:"numeric",day:"numeric"}).formatToParts(new Date()),v={};for(const p of parts)if(["year","month","day"].includes(p.type))v[p.type]=Number(toEnglishDigits(p.value));return v}
-function updatePersianDate(){todayElement.textContent=new Intl.DateTimeFormat("fa-IR-u-ca-persian",{weekday:"long",year:"numeric",month:"long",day:"numeric"}).format(new Date());const p=getPersianDateParts();currentMonthIndex=p.month-1;currentMonthKey=MONTHS[currentMonthIndex].key}
+function getPersianDateParts(){
+  try {
+    const parts = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric"
+    }).formatToParts(new Date());
+    
+    const v = {};
+    for (const p of parts) {
+      if (["year", "month", "day"].includes(p.type)) {
+        v[p.type] = Number(toEnglishDigits(p.value));
+      }
+    }
+    return v;
+  } catch(e) {
+    console.warn("خطا در دریافت تاریخ شمسی، استفاده از تاریخ میلادی:", e);
+    // fallback به تاریخ میلادی
+    const d = new Date();
+    return {
+      year: d.getFullYear(),
+      month: d.getMonth() + 1,
+      day: d.getDate()
+    };
+  }
+}
+function updatePersianDate(){
+  try {
+    todayElement.textContent = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    }).format(new Date());
+  } catch(e) {
+    console.warn("خطا در نمایش تاریخ شمسی:", e);
+    todayElement.textContent = new Date().toLocaleDateString("fa-IR");
+  }
+  
+  const p = getPersianDateParts();
+  if (p && p.month) {
+    currentMonthIndex = p.month - 1;
+    currentMonthKey = MONTHS[currentMonthIndex]?.key || MONTHS[0].key;
+  }
+}
 function isInstallment(i){
     return i.type==="installment" || Number(i.id)<10000;
 }
@@ -200,9 +503,12 @@ function handleError(error, context = 'عملیات') {
 }
 function saveBanks(banksData) {
   if (banksData) {
-    banks = banksData;
+    return DataManager.saveBanks(banksData);
   }
-  localStorage.setItem("banks", JSON.stringify(banks));
+  return DataManager.saveBanks(banks);
+}
+function getBanks() {
+  return DataManager.getBanks();
 }
 
 function renderBanks() {
@@ -235,17 +541,6 @@ function deleteBank(i) {
   saveBanks();
   renderBanks();
   renderPaymentBanks();
-}
-function getBanks() {
-  try {
-    const saved = localStorage.getItem("banks");
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    return ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
-  } catch {
-    return ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
-  }
 }
 function renderPaymentBanks() {
   const container = document.getElementById("paymentBanksContainer");
@@ -317,48 +612,77 @@ function currentStatus(item){const v=item[currentMonthKey];if(isClosedValue(v))r
 
 async function loadData(){
 
-    refreshButton.disabled=true;
+    if (refreshButton) {
+        refreshButton.disabled = true;
+    }
 
-    statusBox.textContent="در حال دریافت اطلاعات…";
-    allStatus.textContent="در حال دریافت اطلاعات…";
+    statusBox.textContent = "📡 در حال دریافت اطلاعات…";
+    allStatus.textContent = "📡 در حال دریافت اطلاعات…";
 
-    try{
-
+    try {
+        // تلاش برای دریافت از سرور
         const data = await supabaseRequest(
             `${TABLE_NAME}?select=*&order=id.asc`
         );
 
         allExpenses = Array.isArray(data) ? data : [];
+        
+        // ذخیره در کش
+        try {
+            localStorage.setItem('cachedExpenses', JSON.stringify(allExpenses));
+            localStorage.setItem('cachedExpensesDate', new Date().toISOString());
+        } catch(cacheErr) {
+            console.warn('خطا در ذخیره کش:', cacheErr);
+        }
+        
         loadIncomeOptions();
         visibleCount = PAGE_SIZE;
-
         renderDueCards();
         renderAllCards();
         renderReports();
         renderHome();
 
-        statusBox.textContent =
-        `${allExpenses.length.toLocaleString("fa-IR")} مورد دریافت شد`;
+        statusBox.textContent = `${allExpenses.length.toLocaleString("fa-IR")} مورد دریافت شد`;
+        allStatus.textContent = `${allExpenses.length.toLocaleString("fa-IR")} مورد موجود است`;
 
-        allStatus.textContent =
-        `${allExpenses.length.toLocaleString("fa-IR")} مورد موجود است`;
-
-    }
-    catch(e){
-
-        console.error(e);
-
-        statusBox.textContent =
-        `خطا در دریافت اطلاعات: ${e.message}`;
-
-        allStatus.textContent =
-        `خطا در دریافت اطلاعات: ${e.message}`;
-
-    }
-    finally{
-
-        refreshButton.disabled=false;
-
+    } catch(e) {
+        console.error('❌ خطا در loadData:', e);
+        
+        // اگر خطای شبکه بود، از کش استفاده کن
+        if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+            try {
+                const cached = localStorage.getItem('cachedExpenses');
+                if (cached) {
+                    allExpenses = JSON.parse(cached);
+                    const cacheDate = localStorage.getItem('cachedExpensesDate') || 'نامشخص';
+                    
+                    loadIncomeOptions();
+                    visibleCount = PAGE_SIZE;
+                    renderDueCards();
+                    renderAllCards();
+                    renderReports();
+                    renderHome();
+                    
+                    statusBox.textContent = `📂 نمایش داده‌های ذخیره شده (${new Date(cacheDate).toLocaleString('fa-IR')})`;
+                    allStatus.textContent = `📂 ${allExpenses.length} مورد از کش (آفلاین)`;
+                    showToast(`📂 نمایش داده‌های ذخیره شده`, 'info');
+                } else {
+                    statusBox.textContent = `❌ بدون داده ذخیره شده و بدون اتصال`;
+                    allStatus.textContent = `❌ لطفاً اتصال اینترنت را بررسی کنید`;
+                }
+            } catch(cacheErr) {
+                console.warn('خطا در خواندن کش:', cacheErr);
+                statusBox.textContent = `❌ خطا: ${e.message}`;
+                allStatus.textContent = `❌ خطا: ${e.message}`;
+            }
+        } else {
+            statusBox.textContent = `❌ خطا: ${e.message}`;
+            allStatus.textContent = `❌ خطا: ${e.message}`;
+        }
+    } finally {
+        if (refreshButton) {
+            refreshButton.disabled = false;
+        }
     }
 }
 function getDaysInPersianMonth(monthIndex){
@@ -777,15 +1101,26 @@ const paymentModal = $("paymentModal");
 const closePaymentModal = $("closePaymentModal");
 let selectedPaymentBank = null;
 
-function monthKeyFromDatePart(dateStr){
-    const cleaned = toEnglishDigits(dateStr||"").trim();
-    const parts = cleaned.split(/[\/\-]/);
-    if(parts.length < 2) return null;
-    const mm = parseInt(parts[1], 10);
-    if(!Number.isFinite(mm) || mm < 1 || mm > 12) return null;
-    return MONTHS[mm-1].key;
-}
 
+function getDateFromSelects() {
+  const day = parseInt(document.getElementById("paymentDay")?.value);
+  const monthKey = document.getElementById("paymentMonth")?.value;
+  const year = parseInt(document.getElementById("paymentYear")?.value);
+  
+  if (!day || !monthKey || !year) return null;
+  
+  // پیدا کردن اندکس ماه
+  const monthIndex = MONTHS.findIndex(m => m.key === monthKey);
+  if (monthIndex === -1) return null;
+  
+  return {
+    day: day,
+    month: monthIndex + 1,
+    monthKey: monthKey,
+    year: year,
+    fullDate: `${year}/${String(monthIndex + 1).padStart(2, "0")}/${String(day).padStart(2, "0")}`
+  };
+}
 async function updateAccountCellFromPayment(itemId, monthKey, amount){
     if(!itemId || !monthKey) return;
 
@@ -840,7 +1175,6 @@ $("paymentForm").addEventListener("submit", async e => {
     const itemSelect = $("paymentItemSelect");
     const itemId = itemSelect ? itemSelect.value : "";
     const amount = parseFloat($("paymentAmount").value);
-    const date = $("paymentDate").value;
     const note = $("paymentNote").value.trim();
     const submitBtn = e.target.querySelector('button[type="submit"]');
 
@@ -848,7 +1182,15 @@ $("paymentForm").addEventListener("submit", async e => {
     if(!Number.isFinite(amount) || amount<=0){ alert("مبلغ معتبر نیست."); return; }
     if(!selectedPaymentBank){ alert("بانک را انتخاب کنید."); return; }
 
-    const monthKey = monthKeyFromDatePart(date) || currentMonthKey;
+    // دریافت تاریخ از سه کمبوکس
+    const dateObj = getDateFromSelects();
+    const date = dateObj ? dateObj.fullDate : null;
+    const monthKey = dateObj ? dateObj.monthKey : currentMonthKey;
+
+    if(!date){
+        alert("تاریخ معتبر نیست.");
+        return;
+    }
 
     if(submitBtn) submitBtn.disabled = true;
 
@@ -878,6 +1220,9 @@ $("paymentForm").addEventListener("submit", async e => {
         selectedPaymentBank = null;
         document.querySelectorAll(".payment-bank").forEach(b => b.classList.remove("active"));
 
+        // ریست کردن کمبوکس‌های تاریخ به مقدار فعلی
+        fillPaymentDateSelects();
+
         await loadData();
     }catch(err){
         console.error("خطا در ثبت تراکنش:", err);
@@ -895,11 +1240,10 @@ fabPayment.onclick = ()=>{
 
     paymentModal.classList.add("open");
     fillPaymentItems($("paymentType").value || "payment");
-    document.body.style.overflow="hidden";
+    document.body.style.overflow = "hidden";
 
-    const p = getPersianDateParts();
-    $("paymentDate").value =
-        `${p.year}/${String(p.month).padStart(2,"0")}/${String(p.day).padStart(2,"0")}`;
+    // پر کردن کمبوکس‌های تاریخ با تاریخ امروز
+    fillPaymentDateSelects();
 
 };
 
@@ -1262,6 +1606,59 @@ else if(type==="expense" || type==="income"){
 }
 
 return body}
+// =========================================================
+// بارگذاری اجباری داده‌ها از سرور (بدون استفاده از کش)
+// =========================================================
+
+async function forceLoadData() {
+  // غیرفعال کردن دکمه رفرش (اگه وجود داشته باشه)
+  if (refreshButton) {
+    refreshButton.disabled = true;
+  }
+
+  statusBox.textContent = "📥 در حال دریافت داده‌ها از سرور…";
+  allStatus.textContent = "📥 در حال دریافت داده‌ها از سرور…";
+
+  try {
+    // اضافه کردن هدر برای جلوگیری از کش
+    const data = await supabaseRequest(
+      `${TABLE_NAME}?select=*&order=id.asc`
+    );
+
+    allExpenses = Array.isArray(data) ? data : [];
+    
+    // ذخیره در کش محلی
+    try {
+      localStorage.setItem('cachedExpenses', JSON.stringify(allExpenses));
+      localStorage.setItem('cachedExpensesDate', new Date().toISOString());
+    } catch(cacheErr) {
+      console.warn('خطا در ذخیره کش:', cacheErr);
+    }
+    
+    // بارگذاری مجدد همه بخش‌ها
+    loadIncomeOptions();
+    visibleCount = PAGE_SIZE;
+    renderDueCards();
+    renderAllCards();
+    renderReports();
+    renderHome();
+
+    statusBox.textContent = `✅ ${allExpenses.length.toLocaleString("fa-IR")} مورد از سرور دریافت شد`;
+    allStatus.textContent = `✅ ${allExpenses.length.toLocaleString("fa-IR")} مورد از سرور دریافت شد`;
+    
+    showToast(`✅ ${allExpenses.length} مورد از سرور دریافت شد`, 'success');
+
+  } catch(e) {
+    console.error('❌ خطا در forceLoadData:', e);
+    statusBox.textContent = `❌ خطا در دریافت از سرور: ${e.message}`;
+    allStatus.textContent = `❌ خطا در دریافت از سرور: ${e.message}`;
+    throw e; // propagate error
+  } finally {
+    if (refreshButton) {
+      refreshButton.disabled = false;
+    }
+  }
+}
 function buildEditBody(type){
 
   const body={
@@ -1400,7 +1797,7 @@ function renderReports(){
   const allPaidTotal = totals.paidInstallmentTotal + monthExpenseTotal;
   const balanceTotal = monthIncomeTotal - allPaidTotal;
 
-  // نمایش در UI (بقیه کدها مثل قبل)
+  // نمایش در UI
   reportMonthTotal.textContent = formatMoney(totals.monthInstallmentTotal);
   reportPaidTotal.textContent = formatMoney(totals.paidInstallmentTotal);
   reportRemainingTotal.textContent = formatMoney(totals.remainingInstallmentTotal);
@@ -1414,7 +1811,7 @@ function renderReports(){
     reportBalanceTotal.style.color = balanceTotal < 0 ? "var(--danger)" : "var(--success)";
   }
 
-  // درصدها (بقیه کدها مثل قبل)
+  // درصدها
   const chartTotal = totals.paidInstallmentTotal + totals.remainingInstallmentTotal;
   const paidPercentage = chartTotal ? Math.round(totals.paidInstallmentTotal / chartTotal * 100) : 0;
   const remainingPercentage = chartTotal ? Math.round(totals.remainingInstallmentTotal / chartTotal * 100) : 0;
@@ -1745,13 +2142,40 @@ function openEditDebtModal(d){
   openModal();
 }
 
-function openPage(id,title){
+function openPage(id, title) {
+  // مخفی کردن همه صفحات
+  pages.forEach(p => p.classList.remove("active"));
+  
+  // نمایش صفحه مورد نظر
+  const targetPage = document.getElementById(id);
+  if (targetPage) targetPage.classList.add("active");
+  
+  // به‌روزرسانی دکمه‌های ناوبری
+  navButtons.forEach(b => b.classList.remove("active"));
+  const activeNav = document.querySelector(`.nav-button[data-page="${id}"]`);
+  if (activeNav) activeNav.classList.add("active");
+  
+  // به‌روزرسانی عنوان صفحه
+  pageTitle.textContent = title;
 
-  pages.forEach(p=>p.classList.toggle("active",p.id===id));
-  // بعد از خطی که می‌نویسه pages.forEach...
-// این کد رو اضافه کن:
+  // اجرای توابع مربوط به هر صفحه
+  if (id === "homePage") renderHome();
+  if (id === "allPage") renderAllCards();
+  if (id === "reportPage") renderReports();
+  if (id === "banksPage") {
+    setTimeout(function() {
+      if (typeof renderBankCards === 'function') {
+        renderBankCards();
+      }
+    }, 150);
+  }
 
-// مدیریت ناوبری با event listener
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+// =========================================================
+// مدیریت ناوبری با event listener (یک بار اجرا میشه)
+// =========================================================
+
 document.querySelectorAll('.nav-button').forEach(btn => {
   btn.addEventListener('click', function() {
     const pageId = this.dataset.page;
@@ -1765,23 +2189,7 @@ document.querySelectorAll('.nav-button').forEach(btn => {
     openPage(pageId, titles[pageId] || pageId);
   });
 });
-  navButtons.forEach(b=>b.classList.toggle("active",b.dataset.page===id));
-  pageTitle.textContent=title;
-
-  if(id==="homePage") renderHome();
-  if(id==="allPage") renderAllCards();
-  if(id==="reportPage") renderReports();
-  if(id==="banksPage") {
-    setTimeout(function(){
-      if(typeof renderBankCards === 'function'){
-        renderBankCards();
-      }
-    }, 150);
-  }
-
-  window.scrollTo({top:0,behavior:"smooth"})
-}
-refreshButton.addEventListener("click", performFullAppUpdate);
+//refreshButton.addEventListener("click", performFullAppUpdate);
 searchInput.addEventListener("input",()=>{visibleCount=PAGE_SIZE;renderAllCards()});
 function updateStatusFilterLabels(filter){
   const paidBtn=$("statusFilterPaid"),unpaidBtn=$("statusFilterUnpaid");
@@ -2002,13 +2410,27 @@ if ("serviceWorker" in navigator) {
 async function fetchGithubVersion() {
   try {
     const res = await fetch("https://api.github.com/repos/ahooraboy43/vamremember/commits/main", {
-      cache: "no-store"
+      cache: "no-store",
+      headers: {
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      }
     });
-    if (!res.ok) return null;
+    
+    if (!res.ok) {
+      console.warn('❌ خطا در دریافت نسخه:', res.status);
+      return null;
+    }
+    
     const data = await res.json();
-    return data?.commit?.committer?.date || null;
+    const commitDate = data?.commit?.committer?.date || null;
+    const commitSha = data?.sha || null;
+    
+    console.log('📌 آخرین نسخه:', { commitDate, commitSha });
+    
+    return commitDate;
   } catch (e) {
-    console.error("خطا در دریافت نسخه گیت‌هاب", e);
+    console.error("❌ خطا در دریافت نسخه گیت‌هاب:", e);
     return null;
   }
 }
@@ -2018,74 +2440,92 @@ function updateAppVersionText(text) {
   const el = $("appVersionText");
   if (el) el.textContent = text;
 }
-
 async function performFullAppUpdate() {
-  if (refreshButton) {
-    refreshButton.disabled = true;
-    refreshButton.textContent = "⏳";
+  // غیرفعال کردن دکمه منو
+  const menuBtn = document.getElementById("hamburgerMenuBtn");
+  if (menuBtn) {
+    menuBtn.disabled = true;
+    menuBtn.textContent = "↻";
   }
 
-  if (statusBox) statusBox.textContent = "در حال بررسی بروزرسانی…";
-  if (allStatus) allStatus.textContent = "در حال بررسی بروزرسانی…";
-  showToast("در حال بررسی بروزرسانی", "info");
+  showToast("🔄 در حال بررسی بروزرسانی…", "info");
 
   try {
+    // ۱. دریافت آخرین نسخه از GitHub
+    showToast("📡 در حال بررسی نسخه جدید...", "info");
     const versionDate = await fetchGithubVersion();
-
+    
     if (!versionDate) {
-      showToast("نسخه جدیدی یافت نشد", "info");
-      updateAppVersionText("نسخه جدیدی یافت نشد");
-      if (statusBox) statusBox.textContent = "نسخه جدیدی یافت نشد";
-      if (allStatus) allStatus.textContent = "نسخه جدیدی یافت نشد";
+      showToast("❌ خطا در دریافت نسخه جدید", "error");
       return;
     }
 
     const faDate = new Date(versionDate).toLocaleString("fa-IR");
-
-    await loadData();
-
-    updateAppVersionText(`نسخه جدید دریافت شد: ${faDate}`);
-    showToast(`نسخه جدید ${faDate} دریافت شد`, "success");
-
-    if (statusBox) statusBox.textContent = `نسخه جدید ${faDate} دریافت شد`;
-    if (allStatus) allStatus.textContent = `نسخه جدید ${faDate} دریافت شد`;
-
-    if (swRegistration) {
-      await swRegistration.update();
+    
+    // ۲. بررسی وجود نسخه جدید
+    const lastVersion = localStorage.getItem('lastAppVersion');
+    
+    if (lastVersion === versionDate) {
+      // حتی اگه نسخه یکسان باشه، داده‌ها رو از سرور بگیر
+      showToast("📥 در حال بروزرسانی داده‌ها از سرور...", "info");
+      await forceLoadData(); // تابع جدید برای بارگذاری اجباری
+      showToast(`✅ داده‌ها بروزرسانی شدند (نسخه ${faDate})`, 'success');
+      updateAppVersionText(`✅ نسخه ${faDate} (داده‌ها بروزرسانی شد)`);
+      return;
     }
+
+    // ۳. بارگذاری اجباری داده‌ها از سرور
+    showToast("📥 در حال دریافت داده‌های جدید…", "info");
+    await forceLoadData();
+    
+    // ۴. به‌روزرسانی Service Worker
+    if (swRegistration) {
+      showToast("🔄 در حال به‌روزرسانی سرویس‌دهنده…", "info");
+      await swRegistration.update();
+      
+      await new Promise(resolve => {
+        const timeout = setTimeout(resolve, 3000);
+        swRegistration.addEventListener('updatefound', () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+      });
+    }
+
+    // ۵. ذخیره نسخه جدید در کش
+    localStorage.setItem('lastAppUpdate', new Date().toISOString());
+    localStorage.setItem('lastAppVersion', versionDate);
+    
+    updateAppVersionText(`✅ نسخه جدید ${faDate} دریافت شد`);
+    showToast(`✅ نسخه جدید ${faDate} با موفقیت دریافت شد!`, 'success');
+
+    // ۶. رفرش صفحه بعد از ۲ ثانیه
+    showToast("🔄 در حال بارگذاری مجدد برنامه…", "info");
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
+
   } catch (e) {
-    console.error(e);
-    showToast(`خطا در بروزرسانی: ${e.message}`, "error");
-    if (statusBox) statusBox.textContent = `خطا در بروزرسانی: ${e.message}`;
-    if (allStatus) allStatus.textContent = `خطا در بروزرسانی: ${e.message}`;
+    console.error('❌ خطا در بروزرسانی:', e);
+    showToast(`❌ خطا: ${e.message}`, "error");
   } finally {
-    if (refreshButton) {
-      refreshButton.disabled = false;
-      refreshButton.textContent = "↻";
+    if (menuBtn) {
+      menuBtn.disabled = false;
+      menuBtn.textContent = "☰";
     }
   }
 }
-
-
 
 // ================= تنظیمات (Settings) =================
 
 const SETTINGS_KEY = "appSettingsV1";
 
-function loadSettings(){
-  try{
-    return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
-  }catch(e){
-    return {};
-  }
+function loadSettings() {
+  return DataManager.getSettings();
 }
 
-function saveSettings(settings){
-  try{
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  }catch(e){
-    console.error("خطا در ذخیره تنظیمات", e);
-  }
+function saveSettings(settings) {
+  return DataManager.saveSettings(settings);
 }
 
 let appSettings = loadSettings();
@@ -2413,20 +2853,14 @@ let touchStartX = 0;
 let touchEndX = 0;
 
 function loadBankCards() {
-  try {
-    const data = localStorage.getItem(BANK_CARDS_KEY);
-    bankCards = data ? JSON.parse(data) : [];
-  } catch (e) {
-    bankCards = [];
-  }
+  bankCards = DataManager.getBankCards();
   renderBankCards();
 }
 
 function saveBankCards() {
-  localStorage.setItem(BANK_CARDS_KEY, JSON.stringify(bankCards));
+  DataManager.saveBankCards(bankCards);
   renderBankCards();
 }
-
 
 // =========================================================
 // ================= رندر کارت‌ها + لیست بانک‌ها =================
@@ -2509,11 +2943,11 @@ function renderBankCards() {
             <span class="bank-card-type" style="font-size:12px;font-weight:600;opacity:0.9;">${card.bankName || 'بانک'}</span>
           </div>
 
-          <div class="bank-card-number" style="">
-            <span class="full-value" dir="ltr" style="font-size:14px;">${fullNumber || '••••-••••-••••-••••'}</span>
-            <span class="masked-value" dir="ltr" style="font-size:14px;">${masked}</span>
-            <button class="copy-btn" data-field="number" data-value="${card.cardNumber || ''}" type="button" style="background:rgba(255,255,255,0.15);border:none;border-radius:4px;color:#fff;padding:1px 5px;font-size:8px;cursor:pointer;">📋</button>
-          </div>
+          <div class="bank-card-number" style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.25);padding:6px 10px;border-radius:8px;margin:3px 0;text-shadow:0 1px 3px rgba(0,0,0,0.4);">
+  <span class="full-value" dir="ltr" style="font-size:14px;font-family:'Courier New',monospace;letter-spacing:1px;">${fullNumber || '••••-••••-••••-••••'}</span>
+  <span class="masked-value" dir="ltr" style="font-size:14px;font-family:'Courier New',monospace;letter-spacing:1px;">${masked}</span>
+  <button class="copy-btn" data-field="number" data-value="${card.cardNumber || ''}" type="button" style="background:rgba(255,255,255,0.15);border:none;border-radius:4px;color:#fff;padding:2px 6px;font-size:9px;cursor:pointer;">📋</button>
+</div>
 
           <div class="bank-card-bottom" style="display:flex;justify-content:space-between;align-items:center;font-size:10px;opacity:0.85;">
             <div class="bank-card-expiry" style="display:flex;align-items:center;gap:4px;background:rgba(0,0,0,0.15);padding:2px 6px;border-radius:6px;font-size:9px;">
@@ -2534,7 +2968,7 @@ function renderBankCards() {
 
 
           <button class="bank-card-edit-btn" data-id="${card.id || i}" type="button" style="position:absolute;top:6px;left:6px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:24px;height:24px;color:#fff;font-size:10px;cursor:pointer;backdrop-filter:blur(4px);z-index:2;display:flex;align-items:center;justify-content:center;">✎</button>
-          <button class="bank-card-delete-btn" data-id="${card.id || i}" type="button" style="position:absolute;top:6px;left:36px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:24px;height:24px;color:#ff3b30;font-size:12px;cursor:pointer;backdrop-filter:blur(4px);z-index:2;display:flex;align-items:center;justify-content:center;">🗑</button>
+          <button class="bank-card-delete-btn" data-id="${card.id || i}" type="button" style="position:absolute;top:6px;left:36px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:26px;height:26px;color:#ff3b30;font-size:13px;cursor:pointer;backdrop-filter:blur(4px);z-index:2;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">🗑</button>
         </div>
       </div>
     `;
@@ -3333,9 +3767,7 @@ document.getElementById("bankCardModal")?.querySelector(".modal-backdrop")?.addE
 document.addEventListener("click", function (e) {if (e.target.closest("#addBankCardBtn")){openBankCardModal();}});
 document.getElementById("addBankBtn")?.addEventListener("click", openAddBankModal);
 
-// =========================================================
-// ================= منوی همبرگری =================
-// =========================================================
+
 // =========================================================
 // ================= منوی همبرگری و دیباگ =================
 // =========================================================
@@ -3348,10 +3780,9 @@ function createHamburgerPanel() {
   panel.id = "hamburgerPanel";
   panel.className = "hamburger-popup hidden";
   panel.innerHTML = `
-    <div class="hamburger-items">
-      <button class="hamburger-item" data-action="refresh" type="button">
-        <span><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="M440-82q-76-8-141.5-41.5t-114-87Q136-264 108-333T80-480q0-91 36.5-168T216-780h-96v-80h240v240h-80v-109q-55 44-87.5 108.5T160-480q0 123 80.5 212.5T440-163v81Zm-17-214L254-466l56-56 113 113 227-227 56 57-283 283Zm177 196v-240h80v109q55-45 87.5-109T800-480q0-123-80.5-212.5T520-797v-81q152 15 256 128t104 270q0 91-36.5 168T744-180h96v80H600Z"/></svg></span> بروزرسانی
-      </button>
+    <button class="hamburger-item" data-action="update" type="button" style="border-top:1px solid rgba(255,255,255,0.06);margin-top:4px;padding-top:10px;color:#38bdf8;">
+  <span><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#38bdf8"><path d="M440-82q-76-8-141.5-41.5t-114-87Q136-264 108-333T80-480q0-91 36.5-168T216-780h-96v-80h240v240h-80v-109q-55 44-87.5 108.5T160-480q0 123 80.5 212.5T440-163v81Zm-17-214L254-466l56-56 113 113 227-227 56 57-283 283Zm177 196v-240h80v109q55-45 87.5-109T800-480q0-123-80.5-212.5T520-797v-81q152 15 256 128t104 270q0 91-36.5 168T744-180h96v80H600Z"/></svg></span> بروزرسانی برنامه
+</button>
       <button class="hamburger-item" data-action="settings" type="button">
         <span>⚙️</span> تنظیمات
       </button>
@@ -3362,6 +3793,9 @@ function createHamburgerPanel() {
           </svg>
         </span>
         دیباگ
+      </button>
+      <button class="hamburger-item" data-action="exit" type="button" style="border-top:1px solid rgba(255,255,255,0.06);margin-top:4px;padding-top:10px;color:#ef4444;">
+        <span>🚪</span> خروج از برنامه
       </button>
     </div>
   `;
@@ -3383,7 +3817,32 @@ function createHamburgerPanel() {
       panel.classList.add("hidden");
     }
   });
-
+document.getElementById('exitAppBtn')?.addEventListener('click', function() {
+  if (confirm('آیا مطمئن هستید که می‌خواهید از برنامه خارج شوید؟')) {
+    // اگر در حالت PWA هستیم
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      // برای اندروید
+      if (navigator.app && navigator.app.exitApp) {
+        navigator.app.exitApp();
+      }
+      // برای iOS
+      else if (window.close) {
+        window.close();
+      }
+      // راهکار جایگزین: رفتن به صفحه خالی
+      else {
+        window.location.href = 'about:blank';
+      }
+    } else {
+      // در مرورگر معمولی
+      if (window.close) {
+        window.close();
+      } else {
+        alert('برای خروج از برنامه، تب مرورگر را ببندید.');
+      }
+    }
+  }
+});
   // مدیریت رویداد کلیک روی آیتم‌های منو
   panel.querySelectorAll(".hamburger-item").forEach(function(item) {
     item.addEventListener("click", function() {
@@ -3391,25 +3850,16 @@ function createHamburgerPanel() {
       panel.classList.add("hidden");
 
       switch (action) {
-        case "refresh":
-          if (typeof performFullAppUpdate === 'function') {
-            performFullAppUpdate();
-          } else {
-            window.location.reload();
-          }
-          break;
-
-        case "banks":
-          if (typeof openPage === "function") {
-            openPage("banksPage", "🏦 بانک‌ها");
-            setTimeout(function () {
-              if (typeof renderBankCards === "function") {
-                renderBankCards();
-              }
-            }, 200);
-          }
-          break;
-
+        case "update":
+case "refresh":
+  if (typeof performFullAppUpdate === 'function') {
+    // نمایش پیام در حال بروزرسانی
+    showToast("🔄 در حال بررسی و دریافت آخرین نسخه...", "info");
+    performFullAppUpdate();
+  } else {
+    window.location.reload();
+  }
+  break;
         case "settings":
           if (typeof openPage === "function") {
             openPage("settingsPage", "⚙️ تنظیمات");
@@ -3424,6 +3874,25 @@ function createHamburgerPanel() {
             alert("خطا: تابع پنل دیباگ پیدا نشد. مطمئن شوید کدهای جاوااسکریپت مربوط به ادمین را به انتهای app.js اضافه کرده‌اید.");
           }
           break;
+          case "exit":
+  if (confirm('آیا مطمئن هستید که می‌خواهید از برنامه خارج شوید؟')) {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      if (navigator.app && navigator.app.exitApp) {
+        navigator.app.exitApp();
+      } else if (window.close) {
+        window.close();
+      } else {
+        window.location.href = 'about:blank';
+      }
+    } else {
+      if (window.close) {
+        window.close();
+      } else {
+        alert('برای خروج از برنامه، تب مرورگر را ببندید.');
+      }
+    }
+  }
+  break;
       }
     });
   });
@@ -3457,7 +3926,85 @@ if (document.readyState === 'loading') {
 } else {
   setTimeout(initNewFeatures, 300);
 }
-
 // صدا زدن توابع امنیتی پیش‌فرض
 if (typeof initAppLock === 'function') initAppLock();
 if (typeof initSettingsUI === 'function') initSettingsUI();
+
+// =========================================================
+// توابع کمکی تاریخ شمسی
+// =========================================================
+
+function toPersianDate(dateString) {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(date);
+  } catch {
+    return dateString;
+  }
+}
+
+function toPersianDateShort(dateString) {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(date);
+  } catch {
+    return dateString;
+  }
+}
+
+function convertToPersian(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    const persian = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(date);
+    return persian.replace(/\//g, '/');
+  } catch {
+    return dateStr;
+  }
+}
+
+// =========================================================
+// تابع دیباگ برای بررسی تاریخ
+// =========================================================
+
+function debugDateSelects() {
+  console.log("===== بررسی کمبوکس‌های تاریخ =====");
+  
+  const daySel = document.getElementById("paymentDay");
+  const monthSel = document.getElementById("paymentMonth");
+  const yearSel = document.getElementById("paymentYear");
+  
+  console.log("paymentDay:", daySel ? daySel.value : "❌ پیدا نشد");
+  console.log("paymentMonth:", monthSel ? monthSel.value : "❌ پیدا نشد");
+  console.log("paymentYear:", yearSel ? yearSel.value : "❌ پیدا نشد");
+  
+  const p = getPersianDateParts();
+  console.log("تاریخ امروز از getPersianDateParts:", p);
+  
+  const monthIndex = p.month - 1;
+  const debugMonthKey = MONTHS[monthIndex]?.key;
+  console.log("کلید ماه جاری:", debugMonthKey);
+  console.log("نام ماه جاری:", MONTHS[monthIndex]?.name);
+  
+  console.log("===== پایان بررسی =====");
+}
+
+// صدا زدن تابع دیباگ بعد از load
+setTimeout(debugDateSelects, 2000);
