@@ -3228,16 +3228,13 @@ function debugDateSelects() {
 let allAssets = [];
 let allCapitalTransactions = [];
 
-let selectedAssetBuyBank = null;
-let selectedAssetSellBank = null;
-
-// قیمت زنده طلا — ریال / گرم
 let currentGoldPrice = 0;
 let goldPriceLastUpdate = null;
 let goldPriceSource = null;
 let goldPriceRefreshTimer = null;
 
 const GOLD_PRICE_REFRESH_INTERVAL = 60 * 1000;
+
 
 
 // =========================================================
@@ -3350,110 +3347,113 @@ async function loadCapitalTransactions() {
 // قیمت از Supabase Edge Function گرفته می‌شود.
 // =========================================================
 
-async function fetchLiveGoldPrice(options = {}) {
+const BRS_GOLD_API_URL =
+  "https://api.brsapi.ir/Market/Gold_Currency.php?key=BdEC9cvaBvqKarc5VAgScrTJyNwTtVt8";
 
-  const silent =
-    options.silent === true;
+async function fetchLiveGoldPrice(options = {}) {
+  const silent = options.silent === true;
 
   try {
-
-    const response =
-      await fetch(
-        `${SUPABASE_URL}/functions/v1/gold-price`,
-        {
-          method: "GET",
-
-          headers: {
-            "Authorization":
-              `Bearer ${SUPABASE_KEY}`,
-
-            "apikey":
-              SUPABASE_KEY
-          },
-
-          cache: "no-store"
-        }
-      );
-
+    const response = await fetch(BRS_GOLD_API_URL, {
+      method: "GET",
+      cache: "no-store",
+      credentials: "omit"
+    });
 
     if (!response.ok) {
-
-      throw new Error(
-        `Gold API HTTP ${response.status}`
-      );
+      throw new Error(`BRS API HTTP ${response.status}`);
     }
 
+    const data = await response.json();
 
-    const result =
-      await response.json();
-
-
-    if (
-      !result ||
-      !Number.isFinite(
-        Number(result.price)
-      ) ||
-      Number(result.price) <= 0
-    ) {
-
-      throw new Error(
-        "قیمت طلا معتبر نیست"
-      );
+    if (!Array.isArray(data.gold)) {
+      throw new Error("ساختار پاسخ API نامعتبر است");
     }
 
-
-    // ارزهام قیمت را تومان می‌دهد.
-    // سیستم VAM Remember ریال است.
-    currentGoldPrice =
-      Math.round(
-        Number(result.price) * 10
-      );
-
-
-    goldPriceLastUpdate =
-      result.updatedAt
-        ? new Date(result.updatedAt)
-        : new Date();
-
-
-    goldPriceSource =
-      result.source || "arzhaam";
-
-
-    updateAllGoldUI();
-
-
-    return currentGoldPrice;
-
-
-  } catch (error) {
-
-    console.error(
-      "خطا در دریافت قیمت لحظه‌ای طلا:",
-      error
+    const gold18 = data.gold.find(
+      item => item.symbol === "IR_GOLD_18K"
     );
 
+    if (!gold18 || !Number.isFinite(Number(gold18.price))) {
+      throw new Error("قیمت طلای ۱۸ عیار در پاسخ API پیدا نشد");
+    }
 
-    // قیمت قبلی را حفظ می‌کنیم.
-    // اگر API قطع باشد داشبورد صفر نمی‌شود.
+    /*
+     * API قیمت را به تومان برمی‌گرداند.
+     * اگر برنامه داخلی شما تومان استفاده می‌کند، همین مقدار درست است.
+     */
+    currentGoldPrice = Number(gold18.price)*10;
+
+    goldPriceLastUpdate = gold18.time_unix
+      ? new Date(Number(gold18.time_unix) * 1000)
+      : new Date();
+
+    goldPriceSource = "BRS API";
+
     updateAllGoldUI();
 
+    console.log("قیمت آنلاین طلای ۱۸ عیار:", {
+      price: currentGoldPrice,
+      unit: gold18.unit,
+      time: gold18.date + " " + gold18.time
+    });
 
-    if (!silent) {
+    return currentGoldPrice;
+  } catch (error) {
+    console.error("خطا در دریافت قیمت طلا از BRS API:", error);
 
+    updateAllGoldUI();
+
+    if (!silent && typeof showToast === "function") {
       showToast(
         currentGoldPrice > 0
-          ? "⚠️ قیمت جدید دریافت نشد؛ آخرین قیمت معتبر نمایش داده می‌شود."
-          : "❌ قیمت طلا دریافت نشد.",
+          ? "⚠️ دریافت قیمت جدید ناموفق بود؛ آخرین قیمت معتبر نمایش داده شد."
+          : "❌ قیمت آنلاین طلا دریافت نشد.",
         "error"
       );
     }
-
 
     return currentGoldPrice;
   }
 }
 
+
+async function loadGoldPrice(options = {}) {
+  return fetchLiveGoldPrice(options);
+}
+
+function updateGoldPrice(price = currentGoldPrice) {
+  const numericPrice = Number(price);
+
+  if (Number.isFinite(numericPrice) && numericPrice > 0) {
+    currentGoldPrice = Math.round(numericPrice);
+
+    if (!goldPriceLastUpdate) {
+      goldPriceLastUpdate = new Date();
+    }
+  }
+
+  updateAllGoldUI();
+}
+
+//-------------------------+++++++++++++++++----------
+async function loadGoldPrice(options = {}) {
+  return fetchLiveGoldPrice(options);
+}
+
+function updateGoldPrice(price = currentGoldPrice) {
+  const numericPrice = Number(price);
+
+  if (Number.isFinite(numericPrice) && numericPrice > 0) {
+    currentGoldPrice = Math.round(numericPrice);
+
+    if (!goldPriceLastUpdate) {
+      goldPriceLastUpdate = new Date();
+    }
+  }
+
+  updateAllGoldUI();
+}
 
 // =========================================================
 // نمایش قیمت روی تابلو
@@ -3898,19 +3898,17 @@ function updateGoldReport() {
 // =========================================================
 
 function updateAllGoldUI() {
-
   updateGoldPriceDisplay();
-
   updateModalGoldPrice();
-
   updateDashboardAssets();
-
   updateGoldSummary();
-
   updateGoldReport();
 
-  calculateAssetSellUnitPrice();
+  if (typeof calculateAssetSellUnitPrice === "function") {
+    calculateAssetSellUnitPrice();
+  }
 }
+
 
 
 // =========================================================
@@ -5356,11 +5354,8 @@ document
         quantity:
           quantity,
 
-        total_price:
-          totalPrice,
-
-        unit_price:
-          unitPrice,
+  total_price: Math.round(Number(totalPrice)),
+  unit_price: Math.round(Number(unitPrice)),
 
         date:
           dateInfo.iso,
@@ -5634,25 +5629,23 @@ document
 // شروع سیستم طلا
 // =========================================================
 
-(async function initGoldSystem() {
-
+async function initGoldSystem() {
   try {
-
     await loadAssets();
-
     await loadCapitalTransactions();
-
+    await loadGoldPrice({ silent: true });
     startGoldPriceAutoRefresh();
-
   } catch (error) {
-
-    console.error(
-      "خطا در راه‌اندازی سیستم طلا:",
-      error
-    );
+    console.error("خطا در راه‌اندازی سیستم طلا:", error);
   }
+}
 
-})();
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initGoldSystem);
+} else {
+  initGoldSystem();
+}
+
 
 
 // =========================================================
