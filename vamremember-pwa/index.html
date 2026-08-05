@@ -725,13 +725,28 @@
           <input type="number" id="assetBuyTotalPrice" placeholder="مثلا ۱۵۰۰۰۰۰۰۰" inputmode="numeric" required>
         </label>
         <!-- قیمت روز طلا -->
-<div style="background:rgba(245,158,11,0.08);padding:10px;border-radius:10px;margin-bottom:12px;border:1px solid rgba(245,158,11,0.15);display:flex;justify-content:space-between;align-items:center;">
+<!-- قیمت لحظه‌ای طلا در فروش -->
+<div
+  class="gold-live-price-box"
+  style="background:rgba(245,158,11,0.08);padding:10px;border-radius:10px;margin-bottom:12px;border:1px solid rgba(245,158,11,0.15);display:none;justify-content:space-between;align-items:center;"
+>
   <div>
-    <small style="color:var(--muted);font-size:11px;">🏅 قیمت روز طلا</small>
-    <div style="font-size:16px;font-weight:bold;color:#f59e0b;" id="modalGoldPrice">۰ ریال</div>
+    <small style="color:var(--muted);font-size:11px;">
+      🏅 قیمت لحظه‌ای طلا
+    </small>
+
+    <div
+      style="font-size:16px;font-weight:bold;color:#f59e0b;"
+      id="modalSellGoldPrice"
+    >
+      ۰ ریال
+    </div>
   </div>
-  <div style="font-size:10px;color:var(--muted);text-align:left;">
-    <span id="modalGoldPriceDate">-</span>
+
+  <div
+    style="font-size:10px;color:var(--muted);text-align:left;"
+  >
+    <span id="modalSellGoldPriceDate">-</span>
   </div>
 </div>
         <label class="field" style="background:var(--surface-2);border-radius:12px;padding:12px;">
