@@ -12,9 +12,7 @@
 <link rel="stylesheet" href="./style.css">
 <title>حسابداری شایان</title>
 </head>
-<body style="
-    height: 1000px;
-">
+<body>
 
 <!-- ================= قفل اپلیکیشن ================= -->
 <div id="appLockScreen" class="app-lock-screen hidden">
@@ -67,7 +65,6 @@
 </div>
 </div>
 <div class="cards" id="cards"></div>
-<!-- Skeleton Loading برای کارت‌ها -->
 <div class="skeleton-wrapper" id="skeletonCards" style="display:none;">
   <div class="skeleton-card">
     <div class="skeleton-line"></div>
@@ -105,11 +102,37 @@
 </div>
 </div>
 </div>
+<!-- کارت قیمت روز طلا و ارزش دارایی -->
+<div class="gold-dashboard-card" style="background:linear-gradient(135deg, #1a2332, #0f172a);border-radius:20px;padding:14px 18px;margin-bottom:12px;border:1px solid rgba(245,158,11,0.15);">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <div>
+      <small style="color:var(--muted);font-size:11px;">🏅 قیمت روز طلا (هر گرم)</small>
+      <div style="font-size:18px;font-weight:bold;color:#f59e0b;" id="todayGoldPrice">۰ ریال</div>
+    </div>
+    <button id="updateGoldPriceBtn" class="icon-button" style="width:36px;height:36px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.2);color:#f59e0b;font-size:14px;">🔄</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);">
+    <div style="text-align:center;">
+      <small style="color:var(--muted);font-size:10px;">وزن کل</small>
+      <div style="font-size:14px;font-weight:bold;color:#fff;" id="dashGoldWeight">۰ گرم</div>
+    </div>
+    <div style="text-align:center;">
+      <small style="color:var(--muted);font-size:10px;">ارزش روز</small>
+      <div style="font-size:14px;font-weight:bold;color:#f59e0b;" id="dashGoldValue">۰ ریال</div>
+    </div>
+    <div style="text-align:center;">
+      <small style="color:var(--muted);font-size:10px;">سود/زیان</small>
+      <div style="font-size:14px;font-weight:bold;" id="dashGoldProfit">۰ ریال</div>
+    </div>
+  </div>
+  <div style="margin-top:6px;text-align:left;font-size:9px;color:var(--muted);">
+    آخرین بروزرسانی: <span id="goldPriceUpdateTime">-</span>
+  </div>
+</div>
 <div class="home-gharz">
 <div class="section-title">🤝 قرض و دین</div>
 <div id="debtsPanel"></div>
 </div>
-
 </section>
 
 <!-- صفحه همه موارد -->
@@ -163,6 +186,10 @@
 <article class="report-card balance report-card-wide">
 <span class="report-icon">⚖️<div class="report-label">مانده (درآمد − پرداختی)</div></span>
 <div class="report-value" id="reportBalanceTotal">۰ ریال</div>
+</article>
+<article class="report-card gold clickable" data-report="gold" style="border-bottom-color:#f59e0b;background:linear-gradient(160deg,rgba(245,158,11,.08),var(--surface) 65%);">
+  <span class="report-icon">🏅<div class="report-label">سرمایه (طلا)</div></span>
+  <div class="report-value" id="reportGoldTotal" style="color:#f59e0b;">۰ ریال</div>
 </article>
 </div>
 
@@ -219,6 +246,34 @@
     <div id="banksManagementList" class="list-bank"></div>
     <button class="primary-button" id="addBankBtn" type="button" style="margin-top:10px;">➕ افزودن بانک جدید</button>
   </div>
+  
+  <!-- ===== بخش سرمایه (طلا) در صفحه بانک‌ها ===== -->
+<div class="home-gharz" style="margin-top:16px;border-color:rgba(245,158,11,0.2);">
+  <div class="section-title" style="color:#f59e0b;">🏅 سرمایه (طلا)</div>
+  
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+    <div style="background:rgba(245,158,11,0.1);padding:10px;border-radius:12px;border:1px solid rgba(245,158,11,0.15);">
+      <small style="color:var(--muted);">ارزش کل</small>
+      <div style="font-size:16px;font-weight:bold;color:#f59e0b;" id="goldTotalValue">۰ ریال</div>
+    </div>
+    <div style="background:rgba(245,158,11,0.1);padding:10px;border-radius:12px;border:1px solid rgba(245,158,11,0.15);">
+      <small style="color:var(--muted);">وزن کل</small>
+      <div style="font-size:16px;font-weight:bold;color:#f59e0b;" id="goldTotalWeight">۰ گرم</div>
+    </div>
+    <div style="background:rgba(245,158,11,0.1);padding:10px;border-radius:12px;border:1px solid rgba(245,158,11,0.15);">
+      <small style="color:var(--muted);">کل سرمایه</small>
+      <div style="font-size:16px;font-weight:bold;color:#f59e0b;" id="goldTotalInvest">۰ ریال</div>
+    </div>
+    <div style="background:rgba(245,158,11,0.1);padding:10px;border-radius:12px;border:1px solid rgba(245,158,11,0.15);">
+      <small style="color:var(--muted);">سود/زیان کل</small>
+      <div style="font-size:16px;font-weight:bold;" id="goldTotalProfit">۰ ریال</div>
+    </div>
+  </div>
+  
+  <div style="max-height:300px;overflow-y:auto;" id="goldCardsContainer">
+    <div id="goldCards"></div>
+  </div>
+</div>
 </section>
 
 <!-- صفحه تنظیمات -->
@@ -276,7 +331,6 @@
 
 </main>
 
-
 <!-- ================= منوی پایین ================= -->
 <button class="home-button" data-page="homePage" onclick="openPage('homePage','🏠 داشبورد')">
 <img class="img-btn" src="assets/home.png" alt="صفحه اصلی">
@@ -286,9 +340,7 @@
   <img class="img-btn1" src="assets/book.png" alt="">
   <small>سررسیدها</small>
 </button>
-<button class="nav-button" data-page="">
-  <img class="img-btn1"style="display:none;"  alt="">
-
+<button class="nav-button" data-page="" style="display:none;">
 </button>
 <button class="nav-button" data-page="banksPage">
   <img class="img-btn1" src="assets/bank.png" alt="">
@@ -310,6 +362,9 @@
 <button class="fab-option" id="fabTransfer" type="button">
 <span class="fab-icon">🔄</span><span>انتقالی</span>
 </button>
+<button class="fab-option" id="fabAsset" type="button">
+  <span class="fab-icon">🏦</span><span>دارایی</span>
+</button>
 <button class="fab-option" id="fabPayment" type="button">
 <span class="fab-icon">💳</span><span>پرداخت / دریافت</span>
 </button>
@@ -322,15 +377,14 @@
 
 </div>
 
-
 <!-- ================= مودال‌ها ================= -->
 
 <!-- مودال جزئیات گزارش -->
-<div class="modal" id="reportDetailsModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">>
-<div class="modal-backdrop"  role="dialog" aria-modal="true" aria-labelledby="modalTitle"></div>
-<div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-<div class="modal-handle" role="dialog" aria-modal="true" aria-labelledby="modalTitle"></div>
-<div class="modal-header" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+<div class="modal" id="reportDetailsModal">
+<div class="modal-backdrop"></div>
+<div class="modal-sheet">
+<div class="modal-handle"></div>
+<div class="modal-header">
 <h2 id="reportDetailsTitle">جزئیات گزارش</h2>
 <button class="close-modal" id="closeReportDetails" type="button">✕</button>
 </div>
@@ -374,18 +428,22 @@
 <button id="expenseTypeButton" class="liquid-segment" data-type="expense" type="button"><span class="segment-icon">هزینه</span></button>
 <button id="incomeTypeButton" class="liquid-segment" data-type="income" type="button"><span class="segment-icon">درآمد</span></button>
 <button id="debtTypeButton" class="liquid-segment" data-type="debt" type="button"><span class="segment-icon">قرض و دین</span></button>
+<button id="assetTypeButton" class="liquid-segment" data-type="asset" type="button"><span class="segment-icon"> دارایی</span></button>
 </div>
 <input id="expenseType" type="hidden" value="installment">
 </div>
+
 <label class="field">
 <span id="expenseTitleLabel">عنوان قسط</span>
 <input id="expenseTitle" type="text" required>
 <select id="expenseTitleSelect" class="hidden"><option value="">انتخاب کنید</option></select>
 </label>
+
 <label class="field">
 <span>مبلغ</span>
 <input id="expenseAmount" type="number" inputmode="numeric" min="0">
 </label>
+
 <div id="installmentFields" class="field-grid">
 <label class="field">
 <span>روز سررسید</span>
@@ -396,6 +454,7 @@
 <input id="expenseInstallments" type="number" min="0">
 </label>
 </div>
+
 <div id="debtFields" class="hidden">
 <div class="field">
 <span>نوع تراکنش</span>
@@ -418,8 +477,39 @@
 </div>
 </div>
 </div>
+
+<!-- بخش دارایی (Asset) برای تعریف دارایی جدید -->
+<div id="assetFields" class="hidden">
+  <label class="field">
+    <span>نام دارایی</span>
+    <input id="assetName" type="text" placeholder="مثلا انگشتر طلا، دلار، یورو..." required>
+  </label>
+  
+  <label class="field">
+    <span>نوع دارایی</span>
+    <select id="assetTypeSelect">
+      <option value="gold">طلا</option>
+      <option value="currency">ارز</option>
+      <option value="crypto">ارز دیجیتال</option>
+      <option value="stock">سهام</option>
+      <option value="other">سایر</option>
+    </select>
+  </label>
+  
+  <label class="field">
+    <span>واحد اندازه‌گیری</span>
+    <input id="assetUnit" type="text" placeholder="مثلا گرم، دلار، سکه..." value="گرم">
+  </label>
+  
+  <label class="field">
+    <span>توضیحات</span>
+    <textarea id="assetNote" placeholder="اختیاری"></textarea>
+  </label>
+</div>
+
 <div id="expenseFields" class="hidden"></div>
 <div id="incomeFields" class="hidden"></div>
+
 <label class="field">
 <span id="startMonthLabel">ماه شروع</span>
 <select id="expenseStartMonth">
@@ -431,16 +521,20 @@
 <option value="bahman">بهمن</option><option value="esfand">اسفند</option>
 </select>
 </label>
+
 <label class="field">
 <span>یادداشت</span>
 <textarea id="expenseNote" placeholder="اختیاری"></textarea>
 </label>
+
 <section class="months-editor hidden" id="monthsEditor">
 <div class="section-title">وضعیت ماه‌ها</div>
 <div id="monthFields"></div>
 </section>
+
 <input id="transferFrom" type="hidden">
 <input id="transferTo" type="hidden">
+
 <button class="primary-button" id="saveExpenseButton" type="submit">ثبت مورد</button>
 </form>
 </div>
@@ -578,7 +672,6 @@
 <input type="password" id="bankCardCvv" placeholder="***" maxlength="4" inputmode="numeric">
 </label>
 </div>
-
 <div class="form-group">
 <label>عکس پس‌زمینه کارت (اختیاری)</label>
 <input type="file" id="bankCardImage" accept="image/*">
@@ -590,9 +683,126 @@
 <input type="color" id="bankCardColor" value="#1a2332">
 </label>
 <button class="primary-button" type="submit">ذخیره کارت</button>
-
 </form>
 </div>
+</div>
+
+<!-- ================= مودال دارایی (خرید/فروش) ================= -->
+<div class="modal" id="assetTransactionModal">
+  <div class="modal-backdrop"></div>
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 id="assetTransactionTitle">🏦 ثبت تراکنش دارایی</h2>
+      <button class="close-modal" id="closeAssetTransactionModal" type="button">✕</button>
+    </div>
+    <form id="assetTransactionForm">
+      
+      <label class="field">
+        <span>انتخاب دارایی</span>
+        <select id="assetSelect" required>
+          <option value="">انتخاب کنید...</option>
+        </select>
+      </label>
+      
+      <div class="field">
+        <span>نوع تراکنش</span>
+        <div class="expense-type-selector" style="grid-template-columns:1fr 1fr;">
+          <button type="button" id="assetBuyBtn" class="asset-transaction-type active" data-type="buy">📥 خرید</button>
+          <button type="button" id="assetSellBtn" class="asset-transaction-type" data-type="sell">📤 فروش</button>
+        </div>
+        <input type="hidden" id="assetTransactionType" value="buy">
+      </div>
+      
+      <div id="assetBuyFields">
+        <label class="field">
+          <span>مقدار (<span id="assetBuyUnitLabel">گرم</span>)</span>
+          <input type="number" id="assetBuyQuantity" step="0.001" placeholder="مثلا ۵.۲۵۰" inputmode="decimal" required>
+        </label>
+        
+        <label class="field">
+          <span>مبلغ پرداختی (ریال)</span>
+          <input type="number" id="assetBuyTotalPrice" placeholder="مثلا ۱۵۰۰۰۰۰۰۰" inputmode="numeric" required>
+        </label>
+        <!-- قیمت روز طلا -->
+<div style="background:rgba(245,158,11,0.08);padding:10px;border-radius:10px;margin-bottom:12px;border:1px solid rgba(245,158,11,0.15);display:flex;justify-content:space-between;align-items:center;">
+  <div>
+    <small style="color:var(--muted);font-size:11px;">🏅 قیمت روز طلا</small>
+    <div style="font-size:16px;font-weight:bold;color:#f59e0b;" id="modalGoldPrice">۰ ریال</div>
+  </div>
+  <div style="font-size:10px;color:var(--muted);text-align:left;">
+    <span id="modalGoldPriceDate">-</span>
+  </div>
+</div>
+        <label class="field" style="background:var(--surface-2);border-radius:12px;padding:12px;">
+          <span style="color:var(--primary-light);">💰 قیمت هر واحد</span>
+          <div style="font-size:18px;font-weight:bold;color:var(--success);" id="assetBuyUnitPrice">۰ ریال</div>
+          <small style="color:var(--muted);">(محاسبه خودکار: مبلغ ÷ مقدار)</small>
+        </label>
+        
+        <div class="field">
+          <span>تاریخ خرید</span>
+          <div class="field-grid" style="grid-template-columns:1fr 1.4fr 1fr">
+            <select id="assetBuyDay"></select>
+            <select id="assetBuyMonth"></select>
+            <input type="number" id="assetBuyYear" placeholder="۱۴۰۵" inputmode="numeric">
+          </div>
+        </div>
+        
+        <div class="field">
+          <span>ثبت پرداخت</span>
+          <div class="quick-tags" id="assetBuyBanksContainer"></div>
+          <small style="color:var(--muted);">انتخاب حساب بانکی برای پرداخت</small>
+        </div>
+      </div>
+      
+      <div id="assetSellFields" style="display:none;">
+        <label class="field">
+          <span>مقدار (<span id="assetSellUnitLabel">گرم</span>)</span>
+          <input type="number" id="assetSellQuantity" step="0.001" placeholder="مثلا ۲" inputmode="decimal" required>
+        </label>
+        
+        <label class="field">
+          <span>مبلغ دریافتی (ریال)</span>
+          <input type="number" id="assetSellTotalPrice" placeholder="مثلا ۷۰۰۰۰۰۰۰" inputmode="numeric" required>
+        </label>
+        
+        <label class="field" style="background:var(--surface-2);border-radius:12px;padding:12px;">
+          <span style="color:var(--primary-light);">💰 قیمت هر واحد</span>
+          <div style="font-size:18px;font-weight:bold;color:var(--success);" id="assetSellUnitPrice">۰ ریال</div>
+          <small style="color:var(--muted);">(محاسبه خودکار: مبلغ ÷ مقدار)</small>
+        </label>
+        
+        <label class="field" style="background:rgba(255,69,58,0.08);border-radius:12px;padding:12px;">
+          <span style="color:var(--warning);">📊 سود/زیان</span>
+          <div style="font-size:18px;font-weight:bold;" id="assetSellProfit">۰ ریال</div>
+          <small style="color:var(--muted);">(قیمت فروش − میانگین قیمت خرید)</small>
+        </label>
+        
+        <div class="field">
+          <span>تاریخ فروش</span>
+          <div class="field-grid" style="grid-template-columns:1fr 1.4fr 1fr">
+            <select id="assetSellDay"></select>
+            <select id="assetSellMonth"></select>
+            <input type="number" id="assetSellYear" placeholder="۱۴۰۵" inputmode="numeric">
+          </div>
+        </div>
+        
+        <div class="field">
+          <span>ثبت دریافت</span>
+          <div class="quick-tags" id="assetSellBanksContainer"></div>
+          <small style="color:var(--muted);">انتخاب حساب بانکی برای دریافت</small>
+        </div>
+      </div>
+      
+      <label class="field">
+        <span>توضیحات</span>
+        <textarea id="assetTransactionNote" placeholder="اختیاری"></textarea>
+      </label>
+      
+      <button class="primary-button" id="saveAssetTransactionBtn" type="submit">ثبت تراکنش</button>
+    </form>
+  </div>
 </div>
 
 <div id="toast" class="toast hidden"></div>

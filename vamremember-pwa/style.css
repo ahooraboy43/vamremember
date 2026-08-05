@@ -1386,18 +1386,18 @@ select:focus {
 
 .expense-type-selector {
   display: grid;
-  grid-template-columns: repeat(4,1fr);
-  gap: 8px;
+  grid-template-columns: repeat(5,1fr);
+  gap: 6px;
   margin-top: 10px;
 }
 
 @media(max-width:480px) {
   .expense-type-selector {
-    grid-template-columns: repeat(2,1fr);
+    grid-template-columns: repeat(3,1fr);
   }
   .expense-type-selector button {
-    padding: 14px 8px;
-    font-size: 14px;
+    padding: 10px 4px;
+    font-size: 12px;
   }
 }
 
@@ -2564,11 +2564,10 @@ label {
 /* =========================================================
    LIQUID GLASS
 ========================================================= */
-
 .liquid-segmented-control {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(4,1fr);
+  grid-template-columns: repeat(5, 1fr);
   width: 100%;
   height: 58px;
   padding: 4px;
@@ -2590,6 +2589,7 @@ label {
   isolation: isolate;
 }
 
+
 .liquid-segmented-control::before {
   content: "";
   position: absolute;
@@ -2606,7 +2606,6 @@ label {
   pointer-events: none;
   z-index: 0;
 }
-
 .liquid-segmented-control::after {
   content: "";
   position: absolute;
@@ -2622,7 +2621,7 @@ label {
   z-index: 1;
   top: 4px;
   right: 4px;
-  width: calc(25% - 2px);
+  width: calc(20% - 2px);
   height: 50px;
   border-radius: 15px;
   background:
@@ -2646,7 +2645,7 @@ label {
 }
 
 .liquid-segmented-control:has(#installmentTypeButton.active) .liquid-segment-glow {
-  transform: translateX(0);
+  transform: translateX(0%);
 }
 
 .liquid-segmented-control:has(#expenseTypeButton.active) .liquid-segment-glow {
@@ -2661,6 +2660,9 @@ label {
   transform: translateX(-300%);
 }
 
+.liquid-segmented-control:has(#assetTypeButton.active) .liquid-segment-glow {
+  transform: translateX(-400%);
+}
 .liquid-segmented-control .liquid-segment {
   position: relative;
   z-index: 3;

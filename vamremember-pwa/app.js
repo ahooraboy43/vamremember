@@ -1,80 +1,70 @@
 const SUPABASE_URL = "https://yfgyauzuzznlhradsrbo.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmZ3lhdXp1enpubGhyYWRzcmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NDIxOTMsImV4cCI6MjA5OTQxODE5M30.Mshjl3p-fJtkTuRSKP_3DhNe9IW7D6jv1C9pD_bv39A";
-const TABLE_NAME="expenses";
+const TABLE_NAME = "expenses";
 const TRANSACTION_TABLE = "transactions";
 const MONTHS = [
-    { key: "farvardin", name: "فروردین" },
-    { key: "ordibehesht", name: "اردیبهشت" },
-    { key: "khordad", name: "خرداد" },
-    { key: "tir", name: "تیر" },
-    { key: "mordad", name: "مرداد" },
-    { key: "shahrivar", name: "شهریور" },
-    { key: "mehr", name: "مهر" },
-    { key: "aban", name: "آبان" },
-    { key: "azar", name: "آذر" },
-    { key: "dey", name: "دی" },
-    { key: "bahman", name: "بهمن" },
-    { key: "esfand", name: "اسفند" }
+  { key: "farvardin", name: "فروردین" },
+  { key: "ordibehesht", name: "اردیبهشت" },
+  { key: "khordad", name: "خرداد" },
+  { key: "tir", name: "تیر" },
+  { key: "mordad", name: "مرداد" },
+  { key: "shahrivar", name: "شهریور" },
+  { key: "mehr", name: "مهر" },
+  { key: "aban", name: "آبان" },
+  { key: "azar", name: "آذر" },
+  { key: "dey", name: "دی" },
+  { key: "bahman", name: "بهمن" },
+  { key: "esfand", name: "اسفند" }
 ];
 const DEBT_TABLE = "debts";
 let allDebts = [];
 let editingDebtId = null;
+
 // =========================================================
 // سیستم مدیریت داده مرکزی
 // =========================================================
 
 const DataManager = {
-  // کلیدهای ذخیره‌سازی
   KEYS: {
     BANKS: 'banks',
     BANK_CARDS: 'bankCardsV1',
     SETTINGS: 'appSettingsV1',
     SESSION: 'appUnlockedV1'
   },
-  
-  // ===== ذخیره‌سازی امن =====
   save(key, data) {
     try {
       localStorage.setItem(key, JSON.stringify(data));
       return true;
-    } catch(e) {
+    } catch (e) {
       console.error('❌ خطا در ذخیره:', e);
       return false;
     }
   },
-  
-  // ===== دریافت امن =====
   load(key, defaultValue = null) {
     try {
       const data = localStorage.getItem(key);
       if (data === null) return defaultValue;
       return JSON.parse(data);
-    } catch(e) {
+    } catch (e) {
       console.error('❌ خطا در خواندن:', e);
       return defaultValue;
     }
   },
-  
-  // ===== حذف امن =====
   remove(key) {
     try {
       localStorage.removeItem(key);
       return true;
-    } catch(e) {
+    } catch (e) {
       console.error('❌ خطا در حذف:', e);
       return false;
     }
   },
-  
-  // ===== بانک‌ها =====
   getBanks() {
     return this.load(this.KEYS.BANKS, ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"]);
   },
-  
   saveBanks(banks) {
     return this.save(this.KEYS.BANKS, banks);
   },
-  
   addBank(name) {
     const banks = this.getBanks();
     if (!banks.includes(name)) {
@@ -84,23 +74,18 @@ const DataManager = {
     }
     return false;
   },
-  
   removeBank(name) {
     let banks = this.getBanks();
     banks = banks.filter(b => b !== name);
     this.saveBanks(banks);
     return banks;
   },
-  
-  // ===== کارت‌های بانکی =====
   getBankCards() {
     return this.load(this.KEYS.BANK_CARDS, []);
   },
-  
   saveBankCards(cards) {
     return this.save(this.KEYS.BANK_CARDS, cards);
   },
-  
   addBankCard(card) {
     const cards = this.getBankCards();
     const index = cards.findIndex(c => c.bankName === card.bankName);
@@ -112,35 +97,27 @@ const DataManager = {
     this.saveBankCards(cards);
     return cards;
   },
-  
   removeBankCard(id) {
     let cards = this.getBankCards();
     cards = cards.filter(c => c.id !== id);
     this.saveBankCards(cards);
     return cards;
   },
-  
-  // ===== تنظیمات =====
   getSettings() {
     return this.load(this.KEYS.SETTINGS, {});
   },
-  
   saveSettings(settings) {
     return this.save(this.KEYS.SETTINGS, settings);
   },
-  
-  // ===== پاک کردن همه داده‌ها =====
   clearAll() {
     try {
       localStorage.clear();
       return true;
-    } catch(e) {
+    } catch (e) {
       console.error('❌ خطا در پاک کردن:', e);
       return false;
     }
   },
-  
-  // ===== پشتیبان‌گیری =====
   backup() {
     try {
       const backup = {
@@ -154,25 +131,21 @@ const DataManager = {
           debts: typeof allDebts !== 'undefined' ? allDebts : []
         }
       };
-      
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.download = `backup_${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      
       showToast('✅ پشتیبان‌گیری انجام شد', 'success');
       return true;
-    } catch(e) {
+    } catch (e) {
       console.error('❌ خطا در پشتیبان‌گیری:', e);
       showToast('❌ خطا در پشتیبان‌گیری', 'error');
       return false;
     }
   },
-  
-  // ===== بازیابی از پشتیبان =====
   restore(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -182,21 +155,18 @@ const DataManager = {
           if (!backup.version || !backup.data) {
             throw new Error('فایل پشتیبان معتبر نیست');
           }
-          
           if (backup.data.banks) this.saveBanks(backup.data.banks);
           if (backup.data.bankCards) this.saveBankCards(backup.data.bankCards);
           if (backup.data.settings) this.saveSettings(backup.data.settings);
-          
           if (backup.data.expenses && typeof allExpenses !== 'undefined') {
             allExpenses = backup.data.expenses;
           }
           if (backup.data.debts && typeof allDebts !== 'undefined') {
             allDebts = backup.data.debts;
           }
-          
           showToast('✅ بازیابی انجام شد', 'success');
           resolve(true);
-        } catch(err) {
+        } catch (err) {
           console.error('❌ خطا در بازیابی:', err);
           showToast('❌ خطا در بازیابی', 'error');
           reject(err);
@@ -211,13 +181,10 @@ function fillDebtDateSelects() {
   const daySel = document.getElementById("debtDueDay");
   const monthSel = document.getElementById("debtDueMonth");
   const yearSel = document.getElementById("debtDueYear");
-  
   if (!daySel || !monthSel || !yearSel) {
     console.warn("❌ عناصر تاریخ قرض پیدا نشدند");
     return;
   }
-  
-  // پر کردن روزها
   if (daySel.options.length === 0) {
     for (let d = 1; d <= 31; d++) {
       const op = document.createElement("option");
@@ -226,8 +193,6 @@ function fillDebtDateSelects() {
       daySel.appendChild(op);
     }
   }
-  
-  // پر کردن ماه‌ها
   if (monthSel.options.length === 0) {
     MONTHS.forEach(m => {
       const op = document.createElement("option");
@@ -236,90 +201,76 @@ function fillDebtDateSelects() {
       monthSel.appendChild(op);
     });
   }
-  
-  // تنظیم تاریخ امروز
   const p = getPersianDateParts();
   const monthIndex = p.month - 1;
   const selectedMonthKey = MONTHS[monthIndex]?.key || MONTHS[0].key;
-  
-  // فقط در حالت جدید (نه ویرایش)
   if (!document.getElementById("editExpenseId")?.value && !editingDebtId) {
     daySel.value = p.day;
     monthSel.value = selectedMonthKey;
     yearSel.value = p.year;
   }
 }
-const PAGE_SIZE = 10;
 
+const PAGE_SIZE = 10;
 let allExpenses = [],
-    visibleCount = PAGE_SIZE,
-    activeFilter = "all",
-    activeStatusFilter = "all",
-    currentMonthKey = null,
-    currentMonthIndex = 0;
+  visibleCount = PAGE_SIZE,
+  activeFilter = "all",
+  activeStatusFilter = "all",
+  currentMonthKey = null,
+  currentMonthIndex = 0;
 
 const $ = id => document.getElementById(id);
-
 const cards = $("cards"),
-    statusBox = $("status"),
-    refreshButton = null, // دکمه حذف شده
-    todayElement = $("today");
+  statusBox = $("status"),
+  refreshButton = null,
+  todayElement = $("today");
 let swRegistration = null;
 let currentAppVersionText = "در حال بررسی نسخه…";
 
-
 const pages = document.querySelectorAll(".page"),
-    navButtons = document.querySelectorAll(".nav-button"),
-    pageTitle = $("pageTitle");
-
+  navButtons = document.querySelectorAll(".nav-button"),
+  pageTitle = $("pageTitle");
 const allCards = $("allCards"),
-    allStatus = $("allStatus"),
-    searchInput = $("searchInput"),
-    loadMoreButton = $("loadMore");
-
+  allStatus = $("allStatus"),
+  searchInput = $("searchInput"),
+  loadMoreButton = $("loadMore");
 const typeFilters = document.querySelectorAll(".type-filter"),
-    statusFilters = document.querySelectorAll(".status-filter"),
-    addExpenseButton = $("addExpenseButton");
-
+  statusFilters = document.querySelectorAll(".status-filter"),
+  addExpenseButton = $("addExpenseButton");
 const expenseModal = $("expenseModal");
 const closeExpenseModal = $("closeExpenseModal");
-
 const editExpenseId = $("editExpenseId"),
-    expenseType = $("expenseType"),
-    installmentTypeButton = $("installmentTypeButton"),
-    expenseTypeButton = $("expenseTypeButton");
-
+  expenseType = $("expenseType"),
+  installmentTypeButton = $("installmentTypeButton"),
+  expenseTypeButton = $("expenseTypeButton");
 const expenseTitleLabel = $("expenseTitleLabel"),
-    expenseTitle = $("expenseTitle"),
-    expenseAmount = $("expenseAmount"),
-    expenseTitleSelect = $("expenseTitleSelect"),
-    expenseDueDay = $("expenseDueDay"),
-    expenseInstallments = $("expenseInstallments"),
-    installmentFields = $("installmentFields"),
-    startMonthLabel = $("startMonthLabel"),
-    expenseStartMonth = $("expenseStartMonth"),
-    expenseNote = $("expenseNote"),
-    monthsEditor = $("monthsEditor"),
-    monthFields = $("monthFields"),
-    saveExpenseButton = $("saveExpenseButton");
-
+  expenseTitle = $("expenseTitle"),
+  expenseAmount = $("expenseAmount"),
+  expenseTitleSelect = $("expenseTitleSelect"),
+  expenseDueDay = $("expenseDueDay"),
+  expenseInstallments = $("expenseInstallments"),
+  installmentFields = $("installmentFields"),
+  startMonthLabel = $("startMonthLabel"),
+  expenseStartMonth = $("expenseStartMonth"),
+  expenseNote = $("expenseNote"),
+  monthsEditor = $("monthsEditor"),
+  monthFields = $("monthFields"),
+  saveExpenseButton = $("saveExpenseButton");
 const reportMonthTotal = $("reportMonthTotal"),
-    reportPaidTotal = $("reportPaidTotal"),
-    reportRemainingTotal = $("reportRemainingTotal"),
-    reportExpensesTotal = $("reportExpensesTotal"),
-    reportAllTotal = $("reportAllTotal"),
-    paidPercent = $("paidPercent"),
-    remainingPercent = $("remainingPercent"),
-    paidBar = $("paidBar"),
-    remainingBar = $("remainingBar");
-
+  reportPaidTotal = $("reportPaidTotal"),
+  reportRemainingTotal = $("reportRemainingTotal"),
+  reportExpensesTotal = $("reportExpensesTotal"),
+  reportAllTotal = $("reportAllTotal"),
+  paidPercent = $("paidPercent"),
+  remainingPercent = $("remainingPercent"),
+  paidBar = $("paidBar"),
+  remainingBar = $("remainingBar");
 const reportIncomeTotal = $("reportIncomeTotal"),
-    reportBalanceTotal = $("reportBalanceTotal"),
-    incomePercent = $("incomePercent"),
-    paymentPercent = $("paymentPercent"),
-    incomeBar = $("incomeBar"),
-    paymentBar = $("paymentBar");
-
+  reportBalanceTotal = $("reportBalanceTotal"),
+  incomePercent = $("incomePercent"),
+  paymentPercent = $("paymentPercent"),
+  incomeBar = $("incomeBar"),
+  paymentBar = $("paymentBar");
 const transferTypeButton = $("transferTypeButton");
 const transferFrom = $("transferFrom");
 const transferTo = $("transferTo");
@@ -332,10 +283,11 @@ const transferModal = $("transferModal");
 const closeTransferModal = $("closeTransferModal");
 const transferForm = $("transferForm");
 const reportDetailsModal = $("reportDetailsModal"),
-    reportDetailsTitle = $("reportDetailsTitle"),
-    reportDetailsList = $("reportDetailsList"),
-    closeReportDetails = $("closeReportDetails");
+  reportDetailsTitle = $("reportDetailsTitle"),
+  reportDetailsList = $("reportDetailsList"),
+  closeReportDetails = $("closeReportDetails");
 let _toastTimer;
+
 function showToast(msg, type = 'info') {
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -343,17 +295,15 @@ function showToast(msg, type = 'info') {
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => el.classList.add('hidden'), 3000);
 }
+
 function fillPaymentDateSelects() {
   const daySel = document.getElementById("paymentDay");
   const monthSel = document.getElementById("paymentMonth");
   const yearSel = document.getElementById("paymentYear");
-  
   if (!daySel || !monthSel || !yearSel) {
     console.warn("❌ عناصر تاریخ پرداخت پیدا نشدند");
     return;
   }
-  
-  // پر کردن روزها
   if (daySel.options.length === 0) {
     for (let d = 1; d <= 31; d++) {
       const op = document.createElement("option");
@@ -362,8 +312,6 @@ function fillPaymentDateSelects() {
       daySel.appendChild(op);
     }
   }
-  
-  // پر کردن ماه‌ها
   if (monthSel.options.length === 0) {
     MONTHS.forEach(m => {
       const op = document.createElement("option");
@@ -372,53 +320,38 @@ function fillPaymentDateSelects() {
       monthSel.appendChild(op);
     });
   }
-  
-  // تنظیم تاریخ امروز (همیشه در مودال پرداخت)
   const p = getPersianDateParts();
   const monthIndex = p.month - 1;
   const selectedMonthKey = MONTHS[monthIndex]?.key || MONTHS[0].key;
-  
   daySel.value = p.day;
   monthSel.value = selectedMonthKey;
   yearSel.value = p.year;
-  
-  console.log("✅ تاریخ پرداخت تنظیم شد:", {
-    day: p.day,
-    month: selectedMonthKey,
-    year: p.year
-  });
+}
+
+function closeModalEl(modalEl) {
+  modalEl.classList.remove("open");
+  document.body.style.overflow = "";
 }
 
 closeExpenseModal?.addEventListener("click", closeModal);
-
 closeTransferModal?.addEventListener("click", () => {
   if (transferModal) {
     closeModalEl(transferModal);
   }
 });
+transferModal?.querySelector(".modal-backdrop")?.addEventListener("click", () => {
+  closeModalEl(transferModal);
+});
+expenseModal?.querySelector(".modal-backdrop")?.addEventListener("click", closeModal);
 
-transferModal
-  ?.querySelector(".modal-backdrop")
-  ?.addEventListener("click", () => {
-    closeModalEl(transferModal);
+async function addTransaction(data) {
+  return await supabaseRequest(TRANSACTION_TABLE, {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(data)
   });
-
-expenseModal
-  ?.querySelector(".modal-backdrop")
-  ?.addEventListener("click", closeModal);
-
-async function addTransaction(data){
-    return await supabaseRequest(
-        TRANSACTION_TABLE,
-        {
-            method:"POST",
-            headers:{
-                Prefer:"return=representation"
-            },
-            body:JSON.stringify(data)
-        }
-    );
 }
+
 function getHeaders() {
   return {
     apikey: SUPABASE_KEY,
@@ -429,16 +362,28 @@ function getHeaders() {
     "Expires": "0"
   };
 }
-async function supabaseRequest(path,options={}){const response=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,headers:{...getHeaders(),...(options.headers||{})}});const text=await response.text();if(!response.ok)throw new Error(text||`HTTP ${response.status}`);return text?JSON.parse(text):null}
-function toEnglishDigits(value){return String(value).replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d))}
-function getPersianDateParts(){
+
+async function supabaseRequest(path, options = {}) {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: { ...getHeaders(), ...(options.headers || {}) }
+  });
+  const text = await response.text();
+  if (!response.ok) throw new Error(text || `HTTP ${response.status}`);
+  return text ? JSON.parse(text) : null;
+}
+
+function toEnglishDigits(value) {
+  return String(value).replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+}
+
+function getPersianDateParts() {
   try {
     const parts = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
       year: "numeric",
       month: "numeric",
       day: "numeric"
     }).formatToParts(new Date());
-    
     const v = {};
     for (const p of parts) {
       if (["year", "month", "day"].includes(p.type)) {
@@ -446,18 +391,14 @@ function getPersianDateParts(){
       }
     }
     return v;
-  } catch(e) {
+  } catch (e) {
     console.warn("خطا در دریافت تاریخ شمسی، استفاده از تاریخ میلادی:", e);
-    // fallback به تاریخ میلادی
     const d = new Date();
-    return {
-      year: d.getFullYear(),
-      month: d.getMonth() + 1,
-      day: d.getDate()
-    };
+    return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() };
   }
 }
-function updatePersianDate(){
+
+function updatePersianDate() {
   try {
     todayElement.textContent = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
       weekday: "long",
@@ -465,22 +406,22 @@ function updatePersianDate(){
       month: "long",
       day: "numeric"
     }).format(new Date());
-  } catch(e) {
+  } catch (e) {
     console.warn("خطا در نمایش تاریخ شمسی:", e);
     todayElement.textContent = new Date().toLocaleDateString("fa-IR");
   }
-  
   const p = getPersianDateParts();
   if (p && p.month) {
     currentMonthIndex = p.month - 1;
     currentMonthKey = MONTHS[currentMonthIndex]?.key || MONTHS[0].key;
   }
 }
-function isInstallment(i){
-    return i.type==="installment" || Number(i.id)<10000;
-}
-const DEFAULT_BANKS = ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
 
+function isInstallment(i) {
+  return i.type === "installment" || Number(i.id) < 10000;
+}
+
+const DEFAULT_BANKS = ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
 let banks;
 try {
   const saved = localStorage.getItem("banks");
@@ -491,22 +432,18 @@ try {
 
 function handleError(error, context = 'عملیات') {
   console.error(`خطا در ${context}:`, error);
-  
-  // نمایش توست خطا
   showToast(`❌ ${context} با خطا مواجه شد: ${error.message || 'خطای ناشناخته'}`, 'error');
-  
-  // لاگ به کنسول برای دیباگ
   console.error('Stack trace:', error.stack);
-  
-  // بازگشت خطا برای استفاده در try-catch
   return { success: false, error };
 }
+
 function saveBanks(banksData) {
   if (banksData) {
     return DataManager.saveBanks(banksData);
   }
   return DataManager.saveBanks(banks);
 }
+
 function getBanks() {
   return DataManager.getBanks();
 }
@@ -542,17 +479,14 @@ function deleteBank(i) {
   renderBanks();
   renderPaymentBanks();
 }
+
 function renderPaymentBanks() {
   const container = document.getElementById("paymentBanksContainer");
   if (!container) return;
-  
-  // دریافت لیست بانک‌ها از localStorage
   const banksList = getBanks();
-  
   container.innerHTML = banksList.map(b =>
     `<button type="button" class="tag-btn payment-bank" data-bank="${b}">${b}</button>`
   ).join("");
-  
   container.querySelectorAll(".payment-bank").forEach(btn => {
     btn.addEventListener("click", () => {
       container.querySelectorAll(".payment-bank").forEach(b => b.classList.remove("active"));
@@ -561,7 +495,6 @@ function renderPaymentBanks() {
     });
   });
 }
-
 
 document.getElementById("addBankButton")?.addEventListener("click", () => {
   const input = document.getElementById("bankNameInput");
@@ -579,293 +512,256 @@ document.getElementById("addBankButton")?.addEventListener("click", () => {
 renderBanks();
 renderPaymentBanks();
 
-function isExpense(i){
-    const id=Number(i.id);
-    return i.type==="expense" || (id>=10000 && id<20000);
+function isExpense(i) {
+  const id = Number(i.id);
+  return i.type === "expense" || (id >= 10000 && id < 20000);
 }
 
-function isIncome(i){
-    const id=Number(i.id);
-    return i.type==="income" || (id>=20000 && id<30000);
-}
-function isNullValue(v){return v===null||v===undefined||v===""}
-function isClosedValue(v){return String(v||"").trim().toUpperCase()==="CLOSE"}
-function isPaidValue(v){return !isNullValue(v)&&!isClosedValue(v)}
-function formatMoney(v){return Number(v||0).toLocaleString("fa-IR")+" ریال"}
-function escapeHtml(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
-function getCurrentPersianDay(){return getPersianDateParts().day}
-function parseMoney(v){
-    if(isNullValue(v) || isClosedValue(v)) return null;
-    const n = Number(String(v).split(/\s*-\s*/)[0].replace(/[,\s٬]/g,""));
-    return Number.isFinite(n) ? n : null;
-}
-function getRemainingInstallments(item){
-    if (!isInstallment(item)) return 0;
-    return Number(item.installment_count || 0);
+function isIncome(i) {
+  const id = Number(i.id);
+  return i.type === "income" || (id >= 20000 && id < 30000);
 }
 
-function getPaidCount(item){let n=0;for(const m of MONTHS)if(isPaidValue(item[m.key]))n++;return n}
-function getLatestExpenseAmount(item){for(let i=currentMonthIndex;i>=0;i--){const n=parseMoney(item[MONTHS[i].key]);if(n!==null)return n}for(let i=MONTHS.length-1;i>currentMonthIndex;i--){const n=parseMoney(item[MONTHS[i].key]);if(n!==null)return n}return Number(item.amount||0)}
-function getExpenseTotal(item){let total=0;for(const m of MONTHS){const n=parseMoney(item[m.key]);if(n!==null)total+=n}return total}
-function extractPaymentDate(v){if(!isPaidValue(v))return"";const s=String(v);const matches=s.match(/[۰-۹0-9]{4}[\/\-][۰-۹0-9]{1,2}[\/\-][۰-۹0-9]{1,2}/g);return matches?.at(-1)||s}
-function currentStatus(item){const v=item[currentMonthKey];if(isClosedValue(v))return"بسته";return isPaidValue(v)?"پرداخت‌شده":"پرداخت‌نشده"}
+function isNullValue(v) { return v === null || v === undefined || v === ""; }
+function isClosedValue(v) { return String(v || "").trim().toUpperCase() === "CLOSE"; }
+function isPaidValue(v) { return !isNullValue(v) && !isClosedValue(v); }
+function formatMoney(v) { return Number(v || 0).toLocaleString("fa-IR") + " ریال"; }
+function escapeHtml(v) { return String(v ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
+function getCurrentPersianDay() { return getPersianDateParts().day; }
 
-async function loadData(){
+function parseMoney(v) {
+  if (isNullValue(v) || isClosedValue(v)) return null;
+  const n = Number(String(v).split(/\s*-\s*/)[0].replace(/[,\s٬]/g, ""));
+  return Number.isFinite(n) ? n : null;
+}
 
-    if (refreshButton) {
-        refreshButton.disabled = true;
-    }
+function getRemainingInstallments(item) {
+  if (!isInstallment(item)) return 0;
+  return Number(item.installment_count || 0);
+}
 
-    statusBox.textContent = "📡 در حال دریافت اطلاعات…";
-    allStatus.textContent = "📡 در حال دریافت اطلاعات…";
+function getPaidCount(item) { let n = 0; for (const m of MONTHS) if (isPaidValue(item[m.key])) n++; return n; }
+function getLatestExpenseAmount(item) { for (let i = currentMonthIndex; i >= 0; i--) { const n = parseMoney(item[MONTHS[i].key]); if (n !== null) return n; } for (let i = MONTHS.length - 1; i > currentMonthIndex; i--) { const n = parseMoney(item[MONTHS[i].key]); if (n !== null) return n; } return Number(item.amount || 0); }
+function getExpenseTotal(item) { let total = 0; for (const m of MONTHS) { const n = parseMoney(item[m.key]); if (n !== null) total += n; } return total; }
+function extractPaymentDate(v) { if (!isPaidValue(v)) return ""; const s = String(v); const matches = s.match(/[۰-۹0-9]{4}[\/\-][۰-۹0-9]{1,2}[\/\-][۰-۹0-9]{1,2}/g); return matches?.at(-1) || s; }
+function currentStatus(item) { const v = item[currentMonthKey]; if (isClosedValue(v)) return "بسته"; return isPaidValue(v) ? "پرداخت‌شده" : "پرداخت‌نشده"; }
 
+async function loadData() {
+  if (refreshButton) {
+    refreshButton.disabled = true;
+  }
+  statusBox.textContent = "📡 در حال دریافت اطلاعات…";
+  allStatus.textContent = "📡 در حال دریافت اطلاعات…";
+  try {
+    const data = await supabaseRequest(`${TABLE_NAME}?select=*&order=id.asc`);
+    allExpenses = Array.isArray(data) ? data : [];
     try {
-        // تلاش برای دریافت از سرور
-        const data = await supabaseRequest(
-            `${TABLE_NAME}?select=*&order=id.asc`
-        );
-
-        allExpenses = Array.isArray(data) ? data : [];
-        
-        // ذخیره در کش
-        try {
-            localStorage.setItem('cachedExpenses', JSON.stringify(allExpenses));
-            localStorage.setItem('cachedExpensesDate', new Date().toISOString());
-        } catch(cacheErr) {
-            console.warn('خطا در ذخیره کش:', cacheErr);
-        }
-        
-        loadIncomeOptions();
-        visibleCount = PAGE_SIZE;
-        renderDueCards();
-        renderAllCards();
-        renderReports();
-        renderHome();
-
-        statusBox.textContent = `${allExpenses.length.toLocaleString("fa-IR")} مورد دریافت شد`;
-        allStatus.textContent = `${allExpenses.length.toLocaleString("fa-IR")} مورد موجود است`;
-
-    } catch(e) {
-        console.error('❌ خطا در loadData:', e);
-        
-        // اگر خطای شبکه بود، از کش استفاده کن
-        if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
-            try {
-                const cached = localStorage.getItem('cachedExpenses');
-                if (cached) {
-                    allExpenses = JSON.parse(cached);
-                    const cacheDate = localStorage.getItem('cachedExpensesDate') || 'نامشخص';
-                    
-                    loadIncomeOptions();
-                    visibleCount = PAGE_SIZE;
-                    renderDueCards();
-                    renderAllCards();
-                    renderReports();
-                    renderHome();
-                    
-                    statusBox.textContent = `📂 نمایش داده‌های ذخیره شده (${new Date(cacheDate).toLocaleString('fa-IR')})`;
-                    allStatus.textContent = `📂 ${allExpenses.length} مورد از کش (آفلاین)`;
-                    showToast(`📂 نمایش داده‌های ذخیره شده`, 'info');
-                } else {
-                    statusBox.textContent = `❌ بدون داده ذخیره شده و بدون اتصال`;
-                    allStatus.textContent = `❌ لطفاً اتصال اینترنت را بررسی کنید`;
-                }
-            } catch(cacheErr) {
-                console.warn('خطا در خواندن کش:', cacheErr);
-                statusBox.textContent = `❌ خطا: ${e.message}`;
-                allStatus.textContent = `❌ خطا: ${e.message}`;
-            }
+      localStorage.setItem('cachedExpenses', JSON.stringify(allExpenses));
+      localStorage.setItem('cachedExpensesDate', new Date().toISOString());
+    } catch (cacheErr) {
+      console.warn('خطا در ذخیره کش:', cacheErr);
+    }
+    loadIncomeOptions();
+    visibleCount = PAGE_SIZE;
+    renderDueCards();
+    renderAllCards();
+    renderReports();
+    renderHome();
+    statusBox.textContent = `${allExpenses.length.toLocaleString("fa-IR")} مورد دریافت شد`;
+    allStatus.textContent = `${allExpenses.length.toLocaleString("fa-IR")} مورد موجود است`;
+  } catch (e) {
+    console.error('❌ خطا در loadData:', e);
+    if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+      try {
+        const cached = localStorage.getItem('cachedExpenses');
+        if (cached) {
+          allExpenses = JSON.parse(cached);
+          const cacheDate = localStorage.getItem('cachedExpensesDate') || 'نامشخص';
+          loadIncomeOptions();
+          visibleCount = PAGE_SIZE;
+          renderDueCards();
+          renderAllCards();
+          renderReports();
+          renderHome();
+          statusBox.textContent = `📂 نمایش داده‌های ذخیره شده (${new Date(cacheDate).toLocaleString('fa-IR')})`;
+          allStatus.textContent = `📂 ${allExpenses.length} مورد از کش (آفلاین)`;
+          showToast(`📂 نمایش داده‌های ذخیره شده`, 'info');
         } else {
-            statusBox.textContent = `❌ خطا: ${e.message}`;
-            allStatus.textContent = `❌ خطا: ${e.message}`;
+          statusBox.textContent = `❌ بدون داده ذخیره شده و بدون اتصال`;
+          allStatus.textContent = `❌ لطفاً اتصال اینترنت را بررسی کنید`;
         }
-    } finally {
-        if (refreshButton) {
-            refreshButton.disabled = false;
-        }
+      } catch (cacheErr) {
+        console.warn('خطا در خواندن کش:', cacheErr);
+        statusBox.textContent = `❌ خطا: ${e.message}`;
+        allStatus.textContent = `❌ خطا: ${e.message}`;
+      }
+    } else {
+      statusBox.textContent = `❌ خطا: ${e.message}`;
+      allStatus.textContent = `❌ خطا: ${e.message}`;
     }
+  } finally {
+    if (refreshButton) {
+      refreshButton.disabled = false;
+    }
+  }
 }
-function getDaysInPersianMonth(monthIndex){
-    if(monthIndex <= 5) return 31;
-    if(monthIndex <= 10) return 30;
-    return 29;
+
+function getDaysInPersianMonth(monthIndex) {
+  if (monthIndex <= 5) return 31;
+  if (monthIndex <= 10) return 30;
+  return 29;
 }
 
-function getDueItems(){
-    const today = getCurrentPersianDay();
-    const daysInCurrentMonth = getDaysInPersianMonth(currentMonthIndex);
-
-    return allExpenses
-        .filter(isInstallment)
-        .filter(i =>
-            Number.isFinite(Number(i.due_day)) &&
-            Number(i.due_day) > 0
-        )
-        .map(i => {
-            const dueDay = Number(i.due_day);
-            let diff = dueDay - today;
-            let targetMonthIndex = currentMonthIndex;
-
-            if(diff < 0){
-                diff += daysInCurrentMonth;
-                targetMonthIndex = (currentMonthIndex + 1) % 12;
-            }
-
-            return {
-                ...i,
-                daysRemaining: diff,
-                targetMonthKey: MONTHS[targetMonthIndex].key
-            };
-        })
-        .filter(i =>
-            isNullValue(i[i.targetMonthKey]) &&
-            i.daysRemaining <= 7
-        )
-        .sort((a, b) => a.daysRemaining - b.daysRemaining);
+function getDueItems() {
+  const today = getCurrentPersianDay();
+  const daysInCurrentMonth = getDaysInPersianMonth(currentMonthIndex);
+  return allExpenses
+    .filter(isInstallment)
+    .filter(i => Number.isFinite(Number(i.due_day)) && Number(i.due_day) > 0)
+    .map(i => {
+      const dueDay = Number(i.due_day);
+      let diff = dueDay - today;
+      let targetMonthIndex = currentMonthIndex;
+      if (diff < 0) {
+        diff += daysInCurrentMonth;
+        targetMonthIndex = (currentMonthIndex + 1) % 12;
+      }
+      return {
+        ...i,
+        daysRemaining: diff,
+        targetMonthKey: MONTHS[targetMonthIndex].key
+      };
+    })
+    .filter(i => isNullValue(i[i.targetMonthKey]) && i.daysRemaining <= 7)
+    .sort((a, b) => a.daysRemaining - b.daysRemaining);
 }
-function renderDueCards(){const items=getDueItems();cards.innerHTML="";if(!items.length){cards.innerHTML='<div class="empty">قسط سررسیدشده یا نزدیک به سررسید وجود ندارد</div>';return}items.forEach(i=>cards.appendChild(createDueCard(i)))}
-function setupPaymentPanel(card, item){
-    const save    = card.querySelector(".save-payment");
-    const cancel  = card.querySelector(".cancel-payment");
-    const noteBox = card.querySelector(".payment-note");
-    const addDate = card.querySelector(".add-date");
-    const confirm = card.querySelector(".confirm-payment");
-    let selectedBank = null;
 
-    setupButtonGroup(card, ".bank-tag", btn => {
-        selectedBank = btn.dataset.bank;
-        let text = noteBox.value;
-        (JSON.parse(localStorage.getItem('banks')||'[]'))
-        .forEach(b => { text = text.replace(b, ""); });
-        text = text.replace(/^\s*-\s*/, "").trim();
-        noteBox.value = btn.dataset.bank + (text ? " - " + text : "-");
-    });
+function renderDueCards() {
+  const items = getDueItems();
+  cards.innerHTML = "";
+  if (!items.length) {
+    cards.innerHTML = '<div class="empty">قسط سررسیدشده یا نزدیک به سررسید وجود ندارد</div>';
+    return;
+  }
+  items.forEach(i => cards.appendChild(createDueCard(i)));
+}
 
-    cancel.addEventListener("click", () => card.classList.remove("open"));
-
-   save.addEventListener("click", async () => {
-    if(!confirm.checked) return alert("لطفاً پرداخت را تأیید کنید");
-
+function setupPaymentPanel(card, item) {
+  const save = card.querySelector(".save-payment");
+  const cancel = card.querySelector(".cancel-payment");
+  const noteBox = card.querySelector(".payment-note");
+  const addDate = card.querySelector(".add-date");
+  const confirm = card.querySelector(".confirm-payment");
+  let selectedBank = null;
+  setupButtonGroup(card, ".bank-tag", btn => {
+    selectedBank = btn.dataset.bank;
+    let text = noteBox.value;
+    (JSON.parse(localStorage.getItem('banks') || '[]'))
+      .forEach(b => { text = text.replace(b, ""); });
+    text = text.replace(/^\s*-\s*/, "").trim();
+    noteBox.value = btn.dataset.bank + (text ? " - " + text : "-");
+  });
+  cancel.addEventListener("click", () => card.classList.remove("open"));
+  save.addEventListener("click", async () => {
+    if (!confirm.checked) return alert("لطفاً پرداخت را تأیید کنید");
     const p = getPersianDateParts();
-    const dateStr = addDate.checked
-        ? `${p.year}/${String(p.month).padStart(2,"0")}/${String(p.day).padStart(2,"0")}`
-        : null;
-
+    const dateStr = addDate.checked ? `${p.year}/${String(p.month).padStart(2, "0")}/${String(p.day).padStart(2, "0")}` : null;
     const note = noteBox.value.trim() || null;
-
-    const cellValue = [note, dateStr]
-        .filter(Boolean)
-        .join(" - ");
-
+    const cellValue = [note, dateStr].filter(Boolean).join(" - ");
     try {
-        await supabaseRequest(
-            `${TABLE_NAME}?id=eq.${item.id}`,
-            {
-                method: "PATCH",
-                headers: { Prefer: "return=representation" },
-                body: JSON.stringify({ [currentMonthKey]: cellValue })
-            }
-        );
-
-        await registerPaymentTransaction(item, note, selectedBank);
-
-        const currentRemaining = Number(item.installment_count);
-        if (Number.isFinite(currentRemaining) && currentRemaining > 0) {
-            await supabaseRequest(
-                `${TABLE_NAME}?id=eq.${item.id}`,
-                {
-                    method: "PATCH",
-                    headers: { Prefer: "return=representation" },
-                    body: JSON.stringify({
-                        installment_count: Math.max(0, currentRemaining - 1)
-                    })
-                }
-            );
-        }
-
-        card.classList.remove("open");
-        await loadData();
-    } catch(e) {
-        alert("خطا در ثبت پرداخت");
-    }
-});
-
-}
-
-function setupButtonGroup(parent, selector, callback){
-
-    parent.querySelectorAll(selector).forEach(btn=>{
-
-        btn.addEventListener("click",()=>{
-
-            parent.querySelectorAll(selector)
-                .forEach(b=>b.classList.remove("active"));
-
-            btn.classList.add("active");
-
-            if(callback){
-                callback(btn);
-            }
-
+      await supabaseRequest(`${TABLE_NAME}?id=eq.${item.id}`, {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({ [currentMonthKey]: cellValue })
+      });
+      await registerPaymentTransaction(item, note, selectedBank);
+      const currentRemaining = Number(item.installment_count);
+      if (Number.isFinite(currentRemaining) && currentRemaining > 0) {
+        await supabaseRequest(`${TABLE_NAME}?id=eq.${item.id}`, {
+          method: "PATCH",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify({ installment_count: Math.max(0, currentRemaining - 1) })
         });
-
-    });
-
+      }
+      card.classList.remove("open");
+      await loadData();
+    } catch (e) {
+      alert("خطا در ثبت پرداخت");
+    }
+  });
 }
-function createDueCard(item){const card=document.createElement("article");card.className="card "+(item.daysRemaining<0?"overdue":"soon");const dayText=item.daysRemaining<0?`${Math.abs(item.daysRemaining).toLocaleString("fa-IR")} روز گذشته`:item.daysRemaining===0?"امروز":`${item.daysRemaining.toLocaleString("fa-IR")} روز مانده`;card.innerHTML=`<div class="card-main"><div class="name">${escapeHtml(item.title)}</div><div class="top"><div class="days">${dayText}</div><div class="installment-badge">${getRemainingInstallments(item).toLocaleString("fa-IR")} قسط باقی مانده</div></div><div class="amount">${formatMoney(item.amount)}</div><div class="meta">سررسید: روز ${Number(item.due_day).toLocaleString("fa-IR")}ام</div></div>${createPaymentPanelHtml()}`;card.querySelector(".card-main").addEventListener("click",()=>{document.querySelectorAll("#cards .card.open").forEach(c=>{if(c!==card)c.classList.remove("open")});card.classList.toggle("open")});setupPaymentPanel(card,item);return card}
-function createPaymentPanelHtml(){
-  
-return`
+
+function setupButtonGroup(parent, selector, callback) {
+  parent.querySelectorAll(selector).forEach(btn => {
+    btn.addEventListener("click", () => {
+      parent.querySelectorAll(selector).forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      if (callback) {
+        callback(btn);
+      }
+    });
+  });
+}
+
+function createDueCard(item) {
+  const card = document.createElement("article");
+  card.className = "card " + (item.daysRemaining < 0 ? "overdue" : "soon");
+  const dayText = item.daysRemaining < 0 ? `${Math.abs(item.daysRemaining).toLocaleString("fa-IR")} روز گذشته` : item.daysRemaining === 0 ? "امروز" : `${item.daysRemaining.toLocaleString("fa-IR")} روز مانده`;
+  card.innerHTML = `<div class="card-main"><div class="name">${escapeHtml(item.title)}</div><div class="top"><div class="days">${dayText}</div><div class="installment-badge">${getRemainingInstallments(item).toLocaleString("fa-IR")} قسط باقی مانده</div></div><div class="amount">${formatMoney(item.amount)}</div><div class="meta">سررسید: روز ${Number(item.due_day).toLocaleString("fa-IR")}ام</div></div>${createPaymentPanelHtml()}`;
+  card.querySelector(".card-main").addEventListener("click", () => {
+    document.querySelectorAll("#cards .card.open").forEach(c => {
+      if (c !== card) c.classList.remove("open");
+    });
+    card.classList.toggle("open");
+  });
+  setupPaymentPanel(card, item);
+  return card;
+}
+
+function createPaymentPanelHtml() {
+  return `
 <div class="payment-panel">
-
 <div class="payment-title">ثبت پرداخت</div>
-
 <textarea class="payment-note" placeholder="توضیح پرداخت..."></textarea>
-
 <div class="quick-tags">
- ${getBanks().map(b=>`<button type="button" class="tag-btn bank-tag" data-bank="${b}">${b}</button>`).join('')}
+ ${getBanks().map(b => `<button type="button" class="tag-btn bank-tag" data-bank="${b}">${b}</button>`).join('')}
 </div>
-
 <label class="date-option">
 <input type="checkbox" class="add-date" checked>
 افزودن تاریخ پرداخت
 </label>
-
 <label class="confirm-option">
 <input type="checkbox" class="confirm-payment">
 پرداخت این قسط را تأیید می‌کنم
 </label>
-
 <div class="payment-actions">
 <button type="button" class="cancel-payment">انصراف</button>
 <button type="button" class="save-payment">ثبت پرداخت</button>
 </div>
-
 </div>
 `;
 }
-async function registerPaymentTransaction(item, note, account, date){
 
-    const data = {
-        expense_id: Number(item.id),
-        title: item.title,
-        amount: Number(item.amount || 0),
-        type: "payment",
-        account: account || null,
-        from_account: null,
-        to_account: null,
-        transaction_date: date || new Date().toISOString(),
-        note: note || null
-    };
-
-    return await addTransaction(data);
+async function registerPaymentTransaction(item, note, account, date) {
+  const data = {
+    expense_id: Number(item.id),
+    title: item.title,
+    amount: Number(item.amount || 0),
+    type: "payment",
+    account: account || null,
+    from_account: null,
+    to_account: null,
+    transaction_date: date || new Date().toISOString(),
+    note: note || null
+  };
+  return await addTransaction(data);
 }
 
 function setupTransferButtons() {
   const fromContainer = document.getElementById("transferFromContainer");
   const toContainer = document.getElementById("transferToContainer");
-  const transferFrom = document.getElementById("transferFromModal");  
-  const transferTo = document.getElementById("transferToModal"); 
+  const transferFrom = document.getElementById("transferFromModal");
+  const transferTo = document.getElementById("transferToModal");
   if (!fromContainer || !toContainer) return;
 
   function renderBtns(container, hiddenInput, activeClass) {
@@ -880,39 +776,19 @@ function setupTransferButtons() {
       });
     });
   }
-
   renderBtns(fromContainer, transferFrom, "from-bank");
   renderBtns(toContainer, transferTo, "to-bank");
 }
 
 function getFilteredItems() {
   const s = searchInput.value.trim().toLowerCase();
-
- return allExpenses.filter(i => {
-
-    if (activeFilter === "installment" && !isInstallment(i)) {
-      return false;
-    }
-
-    if (activeFilter === "expense" && !isExpense(i)) {
-      return false;
-    }
-    if (activeFilter === "income" && !isIncome(i)) {
-    return false;
-    }
-
-    if(activeStatusFilter==="paid" && !isPaidValue(i[currentMonthKey])){
-      return false;
-    }
-
-    if(activeStatusFilter==="unpaid" && !isNullValue(i[currentMonthKey])){
-      return false;
-    }
-
-    if (!s) {
-      return true;
-    }
-
+  return allExpenses.filter(i => {
+    if (activeFilter === "installment" && !isInstallment(i)) return false;
+    if (activeFilter === "expense" && !isExpense(i)) return false;
+    if (activeFilter === "income" && !isIncome(i)) return false;
+    if (activeStatusFilter === "paid" && !isPaidValue(i[currentMonthKey])) return false;
+    if (activeStatusFilter === "unpaid" && !isNullValue(i[currentMonthKey])) return false;
+    if (!s) return true;
     return (
       String(i.title || "").toLowerCase().includes(s) ||
       String(i.id || "").includes(s) ||
@@ -921,198 +797,142 @@ function getFilteredItems() {
   });
 }
 
-function renderAllCards(){
+function renderAllCards() {
   const filtered = getFilteredItems();
   const items = filtered.slice(0, visibleCount);
   allCards.innerHTML = "";
-  
-  if(!items.length){
+  if (!items.length) {
     allCards.innerHTML = '<div class="empty">موردی پیدا نشد</div>';
     loadMoreButton.classList.add("hidden");
     allStatus.textContent = "۰ مورد نمایش داده می‌شود";
     return;
   }
-  
   items.forEach(i => allCards.appendChild(createCard(i, { showActions: true })));
   loadMoreButton.classList.toggle("hidden", visibleCount >= filtered.length);
   allStatus.textContent = `${filtered.length.toLocaleString("fa-IR")} مورد نمایش داده می‌شود`;
 }
-function getExpenseAmount(item){return getLatestExpenseAmount(item)}
-function setExpenseType(type){
 
-    expenseType.value = type;
+function getExpenseAmount(item) { return getLatestExpenseAmount(item); }
 
-    const amountField = expenseAmount.closest(".field");
-    if(amountField){
-        amountField.classList.toggle(
-            "hidden",
-            type === "expense" || type === "income"
-        );
-    }
+function setExpenseType(type) {
+  expenseType.value = type;
 
-    installmentTypeButton?.classList.toggle(
-        "active",
-        type === "installment"
-    );
+  // مقداردهی required برای expenseTitle
+  expenseTitle.required = (type !== "asset");
 
-    expenseTypeButton?.classList.toggle(
-        "active",
-        type === "expense"
-    );
+ const amountField = expenseAmount.closest(".field");
+if (amountField) {
+    amountField.classList.toggle("hidden", type === "expense" || type === "income" || type === "asset");
+}
 
-    incomeTypeButton?.classList.toggle(
-        "active",
-        type === "income"
-    );
+  installmentTypeButton?.classList.toggle("active", type === "installment");
+  expenseTypeButton?.classList.toggle("active", type === "expense");
+  incomeTypeButton?.classList.toggle("active", type === "income");
+  transferTypeButton?.classList.toggle("active", type === "transfer");
+  $("debtTypeButton")?.classList.toggle("active", type === "debt");
+  $("assetTypeButton")?.classList.toggle("active", type === "asset");
 
-    transferTypeButton?.classList.toggle(
-        "active",
-        type === "transfer"
-    );
+  installmentFields?.classList.toggle("hidden", type !== "installment");
+  expenseFields?.classList.toggle("hidden", type !== "expense");
+  $("debtFields")?.classList.toggle("hidden", type !== "debt");
+  incomeFields?.classList.toggle("hidden", type !== "income");
+  transferFields?.classList.toggle("hidden", type !== "transfer");
+  $("assetFields")?.classList.toggle("hidden", type !== "asset");
 
-    installmentFields?.classList.toggle(
-        "hidden",
-        type !== "installment"
-    );
-
-    expenseFields?.classList.toggle(
-    "hidden",
-    type !== "expense"
-);
-$("debtTypeButton")?.classList.toggle("active", type === "debt");
-$("debtFields")?.classList.toggle("hidden", type !== "debt");
-incomeFields?.classList.toggle(
-    "hidden",
-    type !== "income"
-);
-
-    transferFields?.classList.toggle(
-        "hidden",
-        type !== "transfer"
-    );
-
-    switch(type){
-
-        case "installment":
-
-expenseTitleLabel.textContent="عنوان قسط";
-
-expenseTitle.classList.remove("hidden");
-expenseTitleSelect.classList.add("hidden");
-    expenseTitle.placeholder="مثلا وام ازدواج، ویپاد";
-startMonthLabel.textContent="ماه شروع";
-
-break;
-case "debt":
-    fillDebtDateSelects();
-    expenseTitleLabel.textContent = "توضیح (اختیاری)";
-    expenseTitle.placeholder = "توضیح دلخواه";
-    if(!editExpenseId.value && !editingDebtId){
+  switch (type) {
+    case "installment":
+      expenseTitleLabel.textContent = "عنوان قسط";
+      expenseTitle.classList.remove("hidden");
+      expenseTitleSelect.classList.add("hidden");
+      expenseTitle.placeholder = "مثلا وام ازدواج، ویپاد";
+      startMonthLabel.textContent = "ماه شروع";
+      break;
+    case "debt":
+      fillDebtDateSelects();
+      expenseTitleLabel.textContent = "توضیح (اختیاری)";
+      expenseTitle.placeholder = "توضیح دلخواه";
+      if (!editExpenseId.value && !editingDebtId) {
         $("debtDueDay").value = getCurrentPersianDay();
         $("debtDueMonth").value = currentMonthKey;
         $("debtDueYear").value = getPersianDateParts().year;
+      }
+      break;
+    case "expense":
+      expenseTitleLabel.textContent = "عنوان هزینه";
+      expenseTitle.classList.remove("hidden");
+      expenseTitle.placeholder = "مثلا کارواش یا عمومی";
+      startMonthLabel.textContent = "ماه هزینه";
+      break;
+    case "income":
+      expenseTitleLabel.textContent = "عنوان درآمد";
+      expenseTitle.placeholder = "مثلا حقوق، فروش، سود";
+      startMonthLabel.textContent = "ماه درآمد";
+      break;
+    case "transfer":
+      expenseTitleLabel.textContent = "شرح انتقال";
+      expenseTitle.placeholder = "مثلا انتقال از ملی به رفاه";
+      startMonthLabel.textContent = "تاریخ انتقال";
+      break;
+    case "asset":
+      expenseTitleLabel.textContent = "تعریف دارایی جدید";
+      expenseTitle.placeholder = "مثلا انگشتر طلا";
+      expenseTitle.classList.add("hidden");
+      expenseTitle.required = false;
+      startMonthLabel.textContent = "";
+      document.getElementById("assetFields")?.classList.remove("hidden");
+      break;
+  }
+
+  expenseDueDay.required = false;
+  expenseInstallments.required = false;
+
+  if (editExpenseId.value) {
+    saveExpenseButton.textContent = "ذخیره تغییرات";
+  } else {
+    switch (type) {
+      case "installment":
+        saveExpenseButton.textContent = "ثبت قسط";
+        break;
+      case "debt":
+        saveExpenseButton.textContent = "ثبت قرض/دین";
+        break;
+      case "expense":
+        saveExpenseButton.textContent = "ثبت هزینه";
+        break;
+      case "income":
+        saveExpenseButton.textContent = "ثبت درآمد";
+        break;
+      case "transfer":
+        saveExpenseButton.textContent = "ثبت انتقال";
+        break;
+      case "asset":
+        saveExpenseButton.textContent = "ثبت دارایی";
+        break;
     }
-    break;
-case "expense":
+  }
 
-expenseTitleLabel.textContent="عنوان هزینه";
-
-expenseTitle.classList.remove("hidden");
-expenseTitle.placeholder="مثلا کارواش یا عمومی";
-startMonthLabel.textContent="ماه هزینه";
-
-break;
-
-case "income":
-
-    expenseTitleLabel.textContent="عنوان درآمد";
-    expenseTitle.placeholder="مثلا حقوق، فروش، سود";
-    startMonthLabel.textContent="ماه درآمد";
-    break;
-
-case "transfer":
-
-    expenseTitleLabel.textContent="شرح انتقال";
-    expenseTitle.placeholder="مثلا انتقال از ملی به رفاه";
-    startMonthLabel.textContent="تاریخ انتقال";
-    break;
-
-    }
-
-    expenseDueDay.required = false;
-expenseInstallments.required = false;
-
-    if(editExpenseId.value){
-
-        saveExpenseButton.textContent="ذخیره تغییرات";
-
-    }
-    else{
-
-        switch(type){
-
-            case "installment":
-                saveExpenseButton.textContent="ثبت قسط";
-                break;
-                case "debt":
-    saveExpenseButton.textContent = "ثبت قرض/دین";
-    break;
-
-            case "expense":
-                saveExpenseButton.textContent="ثبت هزینه";
-                break;
-
-            case "income":
-                saveExpenseButton.textContent="ثبت درآمد";
-                break;
-
-            case "transfer":
-                saveExpenseButton.textContent="ثبت انتقال";
-                break;
-
-        }
-
-    }
-
-    const sheet = document.querySelector(".modal-sheet");
-
-    if(sheet){
-
-        sheet.classList.remove(
-            "form-income",
-            "form-expense",
-            "form-installment",
-            "form-transfer"
-        );
-
-        sheet.classList.add(
-            "form-" + type
-        );
-
-    }
-
+  const sheet = document.querySelector(".modal-sheet");
+  if (sheet) {
+    sheet.classList.remove("form-income", "form-expense", "form-installment", "form-transfer");
+    sheet.classList.add("form-" + type);
+  }
 }
-fabCreate.onclick = ()=>{
-    openWithType("expense");
 
+fabCreate.onclick = () => {
+  openWithType("expense");
 };
 
 const paymentModal = $("paymentModal");
 const closePaymentModal = $("closePaymentModal");
 let selectedPaymentBank = null;
 
-
 function getDateFromSelects() {
   const day = parseInt(document.getElementById("paymentDay")?.value);
   const monthKey = document.getElementById("paymentMonth")?.value;
   const year = parseInt(document.getElementById("paymentYear")?.value);
-  
   if (!day || !monthKey || !year) return null;
-  
-  // پیدا کردن اندکس ماه
   const monthIndex = MONTHS.findIndex(m => m.key === monthKey);
   if (monthIndex === -1) return null;
-  
   return {
     day: day,
     month: monthIndex + 1,
@@ -1121,436 +941,339 @@ function getDateFromSelects() {
     fullDate: `${year}/${String(monthIndex + 1).padStart(2, "0")}/${String(day).padStart(2, "0")}`
   };
 }
-async function updateAccountCellFromPayment(itemId, monthKey, amount){
-    if(!itemId || !monthKey) return;
 
-    const item = allExpenses.find(i => Number(i.id) === Number(itemId));
-    const existing = item ? parseMoney(item[monthKey]) : null;
-    const total = (existing || 0) + amount;
-
-    await supabaseRequest(
-        `${TABLE_NAME}?id=eq.${itemId}`,
-        {
-            method:"PATCH",
-            headers:{ Prefer:"return=representation" },
-            body: JSON.stringify({ [monthKey]: total })
-        }
-    );
+async function updateAccountCellFromPayment(itemId, monthKey, amount) {
+  if (!itemId || !monthKey) return;
+  const item = allExpenses.find(i => Number(i.id) === Number(itemId));
+  const existing = item ? parseMoney(item[monthKey]) : null;
+  const total = (existing || 0) + amount;
+  await supabaseRequest(`${TABLE_NAME}?id=eq.${itemId}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ [monthKey]: total })
+  });
 }
 
-document.querySelectorAll(".payment-type-btn")
-.forEach(btn => {
-
-    btn.addEventListener("click",()=>{
-
-        document.querySelectorAll(".payment-type-btn")
-        .forEach(b=>b.classList.remove("active"));
-
-        btn.classList.add("active");
-
-        const type = btn.dataset.type;
-
-        $("paymentType").value = type;
-        fillPaymentItems(type);
-
-        $("paymentModalTitle").textContent =
-            type === "income" ? "ثبت دریافت" : "ثبت پرداخت";
-
-    });
-
+document.querySelectorAll(".payment-type-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".payment-type-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    const type = btn.dataset.type;
+    $("paymentType").value = type;
+    fillPaymentItems(type);
+    $("paymentModalTitle").textContent = type === "income" ? "ثبت دریافت" : "ثبت پرداخت";
+  });
 });
 
 document.querySelectorAll(".payment-bank").forEach(btn => {
-    btn.addEventListener("click", () => {
-        document.querySelectorAll(".payment-bank").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        selectedPaymentBank = btn.dataset.bank;
-    });
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".payment-bank").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedPaymentBank = btn.dataset.bank;
+  });
 });
 
 $("paymentForm").addEventListener("submit", async e => {
-    e.preventDefault();
-
-    const type = $("paymentType").value || "payment";
-    const itemSelect = $("paymentItemSelect");
-    const itemId = itemSelect ? itemSelect.value : "";
-    const amount = parseFloat($("paymentAmount").value);
-    const note = $("paymentNote").value.trim();
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-
-    if(!itemId){ alert("حساب را انتخاب کنید."); return; }
-    if(!Number.isFinite(amount) || amount<=0){ alert("مبلغ معتبر نیست."); return; }
-    if(!selectedPaymentBank){ alert("بانک را انتخاب کنید."); return; }
-
-    // دریافت تاریخ از سه کمبوکس
-    const dateObj = getDateFromSelects();
-    const date = dateObj ? dateObj.fullDate : null;
-    const monthKey = dateObj ? dateObj.monthKey : currentMonthKey;
-
-    if(!date){
-        alert("تاریخ معتبر نیست.");
-        return;
+  e.preventDefault();
+  const type = $("paymentType").value || "payment";
+  const itemSelect = $("paymentItemSelect");
+  const itemId = itemSelect ? itemSelect.value : "";
+  const amount = parseFloat($("paymentAmount").value);
+  const note = $("paymentNote").value.trim();
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  if (!itemId) { alert("حساب را انتخاب کنید."); return; }
+  if (!Number.isFinite(amount) || amount <= 0) { alert("مبلغ معتبر نیست."); return; }
+  if (!selectedPaymentBank) { alert("بانک را انتخاب کنید."); return; }
+  const dateObj = getDateFromSelects();
+  const date = dateObj ? dateObj.fullDate : null;
+  const monthKey = dateObj ? dateObj.monthKey : currentMonthKey;
+  if (!date) { alert("تاریخ معتبر نیست."); return; }
+  if (submitBtn) submitBtn.disabled = true;
+  try {
+    await addTransaction({
+      expense_id: Number(itemId),
+      title: itemSelect.options[itemSelect.selectedIndex]?.text || "",
+      amount,
+      type,
+      account: null,
+      from_account: type === "payment" ? selectedPaymentBank : null,
+      to_account: type === "income" ? selectedPaymentBank : null,
+      transaction_date: new Date().toISOString(),
+      note: note || null
+    });
+    try {
+      await updateAccountCellFromPayment(itemId, monthKey, amount);
+    } catch (cellErr) {
+      console.error("خطا در بروزرسانی سلول ماه:", cellErr);
+      alert("تراکنش ثبت شد اما بروزرسانی جدول با خطا مواجه شد:\n" + cellErr.message);
     }
-
-    if(submitBtn) submitBtn.disabled = true;
-
-    try{
-        await addTransaction({
-            expense_id: Number(itemId),
-            title: itemSelect.options[itemSelect.selectedIndex]?.text || "",
-            amount,
-            type,
-            account: null,
-            from_account: type === "payment" ? selectedPaymentBank : null,
-            to_account: type === "income" ? selectedPaymentBank : null,
-            transaction_date: new Date().toISOString(),
-            note: note || null
-        });
-
-        try{
-            await updateAccountCellFromPayment(itemId, monthKey, amount);
-        }catch(cellErr){
-            console.error("خطا در بروزرسانی سلول ماه:", cellErr);
-            alert("تراکنش ثبت شد اما بروزرسانی جدول با خطا مواجه شد:\n"+cellErr.message);
-        }
-
-        paymentModal.classList.remove("open");
-        document.body.style.overflow = "";
-        e.target.reset();
-        selectedPaymentBank = null;
-        document.querySelectorAll(".payment-bank").forEach(b => b.classList.remove("active"));
-
-        // ریست کردن کمبوکس‌های تاریخ به مقدار فعلی
-        fillPaymentDateSelects();
-
-        await loadData();
-    }catch(err){
-        console.error("خطا در ثبت تراکنش:", err);
-        alert("خطا در ثبت:\n"+err.message);
-    }finally{
-        if(submitBtn) submitBtn.disabled = false;
-    }
+    paymentModal.classList.remove("open");
+    document.body.style.overflow = "";
+    e.target.reset();
+    selectedPaymentBank = null;
+    document.querySelectorAll(".payment-bank").forEach(b => b.classList.remove("active"));
+    fillPaymentDateSelects();
+    await loadData();
+  } catch (err) {
+    console.error("خطا در ثبت تراکنش:", err);
+    alert("خطا در ثبت:\n" + err.message);
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+  }
 });
 
-fabPayment.onclick = ()=>{
-
-    fabMenu.classList.add("hidden");
-    addExpenseButton.classList.remove("open");
-    addExpenseButton.classList.remove("active");
-
-    paymentModal.classList.add("open");
-    fillPaymentItems($("paymentType").value || "payment");
-    document.body.style.overflow = "hidden";
-
-    // پر کردن کمبوکس‌های تاریخ با تاریخ امروز
-    fillPaymentDateSelects();
-
+fabPayment.onclick = () => {
+  fabMenu.classList.add("hidden");
+  addExpenseButton.classList.remove("open");
+  addExpenseButton.classList.remove("active");
+  paymentModal.classList.add("open");
+  fillPaymentItems($("paymentType").value || "payment");
+  document.body.style.overflow = "hidden";
+  fillPaymentDateSelects();
 };
 
-closePaymentModal.onclick = ()=>closeModalEl(paymentModal);
+closePaymentModal.onclick = () => closeModalEl(paymentModal);
+paymentModal.querySelector(".modal-backdrop").addEventListener("click", () => closeModalEl(paymentModal));
 
-paymentModal.querySelector(".modal-backdrop").addEventListener("click", ()=>closeModalEl(paymentModal));
-
-fabTransfer.onclick = ()=>{
-
-    fabMenu.classList.add("hidden");
-    addExpenseButton.classList.remove("open");
-    addExpenseButton.classList.remove("active");
-
-    transferModal.classList.add("open");
-    document.body.style.overflow="hidden";
-
+fabTransfer.onclick = () => {
+  fabMenu.classList.add("hidden");
+  addExpenseButton.classList.remove("open");
+  addExpenseButton.classList.remove("active");
+  transferModal.classList.add("open");
+  document.body.style.overflow = "hidden";
 };
-function closeModal(){expenseModal.classList.remove("open");document.body.style.overflow=""}
-function resetExpenseForm(){editingDebtId = null;expenseForm.reset();editExpenseId.value="";monthsEditor.classList.add("hidden");monthFields.innerHTML="";expenseStartMonth.value=currentMonthKey;expenseModalTitle.textContent="ثبت مورد جدید";setExpenseType("installment")}
-function openNewModal(){resetExpenseForm();openModal()}
-function openEditModal(item){
+
+function closeModal() { expenseModal.classList.remove("open"); document.body.style.overflow = ""; }
+
+function resetExpenseForm() {
+  editingDebtId = null;
+  expenseForm.reset();
+  editExpenseId.value = "";
+  monthsEditor.classList.add("hidden");
+  monthFields.innerHTML = "";
+  expenseStartMonth.value = currentMonthKey;
+  expenseModalTitle.textContent = "ثبت مورد جدید";
+  setExpenseType("installment");
+}
+
+function openNewModal() { resetExpenseForm(); openModal(); }
+
+function openEditModal(item) {
   resetExpenseForm();
-
-  editExpenseId.value=item.id;
-  expenseTitle.value=item.title||"";
-  expenseNote.value=item.note||"";
-
- const type =
-    isExpense(item)
-    ?"expense"
-    :isIncome(item)
-    ?"income"
-    :"installment";
-
+  editExpenseId.value = item.id;
+  expenseTitle.value = item.title || "";
+  expenseNote.value = item.note || "";
+  const type = isExpense(item) ? "expense" : isIncome(item) ? "income" : "installment";
   setExpenseType(type);
-
-  if(type==="installment"){
-    expenseAmount.value=item.amount ?? "";
-    expenseDueDay.value=item.due_day ?? "";
-    expenseInstallments.value=item.installment_count ?? "";
+  if (type === "installment") {
+    expenseAmount.value = item.amount ?? "";
+    expenseDueDay.value = item.due_day ?? "";
+    expenseInstallments.value = item.installment_count ?? "";
+  } else {
+    expenseAmount.value = getExpenseAmount(item);
   }
-  else{
-    expenseAmount.value=getExpenseAmount(item);
-  }
-
-  expenseStartMonth.value=findStartMonth(item);
-
-  expenseModalTitle.textContent =
-    type==="installment"
-    ?"ویرایش قسط"
-    :type==="expense"
-    ?"ویرایش هزینه"
-    :"ویرایش درآمد";
-
+  expenseStartMonth.value = findStartMonth(item);
+  expenseModalTitle.textContent = type === "installment" ? "ویرایش قسط" : type === "expense" ? "ویرایش هزینه" : "ویرایش درآمد";
   buildMonthEditor(item);
   monthsEditor.classList.remove("hidden");
-
-  saveExpenseButton.textContent="ذخیره تغییرات";
-
+  saveExpenseButton.textContent = "ذخیره تغییرات";
   openModal();
 }
-function findStartMonth(item){for(const m of MONTHS)if(!isClosedValue(item[m.key]))return m.key;return currentMonthKey}
-function buildMonthEditor(item){monthFields.innerHTML="";for(const m of MONTHS){const w=document.createElement("div");w.className="month-field";w.innerHTML=`<label>${m.name}</label><input type="text" data-month="${m.key}" value="${escapeHtml(item[m.key]??"")}" placeholder="NULL / CLOSE / مقدار پرداخت">`;monthFields.appendChild(w)}}
-function getNextId(type){
 
-    let min,max;
+function findStartMonth(item) { for (const m of MONTHS) if (!isClosedValue(item[m.key])) return m.key; return currentMonthKey; }
 
-    switch(type){
-
-        case "installment":
-            min=1;
-            max=9999;
-            break;
-
-        case "expense":
-            min=10000;
-            max=19999;
-            break;
-
-        case "income":
-            min=20000;
-            max=29999;
-            break;
-
-        default:
-            return null;
-    }
-
-    const ids = allExpenses
-        .map(x=>Number(x.id))
-        .filter(id=>id>=min && id<=max);
-
-    return ids.length
-        ? Math.max(...ids)+1
-        : min;
+function buildMonthEditor(item) {
+  monthFields.innerHTML = "";
+  for (const m of MONTHS) {
+    const w = document.createElement("div");
+    w.className = "month-field";
+    w.innerHTML = `<label>${m.name}</label><input type="text" data-month="${m.key}" value="${escapeHtml(item[m.key] ?? "")}" placeholder="NULL / CLOSE / مقدار پرداخت">`;
+    monthFields.appendChild(w);
+  }
 }
+
+function getNextId(type) {
+  let min, max;
+  switch (type) {
+    case "installment": min = 1;
+      max = 9999;
+      break;
+    case "expense": min = 10000;
+      max = 19999;
+      break;
+    case "income": min = 20000;
+      max = 29999;
+      break;
+    default: return null;
+  }
+  const ids = allExpenses.map(x => Number(x.id)).filter(id => id >= min && id <= max);
+  return ids.length ? Math.max(...ids) + 1 : min;
+}
+
 function fillPaymentItems(type) {
-    const sel = $("paymentItemSelect");
-    if (!sel) return;
-    sel.innerHTML = '<option value="">انتخاب کنید</option>';
-    const rangeStart = type === "payment" ? 10000 : 20000;
-    const rangeEnd   = type === "payment" ? 20000 : 30000;
-    allExpenses
-        .filter(i => Number(i.id) >= rangeStart && Number(i.id) < rangeEnd)
-        .forEach(item => {
-            const op = document.createElement("option");
-            op.value = item.id;
-            op.textContent = item.title;
-            sel.appendChild(op);
-        });
-
-    const label = $("paymentItemLabel");
-    if(label){
-        label.textContent = type === "income" ? "انتخاب حساب درآمد" : "انتخاب حساب هزینه";
-    }
+  const sel = $("paymentItemSelect");
+  if (!sel) return;
+  sel.innerHTML = '<option value="">انتخاب کنید</option>';
+  const rangeStart = type === "payment" ? 10000 : 20000;
+  const rangeEnd = type === "payment" ? 20000 : 30000;
+  allExpenses.filter(i => Number(i.id) >= rangeStart && Number(i.id) < rangeEnd).forEach(item => {
+    const op = document.createElement("option");
+    op.value = item.id;
+    op.textContent = item.title;
+    sel.appendChild(op);
+  });
+  const label = $("paymentItemLabel");
+  if (label) {
+    label.textContent = type === "income" ? "انتخاب حساب درآمد" : "انتخاب حساب هزینه";
+  }
 }
 
-async function saveExpense(e){
+async function saveExpense(e) {
+  e.preventDefault();
+  const type = expenseType.value;
 
-    e.preventDefault();
-
-    const type = expenseType.value;
-    if(type === "debt"){
+  // ===== ثبت قرض =====
+  if (type === "debt") {
     const counterparty = $("debtCounterparty").value.trim();
     const amount = Number(expenseAmount.value);
     const day = Number($("debtDueDay").value);
     const month = $("debtDueMonth").value;
     const year = Number($("debtDueYear").value);
     const direction = $("debtDirection").value || "lent";
-
-    if(!counterparty){ alert("نام طرف حساب را وارد کنید."); return; }
-    if(!Number.isFinite(amount) || amount <= 0){ alert("مبلغ معتبر نیست."); return; }
-    if(!Number.isFinite(day) || day < 1 || day > 31){ alert("روز موعد تسویه معتبر نیست."); return; }
-    if(!month){ alert("ماه موعد تسویه را انتخاب کنید."); return; }
-    if(!Number.isFinite(year) || year < 1300){ alert("سال معتبر نیست."); return; }
-
-    const body = {
-        direction, counterparty, amount,
-        due_day: day, due_month: month, due_year: year,
-        note: expenseTitle.value.trim() || null
-    };
-
+    if (!counterparty) { alert("نام طرف حساب را وارد کنید."); return; }
+    if (!Number.isFinite(amount) || amount <= 0) { alert("مبلغ معتبر نیست."); return; }
+    if (!Number.isFinite(day) || day < 1 || day > 31) { alert("روز موعد تسویه معتبر نیست."); return; }
+    if (!month) { alert("ماه موعد تسویه را انتخاب کنید."); return; }
+    if (!Number.isFinite(year) || year < 1300) { alert("سال معتبر نیست."); return; }
+    const body = { direction, counterparty, amount, due_day: day, due_month: month, due_year: year, note: expenseTitle.value.trim() || null };
     saveExpenseButton.disabled = true;
-    try{
-       // کد جدید:
-let debtPath = DEBT_TABLE;
-if (editingDebtId && editingDebtId !== null && editingDebtId !== undefined) {
-  debtPath = `${DEBT_TABLE}?id=eq.${encodeURIComponent(String(editingDebtId))}`;
-}
-
-console.log("Saving debt:", {
-  editingDebtId,
-  method: editingDebtId ? "PATCH" : "POST",
-  path: debtPath,
-  body
-});
-
-const result = await supabaseRequest(
-  debtPath,
-  {
-    method: editingDebtId ? "PATCH" : "POST",
-    headers: {
-      Prefer: "return=representation"
-    },
-    body: JSON.stringify(body)
-  }
-);
-
-console.log("Save debt result:", result);
-
-if(editingDebtId && Array.isArray(result) && result.length === 0){
-  alert("ویرایش انجام نشد؛ رکوردی با این شناسه پیدا نشد.");
-  console.error("PATCH بدون نتیجه:", editingDebtId, result);
-  return;
-}
-
-closeModal();
-await loadDebts();
-
-    }catch(err){
-        alert("خطا:\n"+err.message);
-    }finally{
-        saveExpenseButton.disabled = false;
-        
+    try {
+      let debtPath = DEBT_TABLE;
+      if (editingDebtId && editingDebtId !== null && editingDebtId !== undefined) {
+        debtPath = `${DEBT_TABLE}?id=eq.${encodeURIComponent(String(editingDebtId))}`;
+      }
+      const result = await supabaseRequest(debtPath, {
+        method: editingDebtId ? "PATCH" : "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify(body)
+      });
+      if (editingDebtId && Array.isArray(result) && result.length === 0) {
+        alert("ویرایش انجام نشد؛ رکوردی با این شناسه پیدا نشد.");
+        return;
+      }
+      closeModal();
+      await loadDebts();
+    } catch (err) {
+      alert("خطا:\n" + err.message);
+    } finally {
+      saveExpenseButton.disabled = false;
     }
     return;
-}
+  }
 
-    if(type==="transfer"){
+  // ===== ثبت دارایی =====
+  if (type === "asset") {
+    const name = document.getElementById("assetName").value.trim();
+    const assetType = document.getElementById("assetTypeSelect").value;
+    const unit = document.getElementById("assetUnit").value.trim();
+    const note = document.getElementById("assetNote").value.trim();
+    if (!name) { alert("نام دارایی را وارد کنید."); return; }
+    if (!unit) { alert("واحد اندازه‌گیری را وارد کنید."); return; }
+    saveExpenseButton.disabled = true;
+    saveExpenseButton.textContent = "در حال ذخیره...";
+    try {
+      await supabaseRequest("assets", {
+        method: "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({ name: name, type: assetType, unit: unit, note: note || null })
+      });
+      closeModal();
+      showToast("✅ دارایی با موفقیت ثبت شد", "success");
+      await loadAssets();
+      await loadData();
+    } catch (err) {
+      alert("خطا در ثبت دارایی:\n" + err.message);
+    } finally {
+      saveExpenseButton.disabled = false;
+      setExpenseType(expenseType.value);
+    }
+    return;
+  }
 
-        if(!transferFrom.value || !transferTo.value){
-            alert("حساب مبدا و مقصد را انتخاب کنید.");
-            return;
-        }
-
-        if(transferFrom.value===transferTo.value){
-            alert("مبدا و مقصد نمی‌توانند یکسان باشند.");
-            return;
-        }
-
-       const amount = Number(expenseAmount.value);
-
-if(type !== "expense" && type !== "income"){
-    if(!Number.isFinite(amount) || amount < 0){
+  // ===== ثبت انتقال =====
+  if (type === "transfer") {
+    if (!transferFrom.value || !transferTo.value) {
+      alert("حساب مبدا و مقصد را انتخاب کنید.");
+      return;
+    }
+    if (transferFrom.value === transferTo.value) {
+      alert("مبدا و مقصد نمی‌توانند یکسان باشند.");
+      return;
+    }
+    const amount = Number(expenseAmount.value);
+    if (type !== "expense" && type !== "income") {
+      if (!Number.isFinite(amount) || amount < 0) {
         alert("مبلغ معتبر نیست.");
         return;
+      }
     }
-}
-
-        saveExpenseButton.disabled=true;
-
-        try{
-
-            await addTransaction({
-                expense_id:null,
-                title:expenseTitle.value.trim() || "انتقال وجه",
-                amount:amount,
-                type:"transfer",
-                account:null,
-                from_account:transferFrom.value,
-                to_account:transferTo.value,
-                transaction_date:new Date().toISOString(),
-                note:expenseNote.value.trim() || null
-            });
-
-            closeModal();
-
-            alert("انتقال ثبت شد.");
-
-        }catch(err){
-
-            alert(err.message);
-
-        }finally{
-
-            saveExpenseButton.disabled=false;
-
-        }
-
-        return;
+    saveExpenseButton.disabled = true;
+    try {
+      await addTransaction({
+        expense_id: null,
+        title: expenseTitle.value.trim() || "انتقال وجه",
+        amount: amount,
+        type: "transfer",
+        account: null,
+        from_account: transferFrom.value,
+        to_account: transferTo.value,
+        transaction_date: new Date().toISOString(),
+        note: expenseNote.value.trim() || null
+      });
+      closeModal();
+      alert("انتقال ثبت شد.");
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      saveExpenseButton.disabled = false;
     }
-
-    const editingId =
-        editExpenseId.value
-        ? Number(editExpenseId.value)
-        : null;
-
-    const title = expenseTitle.value.trim();
-
-    const amount =
-        Number(expenseAmount.value);
-
-    if(!title){
-        alert("عنوان را وارد کنید.");
-        return;
-    }
-
-    if(type !== "transfer"){
-    if(!Number.isFinite(amount) || amount < 0){
-        alert("مبلغ معتبر نیست.");
-        return;
-    }
-}
-
-   if (type === "installment") {
-  const d = Number(expenseDueDay.value);
-  const c = Number(expenseInstallments.value);
-
-  if (expenseDueDay.value !== "" && (!Number.isFinite(d) || d < 0 || d > 31)) {
-    alert("روز سررسید معتبر نیست.");
     return;
   }
-  if (expenseInstallments.value !== "" && (!Number.isFinite(c) || c < 0)) {
-    alert("تعداد اقساط معتبر نیست.");
-    return;
+
+  // ===== ثبت هزینه/قسط/درآمد =====
+  const editingId = editExpenseId.value ? Number(editExpenseId.value) : null;
+  const title = expenseTitle.value.trim();
+  const amount = Number(expenseAmount.value);
+  if (!title) { alert("عنوان را وارد کنید."); return; }
+  if (type !== "transfer") {
+    if (!Number.isFinite(amount) || amount < 0) { alert("مبلغ معتبر نیست."); return; }
   }
-}
-
-
-    saveExpenseButton.disabled=true;
-    saveExpenseButton.textContent="در حال ذخیره...";
-
-    try{
-
-        let body =
-            editingId
-            ? buildEditBody(type)
-            : buildNewBody(type);
-
-        if(!editingId){
-            body.id=getNextId(type);
-        }
-
-        await supabaseRequest(
-            editingId
-            ? `${TABLE_NAME}?id=eq.${editingId}`
-            : TABLE_NAME,
-            {
-                method:editingId?"PATCH":"POST",
-                headers:{
-                    Prefer:"return=representation"
-                },
-                body:JSON.stringify(body)
-            }
-        );
-        if(type === "income"){
-    await addTransaction({
+  if (type === "installment") {
+    const d = Number(expenseDueDay.value);
+    const c = Number(expenseInstallments.value);
+    if (expenseDueDay.value !== "" && (!Number.isFinite(d) || d < 0 || d > 31)) {
+      alert("روز سررسید معتبر نیست.");
+      return;
+    }
+    if (expenseInstallments.value !== "" && (!Number.isFinite(c) || c < 0)) {
+      alert("تعداد اقساط معتبر نیست.");
+      return;
+    }
+  }
+  saveExpenseButton.disabled = true;
+  saveExpenseButton.textContent = "در حال ذخیره...";
+  try {
+    let body = editingId ? buildEditBody(type) : buildNewBody(type);
+    if (!editingId) {
+      body.id = getNextId(type);
+    }
+    await supabaseRequest(editingId ? `${TABLE_NAME}?id=eq.${editingId}` : TABLE_NAME, {
+      method: editingId ? "PATCH" : "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify(body)
+    });
+    if (type === "income") {
+      await addTransaction({
         expense_id: editingId || body.id,
         title: title,
         amount: amount,
@@ -1560,222 +1283,156 @@ if(type !== "expense" && type !== "income"){
         to_account: null,
         transaction_date: new Date().toISOString(),
         note: expenseNote.value.trim() || null
-    });
-}
-
-        closeModal();
-
-        await loadData();
-
-    }catch(err){
-
-        alert("خطا:\n"+err.message);
-
-    }finally{
-
-        saveExpenseButton.disabled=false;
-
-        setExpenseType(expenseType.value);
-
+      });
     }
-
-}
-function buildNewBody(type){
-  const idx=MONTHS.findIndex(m=>m.key===expenseStartMonth.value);
-
-const body={
-    type:type,
-    title:expenseTitle.value.trim(),
-    note:expenseNote.value.trim()||null
-};
-  if(type==="installment"){body.amount=Number(expenseAmount.value);body.due_day=expenseDueDay.value.trim()==="" ? null : Number(expenseDueDay.value);body.installment_count=expenseInstallments.value.trim()==="" ? null : Number(expenseInstallments.value);MONTHS.forEach((m,i)=>body[m.key]=i<idx?"CLOSE":null)}
-else if(type==="expense" || type==="income"){
-
-    body.amount=null;
-    body.due_day=null;
-    body.installment_count=null;
-
-    MONTHS.forEach((m,i)=>
-        body[m.key]=
-        i<idx
-        ?"CLOSE"
-        :i===idx
-        ?Number(expenseAmount.value)
-        :null
-    );
+    closeModal();
+    await loadData();
+  } catch (err) {
+    alert("خطا:\n" + err.message);
+  } finally {
+    saveExpenseButton.disabled = false;
+    setExpenseType(expenseType.value);
+  }
 }
 
-return body}
-// =========================================================
-// بارگذاری اجباری داده‌ها از سرور (بدون استفاده از کش)
-// =========================================================
+function buildNewBody(type) {
+  const idx = MONTHS.findIndex(m => m.key === expenseStartMonth.value);
+  const body = { type: type, title: expenseTitle.value.trim(), note: expenseNote.value.trim() || null };
+  if (type === "installment") {
+    body.amount = Number(expenseAmount.value);
+    body.due_day = expenseDueDay.value.trim() === "" ? null : Number(expenseDueDay.value);
+    body.installment_count = expenseInstallments.value.trim() === "" ? null : Number(expenseInstallments.value);
+    MONTHS.forEach((m, i) => body[m.key] = i < idx ? "CLOSE" : null);
+  } else if (type === "expense" || type === "income") {
+    body.amount = null;
+    body.due_day = null;
+    body.installment_count = null;
+    MONTHS.forEach((m, i) => body[m.key] = i < idx ? "CLOSE" : i === idx ? Number(expenseAmount.value) : null);
+  }
+  return body;
+}
 
 async function forceLoadData() {
-  // غیرفعال کردن دکمه رفرش (اگه وجود داشته باشه)
   if (refreshButton) {
     refreshButton.disabled = true;
   }
-
   statusBox.textContent = "📥 در حال دریافت داده‌ها از سرور…";
   allStatus.textContent = "📥 در حال دریافت داده‌ها از سرور…";
-
   try {
-    // اضافه کردن هدر برای جلوگیری از کش
-    const data = await supabaseRequest(
-      `${TABLE_NAME}?select=*&order=id.asc`
-    );
-
+    const data = await supabaseRequest(`${TABLE_NAME}?select=*&order=id.asc`);
     allExpenses = Array.isArray(data) ? data : [];
-    
-    // ذخیره در کش محلی
     try {
       localStorage.setItem('cachedExpenses', JSON.stringify(allExpenses));
       localStorage.setItem('cachedExpensesDate', new Date().toISOString());
-    } catch(cacheErr) {
+    } catch (cacheErr) {
       console.warn('خطا در ذخیره کش:', cacheErr);
     }
-    
-    // بارگذاری مجدد همه بخش‌ها
     loadIncomeOptions();
     visibleCount = PAGE_SIZE;
     renderDueCards();
     renderAllCards();
     renderReports();
     renderHome();
-
     statusBox.textContent = `✅ ${allExpenses.length.toLocaleString("fa-IR")} مورد از سرور دریافت شد`;
     allStatus.textContent = `✅ ${allExpenses.length.toLocaleString("fa-IR")} مورد از سرور دریافت شد`;
-    
     showToast(`✅ ${allExpenses.length} مورد از سرور دریافت شد`, 'success');
-
-  } catch(e) {
+  } catch (e) {
     console.error('❌ خطا در forceLoadData:', e);
     statusBox.textContent = `❌ خطا در دریافت از سرور: ${e.message}`;
     allStatus.textContent = `❌ خطا در دریافت از سرور: ${e.message}`;
-    throw e; // propagate error
+    throw e;
   } finally {
     if (refreshButton) {
       refreshButton.disabled = false;
     }
   }
 }
-function buildEditBody(type){
 
-  const body={
-    title:expenseTitle.value.trim(),
-    note:expenseNote.value.trim()||null
-  };
-
-  if(type==="installment"){
-    body.amount=Number(expenseAmount.value);
-    body.due_day=Number(expenseDueDay.value);
-    body.installment_count=Number(expenseInstallments.value);
+function buildEditBody(type) {
+  const body = { title: expenseTitle.value.trim(), note: expenseNote.value.trim() || null };
+  if (type === "installment") {
+    body.amount = Number(expenseAmount.value);
+    body.due_day = Number(expenseDueDay.value);
+    body.installment_count = Number(expenseInstallments.value);
+  } else {
+    body.amount = null;
+    body.due_day = null;
+    body.installment_count = null;
   }
-  else{
-    body.amount=null;
-    body.due_day=null;
-    body.installment_count=null;
-  }
-
-  monthFields.querySelectorAll("[data-month]")
-  .forEach(input=>{
-    body[input.dataset.month]=
-      input.value.trim()===""
-      ?null
-      :input.value.trim();
+  monthFields.querySelectorAll("[data-month]").forEach(input => {
+    body[input.dataset.month] = input.value.trim() === "" ? null : input.value.trim();
   });
-
   return body;
 }
-function getReportItems(kind){
-  const installments=allExpenses.filter(isInstallment),expenses=allExpenses.filter(isExpense),incomes=allExpenses.filter(isIncome);
-  if(kind==="month")return installments.filter(i=>!isClosedValue(i[currentMonthKey]));
-  if(kind==="paid")return installments.filter(i=>isPaidValue(i[currentMonthKey]));
-  if(kind==="remaining")return installments.filter(i=>isNullValue(i[currentMonthKey]));
-  if(kind==="expenses")return expenses.filter(i=>parseMoney(i[currentMonthKey])!==null);
-  if(kind==="income")return incomes.filter(i=>parseMoney(i[currentMonthKey])!==null);
-  if(kind==="all")return [...installments.filter(i=>isPaidValue(i[currentMonthKey])),...expenses.filter(i=>isPaidValue(i[currentMonthKey]))];
-  return[];
-}
-function renderHome(){
 
-const today=getCurrentPersianDay();
-
-const overdue =
-allExpenses.filter(i=>
-    isInstallment(i)
-    &&
-    isNullValue(i[currentMonthKey])
-    &&
-    Number(i.due_day)<today
-).length;
-
-const soon=getDueItems().length;
-
-let paid=0;
-let expense=0;
-
-allExpenses.forEach(i=>{
-
-if(
-    isInstallment(i)
-    &&
-    isPaidValue(i[currentMonthKey])
-){
-    paid += Number(i.amount)||0;
+function getReportItems(kind) {
+  const installments = allExpenses.filter(isInstallment),
+    expenses = allExpenses.filter(isExpense),
+    incomes = allExpenses.filter(isIncome);
+  if (kind === "month") return installments.filter(i => !isClosedValue(i[currentMonthKey]));
+  if (kind === "paid") return installments.filter(i => isPaidValue(i[currentMonthKey]));
+  if (kind === "remaining") return installments.filter(i => isNullValue(i[currentMonthKey]));
+  if (kind === "expenses") return expenses.filter(i => parseMoney(i[currentMonthKey]) !== null);
+  if (kind === "income") return incomes.filter(i => parseMoney(i[currentMonthKey]) !== null);
+  if (kind === "all") return [...installments.filter(i => isPaidValue(i[currentMonthKey])), ...expenses.filter(i => isPaidValue(i[currentMonthKey]))];
+  return [];
 }
 
-if(isExpense(i)){
-
-    const value=parseMoney(i[currentMonthKey]);
-
-    if(value!==null){
-        expense+=value;
+function renderHome() {
+  const today = getCurrentPersianDay();
+  const overdue = allExpenses.filter(i => isInstallment(i) && isNullValue(i[currentMonthKey]) && Number(i.due_day) < today).length;
+  const soon = getDueItems().length;
+  let paid = 0,
+    expense = 0;
+  allExpenses.forEach(i => {
+    if (isInstallment(i) && isPaidValue(i[currentMonthKey])) {
+      paid += Number(i.amount) || 0;
     }
-
-}
-
-});
-
-$("homeOverdue").textContent=
-overdue.toLocaleString("fa-IR");
-
-$("homeSoon").textContent=
-soon.toLocaleString("fa-IR");
-
-$("homePaid").textContent=
-formatMoney(paid);
-
-$("homeExpense").textContent=
-formatMoney(expense);
-
-}
-function openReportDetails(kind){
-  const titles={month:"اقساط این ماه",paid:"اقساط پرداخت‌شده",remaining:"اقساط باقی‌مانده",expenses:"هزینه‌های این ماه",income:"درآمدهای این ماه",all:"جمع کل پرداختی"};
-  const items=getReportItems(kind);reportDetailsTitle.textContent=titles[kind]||"جزئیات گزارش";reportDetailsList.innerHTML="";
-  if(!items.length){reportDetailsList.innerHTML='<div class="empty">موردی وجود ندارد</div>'}
-  items.forEach(item=>{
-    const expense=isExpense(item),income=isIncome(item),paid=isPaidValue(item[currentMonthKey]),row=document.createElement("article");row.className="report-detail-item";
-    let detail="";
-    if(expense||income)detail=`<span>${formatMoney(parseMoney(item[currentMonthKey])||0)}</span><span>${income?"دریافت شده":"پرداخت شده"}</span>`;
-    else if(paid)detail=`<span>${formatMoney(item.amount)}</span><span>تاریخ پرداخت: ${escapeHtml(extractPaymentDate(item[currentMonthKey]))}</span>`;
-    else detail=`<span>${formatMoney(item.amount)}</span><span>سررسید: روز ${Number(item.due_day||0).toLocaleString("fa-IR")}ام</span>`;
-    row.innerHTML=`<div class="report-detail-title">${escapeHtml(item.title)}</div><div class="report-detail-meta">${detail}</div>`;reportDetailsList.appendChild(row)
+    if (isExpense(i)) {
+      const value = parseMoney(i[currentMonthKey]);
+      if (value !== null) {
+        expense += value;
+      }
+    }
   });
-  reportDetailsModal.classList.add("open");document.body.style.overflow="hidden"
+  $("homeOverdue").textContent = overdue.toLocaleString("fa-IR");
+  $("homeSoon").textContent = soon.toLocaleString("fa-IR");
+  $("homePaid").textContent = formatMoney(paid);
+  $("homeExpense").textContent = formatMoney(expense);
 }
-function closeReportModal(){reportDetailsModal.classList.remove("open");document.body.style.overflow=""}
 
-function renderReports(){
+function openReportDetails(kind) {
+  const titles = { month: "اقساط این ماه", paid: "اقساط پرداخت‌شده", remaining: "اقساط باقی‌مانده", expenses: "هزینه‌های این ماه", income: "درآمدهای این ماه", all: "جمع کل پرداختی" };
+  const items = getReportItems(kind);
+  reportDetailsTitle.textContent = titles[kind] || "جزئیات گزارش";
+  reportDetailsList.innerHTML = "";
+  if (!items.length) { reportDetailsList.innerHTML = '<div class="empty">موردی وجود ندارد</div>'; }
+  items.forEach(item => {
+    const expense = isExpense(item),
+      income = isIncome(item),
+      paid = isPaidValue(item[currentMonthKey]),
+      row = document.createElement("article");
+    row.className = "report-detail-item";
+    let detail = "";
+    if (expense || income) detail = `<span>${formatMoney(parseMoney(item[currentMonthKey]) || 0)}</span><span>${income ? "دریافت شده" : "پرداخت شده"}</span>`;
+    else if (paid) detail = `<span>${formatMoney(item.amount)}</span><span>تاریخ پرداخت: ${escapeHtml(extractPaymentDate(item[currentMonthKey]))}</span>`;
+    else detail = `<span>${formatMoney(item.amount)}</span><span>سررسید: روز ${Number(item.due_day || 0).toLocaleString("fa-IR")}ام</span>`;
+    row.innerHTML = `<div class="report-detail-title">${escapeHtml(item.title)}</div><div class="report-detail-meta">${detail}</div>`;
+    reportDetailsList.appendChild(row);
+  });
+  reportDetailsModal.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeReportModal() { reportDetailsModal.classList.remove("open"); document.body.style.overflow = ""; }
+
+function renderReports() {
   const installments = allExpenses.filter(isInstallment);
   const expenses = allExpenses.filter(isExpense);
   const incomes = allExpenses.filter(isIncome);
-
-  // استفاده از reduce برای محاسبه همزمان
   const totals = installments.reduce((acc, item) => {
     const currentValue = item[currentMonthKey];
     const amount = Number(item.amount || 0);
-    
     if (!isClosedValue(currentValue)) {
       acc.monthInstallmentTotal += amount;
       if (isPaidValue(currentValue)) acc.paidInstallmentTotal += amount;
@@ -1783,140 +1440,113 @@ function renderReports(){
     }
     return acc;
   }, { monthInstallmentTotal: 0, paidInstallmentTotal: 0, remainingInstallmentTotal: 0 });
-
   const monthExpenseTotal = expenses.reduce((sum, item) => {
     const amount = parseMoney(item[currentMonthKey]);
     return amount !== null ? sum + amount : sum;
   }, 0);
-
   const monthIncomeTotal = incomes.reduce((sum, item) => {
     const amount = parseMoney(item[currentMonthKey]);
     return amount !== null ? sum + amount : sum;
   }, 0);
-
   const allPaidTotal = totals.paidInstallmentTotal + monthExpenseTotal;
   const balanceTotal = monthIncomeTotal - allPaidTotal;
-
-  // نمایش در UI
   reportMonthTotal.textContent = formatMoney(totals.monthInstallmentTotal);
   reportPaidTotal.textContent = formatMoney(totals.paidInstallmentTotal);
   reportRemainingTotal.textContent = formatMoney(totals.remainingInstallmentTotal);
   reportExpensesTotal.textContent = formatMoney(monthExpenseTotal);
   reportAllTotal.textContent = formatMoney(allPaidTotal);
-  
-  if(reportIncomeTotal) reportIncomeTotal.textContent = formatMoney(monthIncomeTotal);
-  
-  if(reportBalanceTotal){
+  if (reportIncomeTotal) reportIncomeTotal.textContent = formatMoney(monthIncomeTotal);
+  if (reportBalanceTotal) {
     reportBalanceTotal.textContent = (balanceTotal < 0 ? "− " : "") + formatMoney(Math.abs(balanceTotal));
     reportBalanceTotal.style.color = balanceTotal < 0 ? "var(--danger)" : "var(--success)";
   }
-
-  // درصدها
   const chartTotal = totals.paidInstallmentTotal + totals.remainingInstallmentTotal;
   const paidPercentage = chartTotal ? Math.round(totals.paidInstallmentTotal / chartTotal * 100) : 0;
   const remainingPercentage = chartTotal ? Math.round(totals.remainingInstallmentTotal / chartTotal * 100) : 0;
-
   if (paidPercent) paidPercent.textContent = `${paidPercentage.toLocaleString("fa-IR")}٪`;
   if (remainingPercent) remainingPercent.textContent = `${remainingPercentage.toLocaleString("fa-IR")}٪`;
   if (paidBar) paidBar.style.width = `${paidPercentage}%`;
   if (remainingBar) remainingBar.style.width = `${remainingPercentage}%`;
-
   const incomeChartTotal = monthIncomeTotal + totals.paidInstallmentTotal + monthExpenseTotal + totals.remainingInstallmentTotal;
   const incomePercentage = incomeChartTotal ? Math.round((monthIncomeTotal / incomeChartTotal) * 100) : 0;
   const paidInstallmentPercentage = incomeChartTotal ? Math.round((totals.paidInstallmentTotal / incomeChartTotal) * 100) : 0;
   const expensePercentage = incomeChartTotal ? Math.round((monthExpenseTotal / incomeChartTotal) * 100) : 0;
   const unpaidInstallmentPercentage = Math.max(0, 100 - incomePercentage - paidInstallmentPercentage - expensePercentage);
-
-  if(incomePercent) incomePercent.textContent = `${incomePercentage.toLocaleString("fa-IR")}٪`;
-  if($("paidInstallmentPercent")) $("paidInstallmentPercent").textContent = `${paidInstallmentPercentage.toLocaleString("fa-IR")}٪`;
-  if($("expensePercent")) $("expensePercent").textContent = `${expensePercentage.toLocaleString("fa-IR")}٪`;
-  if($("unpaidInstallmentPercent")) $("unpaidInstallmentPercent").textContent = `${unpaidInstallmentPercentage.toLocaleString("fa-IR")}٪`;
-  
-  if(incomeBar) incomeBar.style.width = `${incomePercentage}%`;
-  if($("paidInstallmentBar")) $("paidInstallmentBar").style.width = `${paidInstallmentPercentage}%`;
-  if($("expenseBar")) $("expenseBar").style.width = `${expensePercentage}%`;
-  if($("unpaidInstallmentBar")) $("unpaidInstallmentBar").style.width = `${unpaidInstallmentPercentage}%`;
+  if (incomePercent) incomePercent.textContent = `${incomePercentage.toLocaleString("fa-IR")}٪`;
+  if ($("paidInstallmentPercent")) $("paidInstallmentPercent").textContent = `${paidInstallmentPercentage.toLocaleString("fa-IR")}٪`;
+  if ($("expensePercent")) $("expensePercent").textContent = `${expensePercentage.toLocaleString("fa-IR")}٪`;
+  if ($("unpaidInstallmentPercent")) $("unpaidInstallmentPercent").textContent = `${unpaidInstallmentPercentage.toLocaleString("fa-IR")}٪`;
+  if (incomeBar) incomeBar.style.width = `${incomePercentage}%`;
+  if ($("paidInstallmentBar")) $("paidInstallmentBar").style.width = `${paidInstallmentPercentage}%`;
+  if ($("expenseBar")) $("expenseBar").style.width = `${expensePercentage}%`;
+  if ($("unpaidInstallmentBar")) $("unpaidInstallmentBar").style.width = `${unpaidInstallmentPercentage}%`;
 }
-async function loadDebts(){
-  try{
+
+async function loadDebts() {
+  try {
     const data = await supabaseRequest(`${DEBT_TABLE}?select=*&order=due_year.asc`);
     allDebts = Array.isArray(data) ? data : [];
-  }catch(e){
+  } catch (e) {
     console.error("خطا در دریافت قرض و دیون", e);
     allDebts = [];
   }
   renderDebtsPanel();
 }
 
-function renderDebtsPanel(){
-    
+function renderDebtsPanel() {
   const container = $("debtsPanel");
-  if(!container) return;
-
-  if(!allDebts.length){
+  if (!container) return;
+  if (!allDebts.length) {
     container.innerHTML = '<div class="empty">قرض یا دینی ثبت نشده</div>';
     return;
   }
-  
-
-  const sorted = [...allDebts].sort((a,b)=>{
-    const am = MONTHS.findIndex(m=>m.key === a.due_month);
-    const bm = MONTHS.findIndex(m=>m.key === b.due_month);
-    return (Number(a.due_year) - Number(b.due_year)) ||
-           (am - bm) ||
-           (Number(a.due_day) - Number(b.due_day));
+  const sorted = [...allDebts].sort((a, b) => {
+    const am = MONTHS.findIndex(m => m.key === a.due_month);
+    const bm = MONTHS.findIndex(m => m.key === b.due_month);
+    return (Number(a.due_year) - Number(b.due_year)) || (am - bm) || (Number(a.due_day) - Number(b.due_day));
   });
-
   container.innerHTML = "";
-
-  sorted.forEach(d=>{
-    const monthName = MONTHS.find(m=>m.key === d.due_month)?.name || "";
-
+  sorted.forEach(d => {
+    const monthName = MONTHS.find(m => m.key === d.due_month)?.name || "";
     const row = document.createElement("article");
     row.className = `debt-row ${d.direction === "lent" ? "debt-lent" : "debt-borrowed"}`;
     row.setAttribute("tabindex", "0");
     row.setAttribute("role", "button");
-
     row.innerHTML = `
       <div class="debt-card-summary">
         <div class="debt-card-top">
           <div class="debt-title">${escapeHtml(d.counterparty || "بدون نام")}</div>
           <div class="debt-amount">${formatMoney(d.amount)}</div>
         </div>
-
         <div class="debt-card-bottom">
           سررسید: ${Number(d.due_day || 0).toLocaleString("fa-IR")} ${monthName} ${Number(d.due_year || 0).toLocaleString("fa-IR")}
         </div>
       </div>
     `;
-
-    row.addEventListener("click", ()=>openDebtDetailsModal(d));
-
-    row.addEventListener("keydown", (e)=>{
-      if(e.key === "Enter" || e.key === " "){
+    row.addEventListener("click", () => openDebtDetailsModal(d));
+    row.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         openDebtDetailsModal(d);
       }
     });
-
     container.appendChild(row);
   });
 }
+
 let activeDebtDetails = null;
+
 function createCard(item, options = {}) {
   const { type = 'default', showActions = true } = options;
   const card = document.createElement("article");
   const isExpenseItem = isExpense(item);
   const isIncomeItem = isIncome(item);
   const v = item[currentMonthKey];
-  
   let cardClass = "card compact-card";
   if (isExpenseItem) cardClass += " expense-card";
   else if (isIncomeItem) cardClass += " income-card";
   else if (isPaidValue(v)) cardClass += " paid-card";
-  
   card.className = cardClass;
-  
   let html = `
     <div class="card-main compact-main">
       <div class="compact-head">
@@ -1926,8 +1556,8 @@ function createCard(item, options = {}) {
           </div>
         </div>
         <div class="compact-side">
-          ${isIncomeItem ? getPaidCount(item).toLocaleString("fa-IR") + ' دریافت' : 
-            isExpenseItem ? getPaidCount(item).toLocaleString("fa-IR") + ' پرداخت' : 
+          ${isIncomeItem ? getPaidCount(item).toLocaleString("fa-IR") + ' دریافت' :
+            isExpenseItem ? getPaidCount(item).toLocaleString("fa-IR") + ' پرداخت' :
             getRemainingInstallments(item).toLocaleString("fa-IR") + ' قسط باقی‌مانده'}
         </div>
         <div class="id-badge">ID ${Number(item.id).toLocaleString("fa-IR")}</div>
@@ -1950,215 +1580,118 @@ function createCard(item, options = {}) {
       ` : ''}
     </div>
   `;
-  
   card.innerHTML = html;
-  
   if (showActions) {
     card.querySelector(".edit-expense").addEventListener("click", e => {
       e.stopPropagation();
       openEditModal(item);
     });
   }
-  
   return card;
 }
-function openDebtDetailsModal(d){
-  activeDebtDetails = d;
 
+function openDebtDetailsModal(d) {
+  activeDebtDetails = d;
   const modal = $("debtDetailsModal");
   const body = $("debtDetailsBody");
   const title = $("debtDetailsTitle");
-
-  const editBtn =
-    $("editDebtDetailsBtn") ||
-    $("debtDetailsEditBtn");
-
-  const deleteBtn =
-    $("deleteDebtDetailsBtn") ||
-    $("debtDetailsDeleteBtn");
-
-  if(!modal){
-    console.error("debtDetailsModal پیدا نشد");
-    return;
-  }
-
-  if(!body){
-    console.error("debtDetailsBody پیدا نشد");
-    return;
-  }
-
-  if(title){
-    title.textContent = d.counterparty || "جزئیات قرض / دین";
-  }
-
+  const editBtn = $("editDebtDetailsBtn") || $("debtDetailsEditBtn");
+  const deleteBtn = $("deleteDebtDetailsBtn") || $("debtDetailsDeleteBtn");
+  if (!modal) { console.error("debtDetailsModal پیدا نشد"); return; }
+  if (!body) { console.error("debtDetailsBody پیدا نشد"); return; }
+  if (title) { title.textContent = d.counterparty || "جزئیات قرض / دین"; }
   const monthName = MONTHS.find(m => m.key === d.due_month)?.name || "";
   const directionText = d.direction === "lent" ? "طلب از او" : "بدهی به او";
-
   body.innerHTML = `
     <div class="debt-detail-list">
-
-      <div class="debt-detail-item">
-        <span>طرف حساب</span>
-        <strong>${escapeHtml(d.counterparty || "-")}</strong>
-      </div>
-
-      <div class="debt-detail-item">
-        <span>نوع</span>
-        <strong>${directionText}</strong>
-      </div>
-
-      <div class="debt-detail-item">
-        <span>مبلغ</span>
-        <strong>${formatMoney(d.amount)}</strong>
-      </div>
-
-      <div class="debt-detail-item">
-        <span>سررسید</span>
-        <strong>
-          ${Number(d.due_day || 0).toLocaleString("fa-IR")}
-          ${monthName}
-          ${Number(d.due_year || 0).toLocaleString("fa-IR")}
-        </strong>
-      </div>
-
-      <div class="debt-detail-item">
-        <span>عنوان / توضیح</span>
-        <strong>${escapeHtml(d.note || "-")}</strong>
-      </div>
-
+      <div class="debt-detail-item"><span>طرف حساب</span><strong>${escapeHtml(d.counterparty || "-")}</strong></div>
+      <div class="debt-detail-item"><span>نوع</span><strong>${directionText}</strong></div>
+      <div class="debt-detail-item"><span>مبلغ</span><strong>${formatMoney(d.amount)}</strong></div>
+      <div class="debt-detail-item"><span>سررسید</span><strong>${Number(d.due_day || 0).toLocaleString("fa-IR")} ${monthName} ${Number(d.due_year || 0).toLocaleString("fa-IR")}</strong></div>
+      <div class="debt-detail-item"><span>عنوان / توضیح</span><strong>${escapeHtml(d.note || "-")}</strong></div>
     </div>
   `;
-
-  if(editBtn){
-    editBtn.onclick = (event)=>{
+  if (editBtn) {
+    editBtn.onclick = (event) => {
       event.preventDefault();
       event.stopPropagation();
-
       closeDebtDetailsModal();
       openEditDebtModal(d);
     };
-  } else {
-    console.error("دکمه ویرایش مودال جزئیات پیدا نشد");
   }
-
-  if(deleteBtn){
-   deleteBtn.onclick = async event => {
-  event.preventDefault();
-  event.stopPropagation();
-
-  console.log("Debt selected for delete:", d);
-
-  await deleteDebt(d.id);
-};
-
-  } else {
-    console.error("دکمه حذف مودال جزئیات پیدا نشد");
+  if (deleteBtn) {
+    deleteBtn.onclick = async event => {
+      event.preventDefault();
+      event.stopPropagation();
+      await deleteDebt(d.id);
+    };
   }
-
   modal.classList.add("open");
   document.body.style.overflow = "hidden";
 }
 
-function closeDebtDetailsModal(){
+function closeDebtDetailsModal() {
   const modal = $("debtDetailsModal");
-  if(!modal) return;
+  if (!modal) return;
   modal.classList.remove("open");
   document.body.style.overflow = "";
   activeDebtDetails = null;
 }
-
 
 async function deleteDebt(id) {
   if (id === null || id === undefined || id === "") {
     alert("شناسه قرض پیدا نشد.");
     return;
   }
-
   if (!confirm("این مورد حذف شود؟")) return;
-
   try {
-    console.log("Deleting debt:", id);
-
-    const result = await supabaseRequest(
-      `${DEBT_TABLE}?id=eq.${encodeURIComponent(id)}`,
-      {
-        method: "DELETE",
-        headers: {
-          Prefer: "return=representation"
-        }
-      }
-    );
-
-    console.log("Delete debt result:", result);
-
+    const result = await supabaseRequest(`${DEBT_TABLE}?id=eq.${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { Prefer: "return=representation" }
+    });
     if (!Array.isArray(result) || result.length === 0) {
-      throw new Error(
-        `رکورد با شناسه ${id} حذف نشد. Policy مربوط به DELETE را بررسی کنید.`
-      );
+      throw new Error(`رکورد با شناسه ${id} حذف نشد.`);
     }
-
     closeDebtDetailsModal();
     await loadDebts();
-
   } catch (err) {
     console.error("Delete debt failed:", err);
     alert("خطا در حذف:\n" + err.message);
   }
 }
 
-
-
-function openEditDebtModal(d){
-  if(!d || !d.id){
+function openEditDebtModal(d) {
+  if (!d || !d.id) {
     alert("شناسه این مورد برای ویرایش پیدا نشد.");
-    console.error("openEditDebtModal بدون id:", d);
     return;
   }
-
   resetExpenseForm();
   fillDebtDateSelects();
-
   editingDebtId = d.id;
-
   setExpenseType("debt");
-
   expenseTitle.value = d.note || "";
   expenseAmount.value = d.amount ?? "";
-
   $("debtCounterparty").value = d.counterparty || "";
   $("debtDueDay").value = d.due_day || "";
   $("debtDueMonth").value = d.due_month || currentMonthKey;
   $("debtDueYear").value = d.due_year || "";
-
-  document.querySelectorAll(".debt-direction-btn").forEach(b=>{
+  document.querySelectorAll(".debt-direction-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.direction === d.direction);
   });
-
   $("debtDirection").value = d.direction || "lent";
-
   expenseModalTitle.textContent = "ویرایش قرض/دین";
   saveExpenseButton.textContent = "ذخیره تغییرات";
-
   openModal();
 }
 
 function openPage(id, title) {
-  // مخفی کردن همه صفحات
   pages.forEach(p => p.classList.remove("active"));
-  
-  // نمایش صفحه مورد نظر
   const targetPage = document.getElementById(id);
   if (targetPage) targetPage.classList.add("active");
-  
-  // به‌روزرسانی دکمه‌های ناوبری
   navButtons.forEach(b => b.classList.remove("active"));
   const activeNav = document.querySelector(`.nav-button[data-page="${id}"]`);
   if (activeNav) activeNav.classList.add("active");
-  
-  // به‌روزرسانی عنوان صفحه
   pageTitle.textContent = title;
-
-  // اجرای توابع مربوط به هر صفحه
   if (id === "homePage") renderHome();
   if (id === "allPage") renderAllCards();
   if (id === "reportPage") renderReports();
@@ -2169,12 +1702,8 @@ function openPage(id, title) {
       }
     }, 150);
   }
-
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
-// =========================================================
-// مدیریت ناوبری با event listener (یک بار اجرا میشه)
-// =========================================================
 
 document.querySelectorAll('.nav-button').forEach(btn => {
   btn.addEventListener('click', function() {
@@ -2189,52 +1718,71 @@ document.querySelectorAll('.nav-button').forEach(btn => {
     openPage(pageId, titles[pageId] || pageId);
   });
 });
-//refreshButton.addEventListener("click", performFullAppUpdate);
-searchInput.addEventListener("input",()=>{visibleCount=PAGE_SIZE;renderAllCards()});
-function updateStatusFilterLabels(filter){
-  const paidBtn=$("statusFilterPaid"),unpaidBtn=$("statusFilterUnpaid");
-  if(!paidBtn||!unpaidBtn)return;
-  if(filter==="income"){
-    paidBtn.textContent="دریافت‌شده این ماه";
-    unpaidBtn.textContent="دریافت‌نشده این ماه";
-  }else{
-    paidBtn.textContent="پرداخت‌شده این ماه";
-    unpaidBtn.textContent="پرداخت‌نشده این ماه";
+
+searchInput.addEventListener("input", () => { visibleCount = PAGE_SIZE;
+  renderAllCards(); });
+
+function updateStatusFilterLabels(filter) {
+  const paidBtn = $("statusFilterPaid"),
+    unpaidBtn = $("statusFilterUnpaid");
+  if (!paidBtn || !unpaidBtn) return;
+  if (filter === "income") {
+    paidBtn.textContent = "دریافت‌شده این ماه";
+    unpaidBtn.textContent = "دریافت‌نشده این ماه";
+  } else {
+    paidBtn.textContent = "پرداخت‌شده این ماه";
+    unpaidBtn.textContent = "پرداخت‌نشده این ماه";
   }
 }
-typeFilters.forEach(b=>b.addEventListener("click",()=>{typeFilters.forEach(x=>x.classList.remove("active"));b.classList.add("active");activeFilter=b.dataset.filter;updateStatusFilterLabels(activeFilter);visibleCount=PAGE_SIZE;renderAllCards()}));
-statusFilters.forEach(b=>b.addEventListener("click",()=>{statusFilters.forEach(x=>x.classList.remove("active"));b.classList.add("active");activeStatusFilter=b.dataset.status;visibleCount=PAGE_SIZE;renderAllCards()}));
-loadMoreButton.addEventListener("click",()=>{visibleCount+=PAGE_SIZE;renderAllCards()});
-document.querySelectorAll(".report-card[data-report]").forEach(c=>c.addEventListener("click",()=>openReportDetails(c.dataset.report)));
-closeReportDetails.addEventListener("click",closeReportModal);reportDetailsModal.querySelector(".modal-backdrop").addEventListener("click",closeReportModal);
+
+typeFilters.forEach(b => b.addEventListener("click", () => {
+  typeFilters.forEach(x => x.classList.remove("active"));
+  b.classList.add("active");
+  activeFilter = b.dataset.filter;
+  updateStatusFilterLabels(activeFilter);
+  visibleCount = PAGE_SIZE;
+  renderAllCards();
+}));
+
+statusFilters.forEach(b => b.addEventListener("click", () => {
+  statusFilters.forEach(x => x.classList.remove("active"));
+  b.classList.add("active");
+  activeStatusFilter = b.dataset.status;
+  visibleCount = PAGE_SIZE;
+  renderAllCards();
+}));
+
+loadMoreButton.addEventListener("click", () => { visibleCount += PAGE_SIZE;
+  renderAllCards(); });
+
+document.querySelectorAll(".report-card[data-report]").forEach(c => c.addEventListener("click", () => openReportDetails(c.dataset.report)));
+closeReportDetails.addEventListener("click", closeReportModal);
+reportDetailsModal.querySelector(".modal-backdrop").addEventListener("click", closeReportModal);
+
 const fabMenu = $("fabMenu");
-
 addExpenseButton.addEventListener("click", () => {
-    const isOpen = !fabMenu.classList.contains("hidden");
-
-    if (isOpen) {
-        fabMenu.classList.add("hidden");
-        addExpenseButton.classList.remove("open");
-        addExpenseButton.classList.remove("active");
-    } else {
-        fabMenu.classList.remove("hidden");
-        fabMenu.classList.remove("animating");
-        void fabMenu.offsetWidth;
-        fabMenu.classList.add("animating");
-
-        addExpenseButton.classList.add("open");
-        addExpenseButton.classList.add("active");
-    }
+  const isOpen = !fabMenu.classList.contains("hidden");
+  if (isOpen) {
+    fabMenu.classList.add("hidden");
+    addExpenseButton.classList.remove("open");
+    addExpenseButton.classList.remove("active");
+  } else {
+    fabMenu.classList.remove("hidden");
+    fabMenu.classList.remove("animating");
+    void fabMenu.offsetWidth;
+    fabMenu.classList.add("animating");
+    addExpenseButton.classList.add("open");
+    addExpenseButton.classList.add("active");
+  }
 });
-function openModal(){
 
-    expenseModal.classList.add("open");
-
-    document.body.style.overflow="hidden";
-
+function openModal() {
+  expenseModal.classList.add("open");
+  document.body.style.overflow = "hidden";
 }
-function loadIncomeOptions(){
-    fillPaymentItems($("paymentType")?.value || "payment");
+
+function loadIncomeOptions() {
+  fillPaymentItems($("paymentType")?.value || "payment");
 }
 
 function openWithType(type) {
@@ -2245,9 +1793,9 @@ function openWithType(type) {
   setExpenseType(type);
   openModal();
 }
+
 $("closeDebtDetailsModal")?.addEventListener("click", closeDebtDetailsModal);
 $("debtDetailsModal")?.querySelector(".modal-backdrop")?.addEventListener("click", closeDebtDetailsModal);
-
 
 document.addEventListener("click", e => {
   if (!$("fabContainer").contains(e.target)) {
@@ -2257,121 +1805,82 @@ document.addEventListener("click", e => {
   }
 });
 
-
-installmentTypeButton.addEventListener("click",()=>setExpenseType("installment"));
+installmentTypeButton.addEventListener("click", () => setExpenseType("installment"));
 setupTransferButtons();
-$("debtTypeButton")?.addEventListener("click", ()=>setExpenseType("debt"));
-setupButtonGroup(document, ".debt-direction-btn", btn=>{
-    $("debtDirection").value = btn.dataset.direction;
+$("debtTypeButton")?.addEventListener("click", () => setExpenseType("debt"));
+$("assetTypeButton")?.addEventListener("click", () => setExpenseType("asset"));
+setupButtonGroup(document, ".debt-direction-btn", btn => {
+  $("debtDirection").value = btn.dataset.direction;
 });
-expenseTypeButton.addEventListener("click",()=>setExpenseType("expense"));
-if(transferTypeButton){
-    transferTypeButton.addEventListener(
-        "click",
-        ()=>setExpenseType("transfer")
-    );
+expenseTypeButton.addEventListener("click", () => setExpenseType("expense"));
+
+if (transferTypeButton) {
+  transferTypeButton.addEventListener("click", () => setExpenseType("transfer"));
 }
-if(incomeTypeButton){
-    incomeTypeButton.addEventListener(
-        "click",
-        ()=>setExpenseType("income")
-    );
-    document.querySelectorAll(".income-bank")
-    
-.forEach(btn=>{
-
-    btn.addEventListener("click",()=>{
-
-        document
-        .querySelectorAll(".income-bank")
-        .forEach(b=>b.classList.remove("active"));
-
-        btn.classList.add("active");
-
-        selectedIncomeBank = btn.dataset.bank;
-
+if (incomeTypeButton) {
+  incomeTypeButton.addEventListener("click", () => setExpenseType("income"));
+  document.querySelectorAll(".income-bank").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".income-bank").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedIncomeBank = btn.dataset.bank;
     });
-
-});
+  });
 }
-document.querySelectorAll(".transfer-from")
-.forEach(btn=>{
 
-btn.addEventListener("click",()=>{
-
-document.querySelectorAll(".transfer-from")
-.forEach(b=>b.classList.remove("active"));
-
-btn.classList.add("active");
-
-$("transferFromModal").value = btn.dataset.bank;
-
+document.querySelectorAll(".transfer-from").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".transfer-from").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    $("transferFromModal").value = btn.dataset.bank;
+  });
 });
 
+document.querySelectorAll(".transfer-to").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".transfer-to").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    $("transferToModal").value = btn.dataset.bank;
+  });
 });
 
-document.querySelectorAll(".transfer-to")
-.forEach(btn=>{
-
-btn.addEventListener("click",()=>{
-
-document.querySelectorAll(".transfer-to")
-.forEach(b=>b.classList.remove("active"));
-
-btn.classList.add("active");
-
-$("transferToModal").value = btn.dataset.bank;
-
-});
-
-});
-expenseForm.addEventListener("submit",saveExpense);
+expenseForm.addEventListener("submit", saveExpense);
 updatePersianDate();
-expenseStartMonth.value=currentMonthKey;
+expenseStartMonth.value = currentMonthKey;
 setExpenseType("installment");
-$("transferForm").addEventListener("submit", async e=>{
 
-e.preventDefault();
-
-const from=$("transferFromModal").value;
-const to=$("transferToModal").value;
-const amount=Number($("transferAmount").value);
-
-if(!from || !to){
-    alert("حساب مبدا و مقصد را انتخاب کنید");
-    return;
-}
-
-if(from===to){
-    alert("مبدا و مقصد یکسان است");
-    return;
-}
-
-await addTransaction({
-
-expense_id:null,
-title:"انتقال وجه",
-amount:amount,
-type:"transfer",
-account:null,
-from_account:from,
-to_account:to,
-transaction_date:new Date().toISOString(),
-note:$("transferNote").value || null
-
+$("transferForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const from = $("transferFromModal").value;
+  const to = $("transferToModal").value;
+  const amount = Number($("transferAmount").value);
+  if (!from || !to) { alert("حساب مبدا و مقصد را انتخاب کنید"); return; }
+  if (from === to) { alert("مبدا و مقصد یکسان است"); return; }
+  await addTransaction({
+    expense_id: null,
+    title: "انتقال وجه",
+    amount: amount,
+    type: "transfer",
+    account: null,
+    from_account: from,
+    to_account: to,
+    transaction_date: new Date().toISOString(),
+    note: $("transferNote").value || null
+  });
+  transferModal.classList.remove("open");
+  document.body.style.overflow = "";
+  alert("انتقال ثبت شد");
 });
 
-transferModal.classList.remove("open");
-
-document.body.style.overflow="";
-
-alert("انتقال ثبت شد");
-
+loadData().then(() => {
+  openPage("duePage", "⏰ سررسید اقساط");
+  loadDebts();
+  loadAssets();
+  loadCapitalTransactions();
+  loadGoldPrice();
+  setTimeout(updateDashboardAssets, 500);
 });
-loadData().then(()=>{
-    openPage("duePage","⏰ سررسید اقساط");
-    loadDebts();
-});
+
 function addSwipeToClose(modalId) {
   const modal = document.getElementById(modalId);
   const handle = modal?.querySelector(".modal-handle");
@@ -2390,15 +1899,12 @@ function addSwipeToClose(modalId) {
 
 ["expenseModal", "transferModal", "paymentModal", "settingsLockModal"].forEach(addSwipeToClose);
 
-
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("./sw.js")
+    navigator.serviceWorker.register("./sw.js")
       .then((reg) => {
         swRegistration = reg;
         console.log("Service Worker registered:", reg.scope);
-
         navigator.serviceWorker.addEventListener("controllerchange", () => {
           window.location.reload();
         });
@@ -2410,24 +1916,16 @@ if ("serviceWorker" in navigator) {
 async function fetchGithubVersion() {
   try {
     const res = await fetch("https://api.github.com/repos/ahooraboy43/vamremember/commits/main", {
-      cache: "no-store",
-      headers: {
-        'Accept': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate'
-      }
+      cache: "no-store"
     });
-    
     if (!res.ok) {
       console.warn('❌ خطا در دریافت نسخه:', res.status);
       return null;
     }
-    
     const data = await res.json();
     const commitDate = data?.commit?.committer?.date || null;
     const commitSha = data?.sha || null;
-    
     console.log('📌 آخرین نسخه:', { commitDate, commitSha });
-    
     return commitDate;
   } catch (e) {
     console.error("❌ خطا در دریافت نسخه گیت‌هاب:", e);
@@ -2440,49 +1938,35 @@ function updateAppVersionText(text) {
   const el = $("appVersionText");
   if (el) el.textContent = text;
 }
+
 async function performFullAppUpdate() {
-  // غیرفعال کردن دکمه منو
   const menuBtn = document.getElementById("hamburgerMenuBtn");
   if (menuBtn) {
     menuBtn.disabled = true;
     menuBtn.textContent = "↻";
   }
-
   showToast("🔄 در حال بررسی بروزرسانی…", "info");
-
   try {
-    // ۱. دریافت آخرین نسخه از GitHub
     showToast("📡 در حال بررسی نسخه جدید...", "info");
     const versionDate = await fetchGithubVersion();
-    
     if (!versionDate) {
       showToast("❌ خطا در دریافت نسخه جدید", "error");
       return;
     }
-
     const faDate = new Date(versionDate).toLocaleString("fa-IR");
-    
-    // ۲. بررسی وجود نسخه جدید
     const lastVersion = localStorage.getItem('lastAppVersion');
-    
     if (lastVersion === versionDate) {
-      // حتی اگه نسخه یکسان باشه، داده‌ها رو از سرور بگیر
       showToast("📥 در حال بروزرسانی داده‌ها از سرور...", "info");
-      await forceLoadData(); // تابع جدید برای بارگذاری اجباری
+      await forceLoadData();
       showToast(`✅ داده‌ها بروزرسانی شدند (نسخه ${faDate})`, 'success');
       updateAppVersionText(`✅ نسخه ${faDate} (داده‌ها بروزرسانی شد)`);
       return;
     }
-
-    // ۳. بارگذاری اجباری داده‌ها از سرور
     showToast("📥 در حال دریافت داده‌های جدید…", "info");
     await forceLoadData();
-    
-    // ۴. به‌روزرسانی Service Worker
     if (swRegistration) {
       showToast("🔄 در حال به‌روزرسانی سرویس‌دهنده…", "info");
       await swRegistration.update();
-      
       await new Promise(resolve => {
         const timeout = setTimeout(resolve, 3000);
         swRegistration.addEventListener('updatefound', () => {
@@ -2491,20 +1975,14 @@ async function performFullAppUpdate() {
         });
       });
     }
-
-    // ۵. ذخیره نسخه جدید در کش
     localStorage.setItem('lastAppUpdate', new Date().toISOString());
     localStorage.setItem('lastAppVersion', versionDate);
-    
     updateAppVersionText(`✅ نسخه جدید ${faDate} دریافت شد`);
     showToast(`✅ نسخه جدید ${faDate} با موفقیت دریافت شد!`, 'success');
-
-    // ۶. رفرش صفحه بعد از ۲ ثانیه
     showToast("🔄 در حال بارگذاری مجدد برنامه…", "info");
     setTimeout(() => {
       window.location.reload();
     }, 2000);
-
   } catch (e) {
     console.error('❌ خطا در بروزرسانی:', e);
     showToast(`❌ خطا: ${e.message}`, "error");
@@ -2516,115 +1994,85 @@ async function performFullAppUpdate() {
   }
 }
 
-// ================= تنظیمات (Settings) =================
-
+// ================= تنظیمات =================
 const SETTINGS_KEY = "appSettingsV1";
 
-function loadSettings() {
-  return DataManager.getSettings();
-}
+function loadSettings() { return DataManager.getSettings(); }
 
-function saveSettings(settings) {
-  return DataManager.saveSettings(settings);
-}
+function saveSettings(settings) { return DataManager.saveSettings(settings); }
 
 let appSettings = loadSettings();
 
-function simpleHash(str){
+function simpleHash(str) {
   let hash = 0;
   const s = String(str || "");
-  for(let i=0; i<s.length; i++){
+  for (let i = 0; i < s.length; i++) {
     hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
   }
   return String(hash);
 }
 
-function toPersianDigits(str){
-  return String(str).replace(/[0-9]/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]);
-}
+function toPersianDigits(str) { return String(str).replace(/[0-9]/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]); }
 
-function applyTheme(theme){
+function applyTheme(theme) {
   const finalTheme = theme === "light" ? "light" : "dark";
   document.documentElement.setAttribute("data-theme", finalTheme);
-  document.querySelectorAll(".theme-btn").forEach(b=>{
+  document.querySelectorAll(".theme-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.theme === finalTheme);
   });
 }
 
-function applyAppIcon(dataUrl){
-  if(!dataUrl) return;
-
+function applyAppIcon(dataUrl) {
+  if (!dataUrl) return;
   let touchIcon = document.querySelector('link[rel="apple-touch-icon"]');
-  if(!touchIcon){
+  if (!touchIcon) {
     touchIcon = document.createElement("link");
     touchIcon.rel = "apple-touch-icon";
     document.head.appendChild(touchIcon);
   }
   touchIcon.href = dataUrl;
-
   let favicon = document.querySelector('link[rel="icon"]');
-  if(!favicon){
+  if (!favicon) {
     favicon = document.createElement("link");
     favicon.rel = "icon";
     document.head.appendChild(favicon);
   }
   favicon.href = dataUrl;
-
-  fetch("./manifest.json")
-    .then(r => r.json())
-    .then(manifest => {
-      const updated = {
-        ...manifest,
-        icons: [
-          { src: dataUrl, sizes: "192x192", type: "image/png" },
-          { src: dataUrl, sizes: "512x512", type: "image/png" }
-        ]
-      };
-      const blob = new Blob([JSON.stringify(updated)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const manifestLink = document.querySelector('link[rel="manifest"]');
-      if(manifestLink) manifestLink.href = url;
-    })
-    .catch(() => {});
-
+  fetch("./manifest.json").then(r => r.json()).then(manifest => {
+    const updated = { ...manifest, icons: [{ src: dataUrl, sizes: "192x192", type: "image/png" }, { src: dataUrl, sizes: "512x512", type: "image/png" }] };
+    const blob = new Blob([JSON.stringify(updated)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const manifestLink = document.querySelector('link[rel="manifest"]');
+    if (manifestLink) manifestLink.href = url;
+  }).catch(() => {});
   const preview = $("appIconPreview");
-  if(preview) preview.src = dataUrl;
+  if (preview) preview.src = dataUrl;
 }
 
-function resetAppIcon(){
+function resetAppIcon() {
   delete appSettings.icon;
   saveSettings(appSettings);
-
   const preview = $("appIconPreview");
-  if(preview) preview.src = "assets/book.png";
-
+  if (preview) preview.src = "assets/book.png";
   const touchIcon = document.querySelector('link[rel="apple-touch-icon"]');
-  if(touchIcon) touchIcon.remove();
-
+  if (touchIcon) touchIcon.remove();
   const favicon = document.querySelector('link[rel="icon"]');
-  if(favicon) favicon.remove();
-
+  if (favicon) favicon.remove();
   const manifestLink = document.querySelector('link[rel="manifest"]');
-  if(manifestLink) manifestLink.href = "./manifest.json";
+  if (manifestLink) manifestLink.href = "./manifest.json";
 }
 
-function initSettingsUI(){
+function initSettingsUI() {
   applyTheme(appSettings.theme || "dark");
-
-  if(appSettings.icon){
-    applyAppIcon(appSettings.icon);
-  }
-
+  if (appSettings.icon) { applyAppIcon(appSettings.icon); }
   const lockToggle = $("settingsLockEnabled");
-  if(lockToggle) lockToggle.checked = !!appSettings.lockEnabled;
-
+  if (lockToggle) lockToggle.checked = !!appSettings.lockEnabled;
   const versionEl = $("appVersionText");
-  if(versionEl) versionEl.textContent = currentAppVersionText;
+  if (versionEl) versionEl.textContent = currentAppVersionText;
 }
 
-
-document.querySelectorAll(".theme-btn").forEach(btn=>{
-  btn.addEventListener("click", ()=>{
+document.querySelectorAll(".theme-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
     appSettings.theme = btn.dataset.theme;
     saveSettings(appSettings);
     applyTheme(appSettings.theme);
@@ -2636,66 +2084,61 @@ const settingsLockForm = $("settingsLockForm");
 const settingsLockInput = $("settingsLockInput");
 const closeSettingsLockModal = $("closeSettingsLockModal");
 
-function openSettingsPage(){
-  openPage("settingsPage", "⚙️ تنظیمات");
-}
+function openSettingsPage() { openPage("settingsPage", "⚙️ تنظیمات"); }
 
-function openSettingsLockModal(){
-  if(!settingsLockModal) return;
+function openSettingsLockModal() {
+  if (!settingsLockModal) return;
   settingsLockModal.classList.add("open");
   document.body.style.overflow = "hidden";
-  if(settingsLockInput){
+  if (settingsLockInput) {
     settingsLockInput.value = "";
-    setTimeout(()=>settingsLockInput.focus(), 100);
+    setTimeout(() => settingsLockInput.focus(), 100);
   }
 }
 
-function closeSettingsLockModalFn(){
-  if(!settingsLockModal) return;
+function closeSettingsLockModalFn() {
+  if (!settingsLockModal) return;
   settingsLockModal.classList.remove("open");
   document.body.style.overflow = "";
 }
 
-if(settingsLockForm){
-  settingsLockForm.addEventListener("submit", e=>{
+if (settingsLockForm) {
+  settingsLockForm.addEventListener("submit", e => {
     e.preventDefault();
     const val = settingsLockInput ? settingsLockInput.value : "";
-    if(simpleHash(val) === appSettings.passwordHash){
+    if (simpleHash(val) === appSettings.passwordHash) {
       closeSettingsLockModalFn();
       openSettingsPage();
-    }else{
+    } else {
       alert("رمز عبور اشتباه است");
     }
   });
 }
 
-if(closeSettingsLockModal){
+if (closeSettingsLockModal) {
   closeSettingsLockModal.addEventListener("click", closeSettingsLockModalFn);
 }
-if(settingsLockModal){
+if (settingsLockModal) {
   settingsLockModal.querySelector(".modal-backdrop")?.addEventListener("click", closeSettingsLockModalFn);
 }
 
 const saveSettingsPasswordButton = $("saveSettingsPasswordButton");
-if(saveSettingsPasswordButton){
-  saveSettingsPasswordButton.addEventListener("click", ()=>{
+if (saveSettingsPasswordButton) {
+  saveSettingsPasswordButton.addEventListener("click", () => {
     const input = $("newSettingsPassword");
     const val = input ? input.value : "";
-    if(!val){
-      alert("رمز عبور را وارد کنید");
-      return;
-    }
+    if (!val) { alert("رمز عبور را وارد کنید"); return; }
     appSettings.passwordHash = simpleHash(val);
     saveSettings(appSettings);
-    if(input) input.value = "";
+    if (input) input.value = "";
     alert("رمز عبور ذخیره شد");
   });
 }
 
 const settingsLockEnabledInput = $("settingsLockEnabled");
-if(settingsLockEnabledInput){
-  settingsLockEnabledInput.addEventListener("change", ()=>{
-    if(settingsLockEnabledInput.checked && !appSettings.passwordHash){
+if (settingsLockEnabledInput) {
+  settingsLockEnabledInput.addEventListener("change", () => {
+    if (settingsLockEnabledInput.checked && !appSettings.passwordHash) {
       alert("ابتدا یک رمز عبور تنظیم و ذخیره کنید");
       settingsLockEnabledInput.checked = false;
       return;
@@ -2706,12 +2149,12 @@ if(settingsLockEnabledInput){
 }
 
 const appIconInput = $("appIconInput");
-if(appIconInput){
-  appIconInput.addEventListener("change", ()=>{
+if (appIconInput) {
+  appIconInput.addEventListener("change", () => {
     const file = appIconInput.files && appIconInput.files[0];
-    if(!file) return;
+    if (!file) return;
     const reader = new FileReader();
-    reader.onload = ()=>{
+    reader.onload = () => {
       appSettings.icon = reader.result;
       saveSettings(appSettings);
       applyAppIcon(appSettings.icon);
@@ -2721,79 +2164,69 @@ if(appIconInput){
 }
 
 const resetAppIconButton = $("resetAppIconButton");
-if(resetAppIconButton){
+if (resetAppIconButton) {
   resetAppIconButton.addEventListener("click", resetAppIcon);
 }
 
 updateStatusFilterLabels(activeFilter);
 
-// ================= قفل کل اپلیکیشن (App Lock) =================
-
+// ================= قفل اپلیکیشن =================
 const APP_LOCK_SESSION_KEY = "appUnlockedV1";
 
-function ensureDefaultAppLock(){
-  if(appSettings.appLockEnabled === undefined){
+function ensureDefaultAppLock() {
+  if (appSettings.appLockEnabled === undefined) {
     appSettings.appLockEnabled = true;
     appSettings.appLockPasswordHash = simpleHash("83242433");
     saveSettings(appSettings);
   }
 }
-/* =========================================================
-   iOS VIEWPORT HEIGHT
-========================================================= */
 
-
-function isAppLocked(){
-  return !!(
-    appSettings.appLockEnabled &&
-    appSettings.appLockPasswordHash &&
-    !sessionStorage.getItem(APP_LOCK_SESSION_KEY)
-  );
+function isAppLocked() {
+  return !!(appSettings.appLockEnabled && appSettings.appLockPasswordHash && !sessionStorage.getItem(APP_LOCK_SESSION_KEY));
 }
 
-function showAppLockScreen(){
+function showAppLockScreen() {
   const el = $("appLockScreen");
-  if(el) el.classList.remove("hidden");
+  if (el) el.classList.remove("hidden");
   document.body.style.overflow = "hidden";
   const input = $("appLockInput");
-  if(input){
+  if (input) {
     input.value = "";
-    setTimeout(()=>input.focus(), 150);
+    setTimeout(() => input.focus(), 150);
   }
 }
 
-function hideAppLockScreen(){
+function hideAppLockScreen() {
   const el = $("appLockScreen");
-  if(el) el.classList.add("hidden");
+  if (el) el.classList.add("hidden");
   document.body.style.overflow = "";
 }
 
-function initAppLock(){
+function initAppLock() {
   ensureDefaultAppLock();
   const toggle = $("appLockEnabledToggle");
-  if(toggle) toggle.checked = !!appSettings.appLockEnabled;
-
-  if(isAppLocked()){
+  if (toggle) toggle.checked = !!appSettings.appLockEnabled;
+  if (isAppLocked()) {
     showAppLockScreen();
-  }else{
+  } else {
     hideAppLockScreen();
   }
 }
 
 const appLockForm = $("appLockForm");
-if(appLockForm){
-  appLockForm.addEventListener("submit", e=>{
+if (appLockForm) {
+  appLockForm.addEventListener("submit", e => {
     e.preventDefault();
     const input = $("appLockInput");
     const val = input ? input.value : "";
     const errEl = $("appLockError");
-    if(simpleHash(val) === appSettings.appLockPasswordHash){
+    if (simpleHash(val) === appSettings.appLockPasswordHash) {
       sessionStorage.setItem(APP_LOCK_SESSION_KEY, "1");
-      if(errEl) errEl.classList.add("hidden");
+      if (errEl) errEl.classList.add("hidden");
       hideAppLockScreen();
-    }else{
-      if(errEl) errEl.classList.remove("hidden");
-      if(input){
+    } else {
+      if (errEl) errEl.classList.remove("hidden");
+      if (input) {
         input.value = "";
         input.focus();
       }
@@ -2802,9 +2235,9 @@ if(appLockForm){
 }
 
 const appLockEnabledToggle = $("appLockEnabledToggle");
-if(appLockEnabledToggle){
-  appLockEnabledToggle.addEventListener("change", ()=>{
-    if(appLockEnabledToggle.checked && !appSettings.appLockPasswordHash){
+if (appLockEnabledToggle) {
+  appLockEnabledToggle.addEventListener("change", () => {
+    if (appLockEnabledToggle.checked && !appSettings.appLockPasswordHash) {
       appSettings.appLockPasswordHash = simpleHash("83242433");
     }
     appSettings.appLockEnabled = appLockEnabledToggle.checked;
@@ -2813,24 +2246,21 @@ if(appLockEnabledToggle){
 }
 
 const saveAppLockPasswordButton = $("saveAppLockPasswordButton");
-if(saveAppLockPasswordButton){
-  saveAppLockPasswordButton.addEventListener("click", ()=>{
+if (saveAppLockPasswordButton) {
+  saveAppLockPasswordButton.addEventListener("click", () => {
     const input = $("newAppLockPassword");
     const val = input ? input.value : "";
-    if(!val){
-      alert("رمز عبور را وارد کنید");
-      return;
-    }
+    if (!val) { alert("رمز عبور را وارد کنید"); return; }
     appSettings.appLockPasswordHash = simpleHash(val);
     saveSettings(appSettings);
-    if(input) input.value = "";
+    if (input) input.value = "";
     alert("رمز عبور اپلیکیشن ذخیره شد");
   });
 }
-// =========================================================
-// ================= کمکی‌ها (فرمت / ماسک شماره کارت) =================
-// =========================================================
 
+// =========================================================
+// ================= کمکی‌ها =================
+// =========================================================
 function formatCardNumber(value) {
   const digits = (value || '').replace(/\D/g, '').slice(0, 16);
   return digits.replace(/(.{4})/g, '$1-').replace(/-$/, '');
@@ -2842,10 +2272,10 @@ function maskCardNumber(cardNumber) {
   const last4 = digits.slice(-4).padStart(4, '•');
   return `••••-••••-••••-${last4}`;
 }
-// =========================================================
-// ================= کارت‌های بانکی (نسخه جدید با اسکرول native) =================
-// =========================================================
 
+// =========================================================
+// ================= کارت‌های بانکی =================
+// =========================================================
 const BANK_CARDS_KEY = "bankCardsV1";
 let bankCards = [];
 let currentCardIndex = 0;
@@ -2862,18 +2292,11 @@ function saveBankCards() {
   renderBankCards();
 }
 
-// =========================================================
-// ================= رندر کارت‌ها + لیست بانک‌ها =================
-// =========================================================
-
 function renderBankCards() {
   const container = document.getElementById("bankCarousel");
   const dotsContainer = document.getElementById("carouselDots");
   const banksListContainer = document.getElementById("banksManagementList");
-
   if (!container) return;
-
-  // تنظیمات اسکرول
   container.style.overflowX = "auto";
   container.style.overflowY = "hidden";
   container.style.webkitOverflowScrolling = "touch";
@@ -2924,14 +2347,10 @@ function renderBankCards() {
   let cardsHtml = '';
   bankCards.forEach((card, i) => {
     const hasImage = !!card.image;
-    const bgStyle = hasImage
-      ? `background-image:url('${card.image}');background-size:cover;background-position:center;`
-      : `background:${card.color || '#1a2332'};`;
-
+    const bgStyle = hasImage ? `background-image:url('${card.image}');background-size:cover;background-position:center;` : `background:${card.color || '#1a2332'};`;
     const fullNumber = formatCardNumber(card.cardNumber);
     const masked = maskCardNumber(card.cardNumber);
     const isCenter = i === currentCardIndex;
-
     cardsHtml += `
       <div class="bank-card-item ${isCenter ? 'is-center' : ''}" 
            data-index="${i}" 
@@ -2942,13 +2361,11 @@ function renderBankCards() {
             <span class="bank-card-chip" style="font-size:20px;">💳</span>
             <span class="bank-card-type" style="font-size:12px;font-weight:600;opacity:0.9;">${card.bankName || 'بانک'}</span>
           </div>
-
           <div class="bank-card-number" style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.25);padding:6px 10px;border-radius:8px;margin:3px 0;text-shadow:0 1px 3px rgba(0,0,0,0.4);">
-  <span class="full-value" dir="ltr" style="font-size:14px;font-family:'Courier New',monospace;letter-spacing:1px;">${fullNumber || '••••-••••-••••-••••'}</span>
-  <span class="masked-value" dir="ltr" style="font-size:14px;font-family:'Courier New',monospace;letter-spacing:1px;">${masked}</span>
-  <button class="copy-btn" data-field="number" data-value="${card.cardNumber || ''}" type="button" style="background:rgba(255,255,255,0.15);border:none;border-radius:4px;color:#fff;padding:2px 6px;font-size:9px;cursor:pointer;">📋</button>
-</div>
-
+            <span class="full-value" dir="ltr" style="font-size:14px;font-family:'Courier New',monospace;letter-spacing:1px;">${fullNumber || '••••-••••-••••-••••'}</span>
+            <span class="masked-value" dir="ltr" style="font-size:14px;font-family:'Courier New',monospace;letter-spacing:1px;">${masked}</span>
+            <button class="copy-btn" data-field="number" data-value="${card.cardNumber || ''}" type="button" style="background:rgba(255,255,255,0.15);border:none;border-radius:4px;color:#fff;padding:2px 6px;font-size:9px;cursor:pointer;">📋</button>
+          </div>
           <div class="bank-card-bottom" style="display:flex;justify-content:space-between;align-items:center;font-size:10px;opacity:0.85;">
             <div class="bank-card-expiry" style="display:flex;align-items:center;gap:4px;background:rgba(0,0,0,0.15);padding:2px 6px;border-radius:6px;font-size:9px;">
               <span class="full-value" dir="ltr">${card.expiry || '••/••'}</span>
@@ -2959,30 +2376,23 @@ function renderBankCards() {
               <span class="masked-value">•••</span>
             </div>
           </div>
-
           <div class="bank-card-iban" style="font-size:9px;opacity:0.75;display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.15);padding:2px 8px;border-radius:6px;margin-top:2px;font-family:'Courier New',monospace;">
             <span class="full-value" dir="ltr">${card.iban || 'شبا ثبت نشده'}</span>
             <span class="masked-value" dir="ltr">••••-••••-••••-••••</span>
             <button class="copy-btn" data-field="iban" data-value="${card.iban || ''}" type="button" style="background:rgba(255,255,255,0.15);border:none;border-radius:4px;color:#fff;padding:1px 5px;font-size:8px;cursor:pointer;">📋</button>
           </div>
-
-
           <button class="bank-card-edit-btn" data-id="${card.id || i}" type="button" style="position:absolute;top:6px;left:6px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:24px;height:24px;color:#fff;font-size:10px;cursor:pointer;backdrop-filter:blur(4px);z-index:2;display:flex;align-items:center;justify-content:center;">✎</button>
           <button class="bank-card-delete-btn" data-id="${card.id || i}" type="button" style="position:absolute;top:6px;left:36px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:26px;height:26px;color:#ff3b30;font-size:13px;cursor:pointer;backdrop-filter:blur(4px);z-index:2;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">🗑</button>
         </div>
       </div>
     `;
   });
-
   container.innerHTML = cardsHtml;
 
-  // ====== این بخش کلیدی برای اسکرول روی گوشی ======
-  // حتماً pointer-events رو active کن
   container.querySelectorAll('.bank-card-item').forEach(card => {
     card.style.pointerEvents = 'auto';
   });
 
-  // کپی کردن
   container.querySelectorAll('.copy-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -3003,7 +2413,6 @@ function renderBankCards() {
     });
   });
 
-  // دکمه‌های ویرایش
   container.querySelectorAll('.bank-card-edit-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -3013,7 +2422,6 @@ function renderBankCards() {
     });
   });
 
-  // دکمه‌های حذف
   container.querySelectorAll('.bank-card-delete-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -3023,18 +2431,15 @@ function renderBankCards() {
       if (!confirm(`حذف کارت "${card.bankName}"؟`)) return;
       bankCards = bankCards.filter(c => c.id != id);
       saveBankCards();
-      console.log("بعد از حذف، بانک‌های باقی‌مانده:", bankCards.map(c => c.bankName));
       showToast("کارت حذف شد", "info");
       renderBankCards();
     });
   });
 
-  // دات‌ها
   if (dotsContainer) {
     dotsContainer.innerHTML = bankCards.map((_, i) =>
       `<span class="dot ${i === currentCardIndex ? 'active' : ''}" data-index="${i}" style="width:8px;height:8px;border-radius:50%;background:${i === currentCardIndex ? 'var(--primary-light)' : 'var(--border-light)'};cursor:pointer;transition:all 0.3s;display:inline-block;margin:0 3px;"></span>`
     ).join('');
-
     dotsContainer.querySelectorAll('.dot').forEach(dot => {
       dot.addEventListener('click', () => {
         const index = parseInt(dot.dataset.index);
@@ -3046,10 +2451,7 @@ function renderBankCards() {
     });
   }
 
-  // ====== attach motion (با اولویت اسکرول) ======
   attachCarouselMotion(container);
-
-  // اسکرول به کارت فعلی
   requestAnimationFrame(() => {
     const centerCard = container.querySelector(`.bank-card-item[data-index="${currentCardIndex}"]`);
     if (centerCard) {
@@ -3058,33 +2460,24 @@ function renderBankCards() {
   });
 }
 
-// =========================================================
-// ================= موشن نرم کاروسل (اسکرول افقی) =================
-// =========================================================
-
 function attachCarouselMotion(container) {
   function updateCardTransforms() {
     const containerRect = container.getBoundingClientRect();
     const centerX = containerRect.left + containerRect.width / 2;
-
     container.querySelectorAll('.bank-card-item').forEach(card => {
       const cardRect = card.getBoundingClientRect();
       const cardCenter = cardRect.left + cardRect.width / 2;
       const distance = Math.abs(cardCenter - centerX);
       const ratio = Math.min(distance / containerRect.width, 1);
-
       const scale = 1 - ratio * 0.18;
       const opacity = 1 - ratio * 0.55;
-
       card.style.transform = `scale(${scale.toFixed(3)})`;
       card.style.opacity = opacity.toFixed(3);
     });
   }
 
-  // فقط یک‌بار listener‌ها رو وصل کن، حتی اگه این تابع چندبار صدا زده بشه
   if (!container.dataset.motionAttached) {
     container.dataset.motionAttached = "1";
-
     let ticking = false;
     container.addEventListener('scroll', () => {
       if (!ticking) {
@@ -3104,7 +2497,6 @@ function attachCarouselMotion(container) {
         const centerX = containerRect.left + containerRect.width / 2;
         let closestIndex = 0;
         let closestDistance = Infinity;
-
         const cards = container.querySelectorAll('.bank-card-item');
         cards.forEach((card, i) => {
           const cardRect = card.getBoundingClientRect();
@@ -3115,14 +2507,11 @@ function attachCarouselMotion(container) {
             closestIndex = i;
           }
         });
-
         if (closestIndex !== currentCardIndex) {
           currentCardIndex = closestIndex;
-
           cards.forEach((card, i) => {
             card.classList.toggle('is-center', i === closestIndex);
           });
-
           document.querySelectorAll('#carouselDots .dot').forEach((dot, i) => {
             dot.classList.toggle('active', i === closestIndex);
           });
@@ -3130,54 +2519,41 @@ function attachCarouselMotion(container) {
       }, 120);
     }, { passive: true });
   }
-// پشتیبانی از درگ با ماوس (دسکتاپ)
-    let isDragging = false;
-    let dragStartX = 0;
-    let scrollStartLeft = 0;
 
-    container.addEventListener('mousedown', (e) => {
-      isDragging = true;
-      container.style.cursor = 'grabbing';
-      dragStartX = e.pageX;
-      scrollStartLeft = container.scrollLeft;
-      container.style.scrollSnapType = 'none'; // موقع درگ، اسنپ رو غیرفعال کن
-    });
-
-    window.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      e.preventDefault();
-      const dx = e.pageX - dragStartX;
-      container.scrollLeft = scrollStartLeft - dx;
-    });
-
-    window.addEventListener('mouseup', () => {
-      if (!isDragging) return;
+  let isDragging = false;
+  let dragStartX = 0;
+  let scrollStartLeft = 0;
+  container.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    container.style.cursor = 'grabbing';
+    dragStartX = e.pageX;
+    scrollStartLeft = container.scrollLeft;
+    container.style.scrollSnapType = 'none';
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const dx = e.pageX - dragStartX;
+    container.scrollLeft = scrollStartLeft - dx;
+  });
+  window.addEventListener('mouseup', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    container.style.cursor = 'grab';
+    container.style.scrollSnapType = "x mandatory";
+  });
+  container.addEventListener('mouseleave', () => {
+    if (isDragging) {
       isDragging = false;
       container.style.cursor = 'grab';
-      container.style.scrollSnapType = "x mandatory"; // دوباره فعالش کن تا snap بشه
-    });
-
-    container.addEventListener('mouseleave', () => {
-      if (isDragging) {
-        isDragging = false;
-        container.style.cursor = 'grab';
-        container.style.scrollSnapType = "x mandatory";
-      }
-    });
-  // این خط همیشه اجرا بشه (حتی اگه listener جدید attach نشده)
-  // چون بعد از هر render، پوزیشن کارت‌ها عوض شده و باید scale/opacity آپدیت بشه
+      container.style.scrollSnapType = "x mandatory";
+    }
+  });
   updateCardTransforms();
 }
-// =========================================================
-
-
 
 // =========================================================
-// ================= پنل دیباگ تب‌دار =================
-// =========================================================
-
-// =========================================================
-// ================= پنل دیباگ جدید با تب‌بندی =================
+// ================= پنل دیباگ =================
 // =========================================================
 
 function openAdminPanel() {
@@ -3186,12 +2562,8 @@ function openAdminPanel() {
     if (pass !== null) alert("رمز اشتباه است");
     return;
   }
-
-  // حذف پنل قبلی اگر وجود داشته
   const oldPanel = document.getElementById('admin-panel');
   if (oldPanel) oldPanel.remove();
-
-  // ساخت پنل جدید
   const panel = document.createElement('div');
   panel.id = 'admin-panel';
   panel.innerHTML = `
@@ -3201,7 +2573,6 @@ function openAdminPanel() {
           <h3>🛠 پنل دیباگ</h3>
           <button onclick="closeAdminPanel()" class="admin-close-btn">✕</button>
         </div>
-        
         <div class="admin-tabs">
           <button class="admin-tab active" data-tab="banks">🏦 بانک‌ها</button>
           <button class="admin-tab" data-tab="debts">🤝 قرض‌ها</button>
@@ -3209,17 +2580,13 @@ function openAdminPanel() {
           <button class="admin-tab" data-tab="settings">⚙️ تنظیمات</button>
           <button class="admin-tab" data-tab="storage">💾 دیتابیس</button>
         </div>
-        
         <div class="admin-body" id="adminBody">
           <div style="color:#94a3b8;text-align:center;padding:40px 0;">در حال بارگذاری...</div>
         </div>
       </div>
     </div>
   `;
-
   document.body.appendChild(panel);
-
-  // مدیریت تب‌ها
   panel.querySelectorAll('.admin-tab').forEach(tab => {
     tab.addEventListener('click', function() {
       panel.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
@@ -3227,11 +2594,7 @@ function openAdminPanel() {
       renderAdminTab(this.dataset.tab);
     });
   });
-
-  // رندر تب پیش‌فرض با تاخیر کم
-  setTimeout(() => {
-    renderAdminTab('banks');
-  }, 50);
+  setTimeout(() => { renderAdminTab('banks'); }, 50);
 }
 
 function closeAdminPanel() {
@@ -3241,13 +2604,9 @@ function closeAdminPanel() {
 
 function renderAdminTab(tab) {
   const body = document.getElementById('adminBody');
-  if (!body) {
-    console.error('adminBody پیدا نشد');
-    return;
-  }
-
+  if (!body) { console.error('adminBody پیدا نشد'); return; }
   try {
-    switch(tab) {
+    switch (tab) {
       case 'banks':
         renderAdminBanks(body);
         break;
@@ -3266,44 +2625,32 @@ function renderAdminTab(tab) {
       default:
         body.innerHTML = '<div style="color:#94a3b8;text-align:center;padding:20px;">تب نامعتبر</div>';
     }
-  } catch(e) {
-    // اینجا خطا رو کامل نمایش بده
+  } catch (e) {
     console.error('❌ خطای کامل در renderAdminTab:', e);
-    console.error('📚 Stack trace:', e.stack);
     body.innerHTML = `
       <div style="color:#ef4444;text-align:center;padding:20px;background:rgba(239,68,68,0.1);border-radius:12px;">
         <strong>❌ خطا در تب ${tab}</strong>
         <br><br>
         <span style="font-size:13px;color:#94a3b8;">${e.message}</span>
-        <br><br>
-        <button onclick="console.log('دوباره تلاش کن')" style="padding:8px 16px;background:#3b82f6;border:none;border-radius:8px;color:#fff;cursor:pointer;">
-          🔄 دوباره تلاش
-        </button>
       </div>
     `;
   }
 }
 
-// ========== تب بانک‌ها ==========
 function renderAdminBanks(body) {
   try {
-    // دریافت بانک‌ها با تابع امن
     let banks = [];
     try {
       const saved = localStorage.getItem("banks");
       banks = saved ? JSON.parse(saved) : ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
-    } catch(e) {
-      console.warn('خطا در خواندن بانک‌ها:', e);
+    } catch (e) {
       banks = ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
     }
-    
-    // دریافت کارت‌ها
     let cards = [];
     try {
       const saved = localStorage.getItem("bankCardsV1");
       cards = saved ? JSON.parse(saved) : [];
-    } catch(e) {
-      console.warn('خطا در خواندن کارت‌ها:', e);
+    } catch (e) {
       cards = [];
     }
     body.innerHTML = `
@@ -3324,7 +2671,6 @@ function renderAdminBanks(body) {
           `).join('')}
         </div>
       </div>
-
       <div class="admin-section" style="margin-top:16px;">
         <div class="admin-section-header">
           <span>💳 کارت‌های بانکی (${cards.length})</span>
@@ -3346,11 +2692,11 @@ function renderAdminBanks(body) {
         </div>
       </div>
     `;
-  }  catch(e) {
-    console.error('❌ خطا در renderAdminBanks:', e);
+  } catch (e) {
     body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا در بارگذاری بانک‌ها: ${e.message}</div>`;
   }
 }
+
 function deleteCardFromAdmin(id) {
   if (!confirm("این کارت حذف شود؟")) return;
   bankCards = bankCards.filter(c => c.id != id);
@@ -3359,11 +2705,9 @@ function deleteCardFromAdmin(id) {
   showToast("کارت حذف شد", "success");
 }
 
-// ========== تب قرض‌ها ==========
 function renderAdminDebts(body) {
   try {
     const debts = allDebts || [];
-    
     body.innerHTML = `
       <div class="admin-section">
         <div class="admin-section-header">
@@ -3385,23 +2729,19 @@ function renderAdminDebts(body) {
         </div>
       </div>
     `;
-  } catch(e) {
-    console.error('❌ خطا در renderAdminDebts:', e);
+  } catch (e) {
     body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا در بارگذاری قرض‌ها: ${e.message}</div>`;
   }
 }
-
 
 function deleteDebtFromAdmin(id) {
   if (!confirm("این قرض حذف شود؟")) return;
   deleteDebt(id);
 }
 
-// ========== تب هزینه‌ها ==========
 function renderAdminExpenses(body) {
   try {
     const expenses = allExpenses || [];
-    
     body.innerHTML = `
       <div class="admin-section">
         <div class="admin-section-header">
@@ -3423,51 +2763,33 @@ function renderAdminExpenses(body) {
         </div>
       </div>
     `;
-  } catch(e) {
-    console.error('❌ خطا در renderAdminExpenses:', e);
+  } catch (e) {
     body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا در بارگذاری هزینه‌ها: ${e.message}</div>`;
   }
 }
-// ========== تب تنظیمات ==========
+
 function renderAdminSettings(body) {
   try {
     const settings = loadSettings();
-    
     body.innerHTML = `
       <div class="admin-section">
         <div class="admin-section-header">
           <span>⚙️ تنظیمات برنامه</span>
         </div>
         <div class="admin-settings-list">
-          <div class="admin-setting-item">
-            <span>تم</span>
-            <span>${settings.theme === 'light' ? '☀️ روشن' : '🌙 تیره'}</span>
-          </div>
-          <div class="admin-setting-item">
-            <span>قفل اپلیکیشن</span>
-            <span>${settings.appLockEnabled ? '✅ فعال' : '❌ غیرفعال'}</span>
-          </div>
-          <div class="admin-setting-item">
-            <span>قفل تنظیمات</span>
-            <span>${settings.lockEnabled ? '✅ فعال' : '❌ غیرفعال'}</span>
-          </div>
-          <div class="admin-setting-item">
-            <span>کلیدهای ذخیره شده</span>
-            <span>${Object.keys(settings).length} کلید</span>
-          </div>
+          <div class="admin-setting-item"><span>تم</span><span>${settings.theme === 'light' ? '☀️ روشن' : '🌙 تیره'}</span></div>
+          <div class="admin-setting-item"><span>قفل اپلیکیشن</span><span>${settings.appLockEnabled ? '✅ فعال' : '❌ غیرفعال'}</span></div>
+          <div class="admin-setting-item"><span>قفل تنظیمات</span><span>${settings.lockEnabled ? '✅ فعال' : '❌ غیرفعال'}</span></div>
+          <div class="admin-setting-item"><span>کلیدهای ذخیره شده</span><span>${Object.keys(settings).length} کلید</span></div>
         </div>
-        <button onclick="if(confirm('همه داده‌ها پاک شوند؟')){localStorage.clear();alert('داده‌ها پاک شد!');location.reload();}" class="admin-danger-btn" style="margin-top:12px;width:100%;padding:10px;border:none;border-radius:10px;background:#ef4444;color:#fff;font-weight:bold;cursor:pointer;">
-          🗑 پاک کردن کل دیتا
-        </button>
+        <button onclick="if(confirm('همه داده‌ها پاک شوند؟')){localStorage.clear();alert('داده‌ها پاک شد!');location.reload();}" class="admin-danger-btn" style="margin-top:12px;width:100%;padding:10px;border:none;border-radius:10px;background:#ef4444;color:#fff;font-weight:bold;cursor:pointer;">🗑 پاک کردن کل دیتا</button>
       </div>
     `;
-  }catch(e) {
-    console.error('❌ خطا در renderAdminSettings:', e);
+  } catch (e) {
     body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا در بارگذاری تنظیمات: ${e.message}</div>`;
   }
 }
 
-// ========== تب دیتابیس ==========
 function renderAdminStorage(body) {
   try {
     let html = `
@@ -3477,7 +2799,6 @@ function renderAdminStorage(body) {
         </div>
         <div class="admin-storage-list">
     `;
-
     if (localStorage.length === 0) {
       html += `<div class="admin-empty">هیچ داده‌ای ذخیره نشده</div>`;
     } else {
@@ -3489,8 +2810,7 @@ function renderAdminStorage(body) {
           const parsed = JSON.parse(val);
           preview = JSON.stringify(parsed, null, 2);
           if (preview.length > 100) preview = preview.substring(0, 100) + '...';
-        } catch(e) {}
-        
+        } catch (e) {}
         html += `
           <div class="admin-storage-item">
             <div class="admin-storage-key">${key}</div>
@@ -3503,15 +2823,9 @@ function renderAdminStorage(body) {
         `;
       }
     }
-
-    html += `
-        </div>
-      </div>
-    `;
-
+    html += `</div></div>`;
     body.innerHTML = html;
-  } catch(e) {
-    console.error('❌ خطا در renderAdminStorage:', e);
+  } catch (e) {
     body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا در بارگذاری دیتابیس: ${e.message}</div>`;
   }
 }
@@ -3537,10 +2851,6 @@ function deleteStorageKey(key) {
   renderAdminTab('storage');
   showToast('حذف شد', 'info');
 }
-
-
-// ================= مدیریت بانک‌ها =================
-// =========================================================
 
 function loadBanksFromStorage() {
   try {
@@ -3573,13 +2883,10 @@ function editBankName(index) {
   if (newName && newName.trim() && newName.trim() !== oldName) {
     banks[index] = newName.trim();
     saveBanksToStorage(banks);
-
-    // نام بانک روی کارت مرتبط هم آپدیت بشه
     bankCards.forEach(c => {
       if (c.bankName === oldName) c.bankName = newName.trim();
     });
     saveBankCards();
-
     renderBankCards();
     showToast("نام بانک تغییر کرد", "success");
   }
@@ -3589,15 +2896,11 @@ function deleteBankName(index) {
   const banks = loadBanksFromStorage();
   const bankName = banks[index];
   if (!confirm(`حذف "${bankName}"؟ کارت این بانک هم حذف خواهد شد.`)) return;
-
   banks.splice(index, 1);
   saveBanksToStorage(banks);
-
   bankCards = bankCards.filter(c => c.bankName !== bankName);
   saveBankCards();
-
   if (currentCardIndex >= bankCards.length) currentCardIndex = Math.max(0, bankCards.length - 1);
-
   renderBankCards();
   showToast("بانک و کارت آن حذف شد", "info");
 }
@@ -3611,10 +2914,6 @@ function addCardToBank(bankName) {
   }
   openBankCardModal(null, bankName);
 }
-
-// =========================================================
-// ================= مودال ثبت/ویرایش کارت =================
-// =========================================================
 
 let currentCardImageData = null;
 
@@ -3631,18 +2930,14 @@ function openBankCardModal(card = null, prefillBank = null) {
   const colorField = document.getElementById("bankCardColor");
   const imagePreview = document.getElementById("bankCardImagePreview");
   const imageInput = document.getElementById("bankCardImage");
-
   if (!modal) return;
   form.reset();
   idField.value = "";
   currentCardImageData = null;
   if (imageInput) imageInput.value = "";
-  if (imagePreview) { imagePreview.style.display = "none"; imagePreview.src = ""; }
-
-  if (prefillBank) {
-    nameField.value = prefillBank;
-  }
-
+  if (imagePreview) { imagePreview.style.display = "none";
+    imagePreview.src = ""; }
+  if (prefillBank) { nameField.value = prefillBank; }
   if (card) {
     title.textContent = "ویرایش کارت بانکی";
     idField.value = card.id || "";
@@ -3654,12 +2949,12 @@ function openBankCardModal(card = null, prefillBank = null) {
     colorField.value = card.color || "#1a2332";
     if (card.image) {
       currentCardImageData = card.image;
-      if (imagePreview) { imagePreview.src = card.image; imagePreview.style.display = "block"; }
+      if (imagePreview) { imagePreview.src = card.image;
+        imagePreview.style.display = "block"; }
     }
   } else {
     title.textContent = "ثبت کارت بانکی جدید";
   }
-
   modal.classList.add("open");
   document.body.style.overflow = "hidden";
 }
@@ -3671,7 +2966,6 @@ function closeBankCardModal() {
   document.body.style.overflow = "";
 }
 
-// فرمت خودکار شماره کارت هنگام تایپ
 document.getElementById("bankCardNumber")?.addEventListener("input", function(e) {
   const cursorWasAtEnd = e.target.selectionStart === e.target.value.length;
   e.target.value = formatCardNumber(e.target.value);
@@ -3680,7 +2974,6 @@ document.getElementById("bankCardNumber")?.addEventListener("input", function(e)
   }
 });
 
-// آپلود عکس پس‌زمینه کارت
 document.getElementById("bankCardImage")?.addEventListener("change", function(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -3699,14 +2992,14 @@ document.getElementById("bankCardImage")?.addEventListener("change", function(e)
 document.getElementById("removeBankCardImageBtn")?.addEventListener("click", function() {
   currentCardImageData = null;
   const preview = document.getElementById("bankCardImagePreview");
-  if (preview) { preview.style.display = "none"; preview.src = ""; }
+  if (preview) { preview.style.display = "none";
+    preview.src = ""; }
   const imageInput = document.getElementById("bankCardImage");
   if (imageInput) imageInput.value = "";
 });
 
 document.getElementById("bankCardForm")?.addEventListener("submit", function(e) {
   e.preventDefault();
-
   const idField = document.getElementById("editBankCardId");
   const nameField = document.getElementById("bankCardName");
   const numberField = document.getElementById("bankCardNumber");
@@ -3714,24 +3007,12 @@ document.getElementById("bankCardForm")?.addEventListener("submit", function(e) 
   const expiryField = document.getElementById("bankCardExpiry");
   const cvvField = document.getElementById("bankCardCvv");
   const colorField = document.getElementById("bankCardColor");
-
   const isEditing = !!idField.value;
   const bankName = nameField.value.trim();
-
-  if (!bankName) {
-    showToast("نام بانک را وارد کنید", "error");
-    return;
-  }
-
-  // هر بانک فقط یک کارت
+  if (!bankName) { showToast("نام بانک را وارد کنید", "error"); return; }
   const duplicate = bankCards.find(c => c.bankName === bankName && (!isEditing || c.id !== idField.value));
-  if (duplicate) {
-    showToast("برای این بانک قبلاً یک کارت ثبت شده است", "error");
-    return;
-  }
-
+  if (duplicate) { showToast("برای این بانک قبلاً یک کارت ثبت شده است", "error"); return; }
   const rawNumber = numberField.value.replace(/\D/g, '');
-
   const cardData = {
     id: idField.value || Date.now().toString(),
     bankName: bankName,
@@ -3743,19 +3024,16 @@ document.getElementById("bankCardForm")?.addEventListener("submit", function(e) 
     image: currentCardImageData,
     createdAt: new Date().toISOString()
   };
-
   if (cardData.cardNumber && cardData.cardNumber.length < 16) {
     showToast("شماره کارت باید ۱۶ رقم باشد", "error");
     return;
   }
-
   const existingIndex = bankCards.findIndex(c => c.id === cardData.id);
   if (existingIndex >= 0) {
     bankCards[existingIndex] = cardData;
   } else {
     bankCards.push(cardData);
   }
-
   saveBankCards();
   closeBankCardModal();
   showToast("کارت بانکی ذخیره شد", "success");
@@ -3764,35 +3042,28 @@ document.getElementById("bankCardForm")?.addEventListener("submit", function(e) 
 
 document.getElementById("closeBankCardModal")?.addEventListener("click", closeBankCardModal);
 document.getElementById("bankCardModal")?.querySelector(".modal-backdrop")?.addEventListener("click", closeBankCardModal);
-document.addEventListener("click", function (e) {if (e.target.closest("#addBankCardBtn")){openBankCardModal();}});
+document.addEventListener("click", function(e) { if (e.target.closest("#addBankCardBtn")) { openBankCardModal(); } });
 document.getElementById("addBankBtn")?.addEventListener("click", openAddBankModal);
-
-
+document.getElementById("updateGoldPriceBtn")?.addEventListener("click", updateGoldPrice);
 // =========================================================
-// ================= منوی همبرگری و دیباگ =================
+// ================= منوی همبرگری =================
 // =========================================================
 
 function createHamburgerPanel() {
-  // ۱. پیشگیری از ساخت چندباره منو در صفحه
   if (document.getElementById("hamburgerPanel")) return;
-
   const panel = document.createElement("div");
   panel.id = "hamburgerPanel";
   panel.className = "hamburger-popup hidden";
   panel.innerHTML = `
-    <button class="hamburger-item" data-action="update" type="button" style="border-top:1px solid rgba(255,255,255,0.06);margin-top:4px;padding-top:10px;color:#38bdf8;">
-  <span><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#38bdf8"><path d="M440-82q-76-8-141.5-41.5t-114-87Q136-264 108-333T80-480q0-91 36.5-168T216-780h-96v-80h240v240h-80v-109q-55 44-87.5 108.5T160-480q0 123 80.5 212.5T440-163v81Zm-17-214L254-466l56-56 113 113 227-227 56 57-283 283Zm177 196v-240h80v109q55-45 87.5-109T800-480q0-123-80.5-212.5T520-797v-81q152 15 256 128t104 270q0 91-36.5 168T744-180h96v80H600Z"/></svg></span> بروزرسانی برنامه
-</button>
+    <div class="hamburger-items">
+      <button class="hamburger-item" data-action="update" type="button" style="border-top:1px solid rgba(255,255,255,0.06);margin-top:4px;padding-top:10px;color:#38bdf8;">
+        <span><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#38bdf8"><path d="M440-82q-76-8-141.5-41.5t-114-87Q136-264 108-333T80-480q0-91 36.5-168T216-780h-96v-80h240v240h-80v-109q-55 44-87.5 108.5T160-480q0 123 80.5 212.5T440-163v81Zm-17-214L254-466l56-56 113 113 227-227 56 57-283 283Zm177 196v-240h80v109q55-45 87.5-109T800-480q0-123-80.5-212.5T520-797v-81q152 15 256 128t104 270q0 91-36.5 168T744-180h96v80H600Z"/></svg></span> بروزرسانی برنامه
+      </button>
       <button class="hamburger-item" data-action="settings" type="button">
         <span>⚙️</span> تنظیمات
       </button>
       <button class="hamburger-item" data-action="admin" type="button">
-        <span>
-          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#EA3323">
-            <path d="M480-212q66 0 107-46.71 41-46.7 41-112.29v-137q0-66.41-41-113.71Q546-669 480-669t-107 47.29q-41 47.3-41 113.71v137q0 65.59 41 112.29Q414-212 480-212Zm-80-100h160v-96H400v96Zm0-160h160v-96H400v96Zm80 31Zm.06 355Q404-86 339-125.5T238-232H126v-96h83q-2.25-15.67-2.62-31.33Q206-375 206-392h-80v-96h80q0-17 .38-32.67.37-15.66 2.62-31.33h-83v-96h117q10-27 29-48.5t43-38.5l-66-66 69-68 86 86q34-15 70.5-16t70.5 13l90-89 68 68-64 64q29 19 50 45t34 58h111v88h-83q2.25 15.67 2.63 31.33Q754-505 754-488h80v96h-80q0 17-1 32.5t-3 31.5h84v96H722q-36 67-100.94 106.5t-141 39.5Z"/>
-          </svg>
-        </span>
-        دیباگ
+        <span><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#EA3323"><path d="M480-212q66 0 107-46.71 41-46.7 41-112.29v-137q0-66.41-41-113.71Q546-669 480-669t-107 47.29q-41 47.3-41 113.71v137q0 65.59 41 112.29Q414-212 480-212Zm-80-100h160v-96H400v96Zm0-160h160v-96H400v96Zm80 31Zm.06 355Q404-86 339-125.5T238-232H126v-96h83q-2.25-15.67-2.62-31.33Q206-375 206-392h-80v-96h80q0-17 .38-32.67.37-15.66 2.62-31.33h-83v-96h117q10-27 29-48.5t43-38.5l-66-66 69-68 86 86q34-15 70.5-16t70.5 13l90-89 68 68-64 64q29 19 50 45t34 58h111v88h-83q2.25 15.67 2.63 31.33Q754-505 754-488h80v96h-80q0 17-1 32.5t-3 31.5h84v96H722q-36 67-100.94 106.5t-141 39.5Z"/></svg></span> دیباگ
       </button>
       <button class="hamburger-item" data-action="exit" type="button" style="border-top:1px solid rgba(255,255,255,0.06);margin-top:4px;padding-top:10px;color:#ef4444;">
         <span>🚪</span> خروج از برنامه
@@ -3800,7 +3071,6 @@ function createHamburgerPanel() {
     </div>
   `;
   document.body.appendChild(panel);
-
   const menuBtn = document.getElementById("hamburgerMenuBtn");
   if (menuBtn) {
     menuBtn.addEventListener("click", function(e) {
@@ -3808,107 +3078,66 @@ function createHamburgerPanel() {
       panel.classList.toggle("hidden");
     });
   }
-
-  // بستن منو با کلیک روی هر جای دیگر صفحه
   document.addEventListener("click", function(e) {
-    if (!panel.classList.contains("hidden") &&
-        !panel.contains(e.target) &&
-        e.target !== menuBtn) {
+    if (!panel.classList.contains("hidden") && !panel.contains(e.target) && e.target !== menuBtn) {
       panel.classList.add("hidden");
     }
   });
-document.getElementById('exitAppBtn')?.addEventListener('click', function() {
-  if (confirm('آیا مطمئن هستید که می‌خواهید از برنامه خارج شوید؟')) {
-    // اگر در حالت PWA هستیم
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      // برای اندروید
-      if (navigator.app && navigator.app.exitApp) {
-        navigator.app.exitApp();
-      }
-      // برای iOS
-      else if (window.close) {
-        window.close();
-      }
-      // راهکار جایگزین: رفتن به صفحه خالی
-      else {
-        window.location.href = 'about:blank';
-      }
-    } else {
-      // در مرورگر معمولی
-      if (window.close) {
-        window.close();
-      } else {
-        alert('برای خروج از برنامه، تب مرورگر را ببندید.');
-      }
-    }
-  }
-});
-  // مدیریت رویداد کلیک روی آیتم‌های منو
   panel.querySelectorAll(".hamburger-item").forEach(function(item) {
     item.addEventListener("click", function() {
       const action = this.dataset.action;
       panel.classList.add("hidden");
-
       switch (action) {
         case "update":
-case "refresh":
-  if (typeof performFullAppUpdate === 'function') {
-    // نمایش پیام در حال بروزرسانی
-    showToast("🔄 در حال بررسی و دریافت آخرین نسخه...", "info");
-    performFullAppUpdate();
-  } else {
-    window.location.reload();
-  }
-  break;
+        case "refresh":
+          if (typeof performFullAppUpdate === 'function') {
+            showToast("🔄 در حال بررسی و دریافت آخرین نسخه...", "info");
+            performFullAppUpdate();
+          } else {
+            window.location.reload();
+          }
+          break;
         case "settings":
           if (typeof openPage === "function") {
             openPage("settingsPage", "⚙️ تنظیمات");
           }
           break;
-
         case "admin":
           if (typeof openAdminPanel === "function") {
             openAdminPanel();
           } else {
-            console.error("تابع openAdminPanel در سطح فایل تعریف نشده یا در دسترس نیست.");
-            alert("خطا: تابع پنل دیباگ پیدا نشد. مطمئن شوید کدهای جاوااسکریپت مربوط به ادمین را به انتهای app.js اضافه کرده‌اید.");
+            alert("خطا: تابع پنل دیباگ پیدا نشد.");
           }
           break;
-          case "exit":
-  if (confirm('آیا مطمئن هستید که می‌خواهید از برنامه خارج شوید؟')) {
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      if (navigator.app && navigator.app.exitApp) {
-        navigator.app.exitApp();
-      } else if (window.close) {
-        window.close();
-      } else {
-        window.location.href = 'about:blank';
-      }
-    } else {
-      if (window.close) {
-        window.close();
-      } else {
-        alert('برای خروج از برنامه، تب مرورگر را ببندید.');
-      }
-    }
-  }
-  break;
+        case "exit":
+          if (confirm('آیا مطمئن هستید که می‌خواهید از برنامه خارج شوید؟')) {
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+              if (navigator.app && navigator.app.exitApp) {
+                navigator.app.exitApp();
+              } else if (window.close) {
+                window.close();
+              } else {
+                window.location.href = 'about:blank';
+              }
+            } else {
+              if (window.close) {
+                window.close();
+              } else {
+                alert('برای خروج از برنامه، تب مرورگر را ببندید.');
+              }
+            }
+          }
+          break;
       }
     });
   });
 }
 
-// =========================================================
-// ================= مقداردهی اولیه =================
-// =========================================================
-
 function initNewFeatures() {
   createHamburgerPanel();
-  
   if (typeof loadBankCards === 'function') {
     loadBankCards();
   }
-
   document.addEventListener("click", (e) => {
     if (e.target.id === "emptyAddBankBtn") {
       if (typeof openBankCardModal === 'function') {
@@ -3918,7 +3147,6 @@ function initNewFeatures() {
   });
 }
 
-// اطمینان از مقداردهی پس از لود شدن کامل
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(initNewFeatures, 300);
@@ -3926,13 +3154,9 @@ if (document.readyState === 'loading') {
 } else {
   setTimeout(initNewFeatures, 300);
 }
-// صدا زدن توابع امنیتی پیش‌فرض
+
 if (typeof initAppLock === 'function') initAppLock();
 if (typeof initSettingsUI === 'function') initSettingsUI();
-
-// =========================================================
-// توابع کمکی تاریخ شمسی
-// =========================================================
 
 function toPersianDate(dateString) {
   if (!dateString) return '';
@@ -3980,31 +3204,438 @@ function convertToPersian(dateStr) {
   }
 }
 
-// =========================================================
-// تابع دیباگ برای بررسی تاریخ
-// =========================================================
-
 function debugDateSelects() {
   console.log("===== بررسی کمبوکس‌های تاریخ =====");
-  
   const daySel = document.getElementById("paymentDay");
   const monthSel = document.getElementById("paymentMonth");
   const yearSel = document.getElementById("paymentYear");
-  
   console.log("paymentDay:", daySel ? daySel.value : "❌ پیدا نشد");
   console.log("paymentMonth:", monthSel ? monthSel.value : "❌ پیدا نشد");
   console.log("paymentYear:", yearSel ? yearSel.value : "❌ پیدا نشد");
-  
   const p = getPersianDateParts();
   console.log("تاریخ امروز از getPersianDateParts:", p);
-  
   const monthIndex = p.month - 1;
   const debugMonthKey = MONTHS[monthIndex]?.key;
   console.log("کلید ماه جاری:", debugMonthKey);
   console.log("نام ماه جاری:", MONTHS[monthIndex]?.name);
-  
   console.log("===== پایان بررسی =====");
 }
 
-// صدا زدن تابع دیباگ بعد از load
+// =========================================================
+// ================= مدیریت سرمایه (طلا و دارایی‌ها) =================
+// =========================================================
+
+let allAssets = [];
+let allCapitalTransactions = [];
+let selectedAssetBuyBank = null;
+let selectedAssetSellBank = null;
+let currentGoldPrice = 0;
+let goldPriceLastUpdate = null;
+
+async function loadAssets() {
+  try {
+    const data = await supabaseRequest("assets?select=*&order=name.asc");
+    allAssets = Array.isArray(data) ? data : [];
+    populateAssetSelect();
+    updateAssetUnitLabels();
+  } catch (e) {
+    console.error("خطا در دریافت دارایی‌ها:", e);
+    allAssets = [];
+  }
+}
+
+async function loadCapitalTransactions() {
+  try {
+    const data = await supabaseRequest("capital_transactions?select=*&order=date.desc");
+    allCapitalTransactions = Array.isArray(data) ? data : [];
+    updateGoldSummary();
+    updateGoldReport();
+  } catch (e) {
+    console.error("خطا در دریافت تراکنش‌ها:", e);
+    allCapitalTransactions = [];
+  }
+}
+
+async function loadGoldPrice() {
+  try {
+    const data = await supabaseRequest("gold_prices?select=*&order=date.desc&limit=1");
+    if (Array.isArray(data) && data.length > 0) {
+      currentGoldPrice = data[0].price_per_gram;
+      goldPriceLastUpdate = data[0].date;
+    } else {
+      currentGoldPrice = 30000000;
+    }
+    updateGoldPriceDisplay();
+    updateModalGoldPrice();
+  } catch (e) {
+    console.error("خطا در دریافت قیمت طلا:", e);
+    currentGoldPrice = 30000000;
+    updateGoldPriceDisplay();
+    updateModalGoldPrice();
+  }
+}
+
+function updateGoldPriceDisplay() {
+  const priceEl = document.getElementById("todayGoldPrice");
+  const timeEl = document.getElementById("goldPriceUpdateTime");
+  if (priceEl) priceEl.textContent = formatMoney(currentGoldPrice);
+  if (timeEl && goldPriceLastUpdate) {
+    try {
+      const date = new Date(goldPriceLastUpdate);
+      timeEl.textContent = date.toLocaleDateString('fa-IR');
+    } catch {
+      timeEl.textContent = '-';
+    }
+  }
+  // به‌روزرسانی دارایی‌ها
+  updateDashboardAssets();
+  updateGoldSummary();
+  updateGoldReport();
+}
+
+function populateAssetSelect() {
+  const select = document.getElementById("assetSelect");
+  if (!select) return;
+  select.innerHTML = '<option value="">انتخاب کنید...</option>';
+  allAssets.forEach(asset => {
+    const op = document.createElement("option");
+    op.value = asset.id;
+    op.textContent = `${asset.name} (${asset.unit})`;
+    select.appendChild(op);
+  });
+}
+
+function updateAssetUnitLabels() {
+  const select = document.getElementById("assetSelect");
+  if (!select) return;
+  const selectedId = parseInt(select.value);
+  const asset = allAssets.find(a => a.id === selectedId);
+  const unit = asset ? asset.unit : "گرم";
+  const buyLabel = document.getElementById("assetBuyUnitLabel");
+  const sellLabel = document.getElementById("assetSellUnitLabel");
+  if (buyLabel) buyLabel.textContent = unit;
+  if (sellLabel) sellLabel.textContent = unit;
+}
+
+function fillAssetDateSelects(prefix) {
+  const daySel = document.getElementById(`${prefix}Day`);
+  const monthSel = document.getElementById(`${prefix}Month`);
+  const yearSel = document.getElementById(`${prefix}Year`);
+  if (!daySel || !monthSel || !yearSel) return;
+  if (daySel.options.length === 0) {
+    for (let d = 1; d <= 31; d++) {
+      const op = document.createElement("option");
+      op.value = d;
+      op.textContent = d.toLocaleString("fa-IR");
+      daySel.appendChild(op);
+    }
+  }
+  if (monthSel.options.length === 0) {
+    MONTHS.forEach(m => {
+      const op = document.createElement("option");
+      op.value = m.key;
+      op.textContent = m.name;
+      monthSel.appendChild(op);
+    });
+  }
+  const p = getPersianDateParts();
+  const monthIndex = p.month - 1;
+  const selectedMonthKey = MONTHS[monthIndex]?.key || MONTHS[0].key;
+  daySel.value = p.day;
+  monthSel.value = selectedMonthKey;
+  yearSel.value = p.year;
+}
+
+function renderAssetBanks(containerId, isBuy = true) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const banksList = getBanks();
+  container.innerHTML = banksList.map(b =>
+    `<button type="button" class="tag-btn asset-bank-btn" data-bank="${b}">${b}</button>`
+  ).join("");
+  container.querySelectorAll(".asset-bank-btn").forEach(btn => {
+    btn.addEventListener("click", function() {
+      container.querySelectorAll(".asset-bank-btn").forEach(b => b.classList.remove("active"));
+      this.classList.add("active");
+      if (isBuy) {
+        selectedAssetBuyBank = this.dataset.bank;
+      } else {
+        selectedAssetSellBank = this.dataset.bank;
+      }
+    });
+  });
+}
+
+function calculateAssetBuyUnitPrice() {
+  const quantity = parseFloat(document.getElementById("assetBuyQuantity").value) || 0;
+  const totalPrice = parseFloat(document.getElementById("assetBuyTotalPrice").value) || 0;
+  const unitPrice = quantity > 0 ? totalPrice / quantity : 0;
+  document.getElementById("assetBuyUnitPrice").textContent = formatMoney(unitPrice);
+}
+
+function calculateAssetSellUnitPrice() {
+  const quantity = parseFloat(document.getElementById("assetSellQuantity").value) || 0;
+  const totalPrice = parseFloat(document.getElementById("assetSellTotalPrice").value) || 0;
+  const unitPrice = quantity > 0 ? totalPrice / quantity : 0;
+  document.getElementById("assetSellUnitPrice").textContent = formatMoney(unitPrice);
+  const assetId = parseInt(document.getElementById("assetSelect").value);
+  if (!assetId || quantity <= 0 || totalPrice <= 0) {
+    document.getElementById("assetSellProfit").textContent = "۰ ریال";
+    return;
+  }
+  const buyTransactions = allCapitalTransactions.filter(t => t.asset_id === assetId && t.type === 'buy');
+  if (buyTransactions.length === 0) {
+    document.getElementById("assetSellProfit").textContent = "خریدی ثبت نشده";
+    return;
+  }
+  let totalQuantity = 0,
+    totalCost = 0;
+  buyTransactions.forEach(t => {
+    totalQuantity += t.quantity;
+    totalCost += t.total_price;
+  });
+  const avgBuyPrice = totalQuantity > 0 ? totalCost / totalQuantity : 0;
+  const totalBuyPrice = quantity * avgBuyPrice;
+  const profit = totalPrice - totalBuyPrice;
+  const profitPercent = totalBuyPrice > 0 ? (profit / totalBuyPrice * 100) : 0;
+  const profitEl = document.getElementById("assetSellProfit");
+  profitEl.textContent = (profit >= 0 ? '+' : '') + formatMoney(profit) + ` (${profitPercent >= 0 ? '+' : ''}${profitPercent.toFixed(2)}%)`;
+  profitEl.style.color = profit >= 0 ? 'var(--success)' : 'var(--danger)';
+}
+
+function openAssetTransactionModal() {
+  const modal = document.getElementById("assetTransactionModal");
+  if (!modal) return;
+  modal.classList.add("open");
+  document.body.style.overflow = "hidden";
+  document.getElementById("assetTransactionForm").reset();
+  document.getElementById("assetTransactionType").value = "buy";
+  document.getElementById("assetBuyFields").style.display = "block";
+  document.getElementById("assetSellFields").style.display = "none";
+  document.getElementById("assetTransactionTitle").textContent = "📥 خرید دارایی";
+  document.getElementById("saveAssetTransactionBtn").textContent = "ثبت خرید";
+  loadAssets();
+  loadCapitalTransactions();
+  fillAssetDateSelects("assetBuy");
+  fillAssetDateSelects("assetSell");
+  renderAssetBanks("assetBuyBanksContainer", true);
+  renderAssetBanks("assetSellBanksContainer", false);
+  selectedAssetBuyBank = null;
+  selectedAssetSellBank = null;
+}
+
+function closeAssetTransactionModal() {
+  const modal = document.getElementById("assetTransactionModal");
+  if (modal) {
+    modal.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+}
+
+function updateGoldSummary() {
+  const buyTransactions = allCapitalTransactions.filter(t => t.type === 'buy');
+  let totalWeight = 0,
+    totalInvest = 0,
+    totalTodayValue = 0;
+  buyTransactions.forEach(t => {
+    totalWeight += t.quantity;
+    totalInvest += t.total_price;
+    totalTodayValue += t.quantity * currentGoldPrice;
+  });
+  const totalProfit = totalTodayValue - totalInvest;
+  document.getElementById("goldTotalValue").textContent = formatMoney(totalTodayValue);
+  document.getElementById("goldTotalWeight").textContent = totalWeight.toLocaleString('fa-IR') + ' گرم';
+  document.getElementById("goldTotalInvest").textContent = formatMoney(totalInvest);
+  const profitEl = document.getElementById("goldTotalProfit");
+  profitEl.textContent = (totalProfit >= 0 ? '+' : '') + formatMoney(totalProfit);
+  profitEl.style.color = totalProfit >= 0 ? 'var(--success)' : 'var(--danger)';
+  
+}
+
+function updateGoldReport() {
+  const buyTransactions = allCapitalTransactions.filter(t => t.type === 'buy');
+  let totalWeight = 0,
+    totalInvest = 0,
+    totalTodayValue = 0;
+  buyTransactions.forEach(t => {
+    totalWeight += t.quantity;
+    totalInvest += t.total_price;
+    totalTodayValue += t.quantity * currentGoldPrice;
+  });
+  document.getElementById("reportGoldTotal").textContent = formatMoney(totalTodayValue);
+}
+
+document.querySelectorAll(".asset-transaction-type").forEach(btn => {
+  btn.addEventListener("click", function() {
+    document.querySelectorAll(".asset-transaction-type").forEach(b => b.classList.remove("active"));
+    this.classList.add("active");
+    const type = this.dataset.type;
+    document.getElementById("assetTransactionType").value = type;
+    document.getElementById("assetBuyFields").style.display = type === "buy" ? "block" : "none";
+    document.getElementById("assetSellFields").style.display = type === "sell" ? "block" : "none";
+    document.getElementById("assetTransactionTitle").textContent = type === "buy" ? "📥 خرید دارایی" : "📤 فروش دارایی";
+    document.getElementById("saveAssetTransactionBtn").textContent = type === "buy" ? "ثبت خرید" : "ثبت فروش";
+  });
+});
+
+document.getElementById("assetSelect")?.addEventListener("change", function() {
+  updateAssetUnitLabels();
+  calculateAssetBuyUnitPrice();
+  calculateAssetSellUnitPrice();
+});
+
+document.getElementById("assetBuyQuantity")?.addEventListener("input", calculateAssetBuyUnitPrice);
+document.getElementById("assetBuyTotalPrice")?.addEventListener("input", calculateAssetBuyUnitPrice);
+document.getElementById("assetSellQuantity")?.addEventListener("input", calculateAssetSellUnitPrice);
+document.getElementById("assetSellTotalPrice")?.addEventListener("input", calculateAssetSellUnitPrice);
+
+document.getElementById("fabAsset")?.addEventListener("click", function() {
+  fabMenu.classList.add("hidden");
+  addExpenseButton.classList.remove("open");
+  addExpenseButton.classList.remove("active");
+  openAssetTransactionModal();
+});
+
+document.getElementById("closeAssetTransactionModal")?.addEventListener("click", closeAssetTransactionModal);
+document.getElementById("assetTransactionModal")?.querySelector(".modal-backdrop")?.addEventListener("click", closeAssetTransactionModal);
+
+document.getElementById("assetTransactionForm")?.addEventListener("submit", async function(e) {
+  e.preventDefault();
+  const assetId = parseInt(document.getElementById("assetSelect").value);
+  const type = document.getElementById("assetTransactionType").value;
+  if (!assetId) { alert("لطفاً یک دارایی انتخاب کنید."); return; }
+  let quantity, totalPrice, date, bank;
+  if (type === "buy") {
+    quantity = parseFloat(document.getElementById("assetBuyQuantity").value);
+    totalPrice = parseFloat(document.getElementById("assetBuyTotalPrice").value);
+    bank = selectedAssetBuyBank;
+    const day = parseInt(document.getElementById("assetBuyDay").value);
+    const monthKey = document.getElementById("assetBuyMonth").value;
+    const year = parseInt(document.getElementById("assetBuyYear").value);
+    const monthIndex = MONTHS.findIndex(m => m.key === monthKey);
+    date = new Date(year, monthIndex, day).toISOString();
+    if (!quantity || quantity <= 0) { alert("مقدار معتبر نیست."); return; }
+    if (!totalPrice || totalPrice <= 0) { alert("مبلغ معتبر نیست."); return; }
+    if (!bank) { alert("لطفاً حساب بانکی را انتخاب کنید."); return; }
+  } else {
+    quantity = parseFloat(document.getElementById("assetSellQuantity").value);
+    totalPrice = parseFloat(document.getElementById("assetSellTotalPrice").value);
+    bank = selectedAssetSellBank;
+    const day = parseInt(document.getElementById("assetSellDay").value);
+    const monthKey = document.getElementById("assetSellMonth").value;
+    const year = parseInt(document.getElementById("assetSellYear").value);
+    const monthIndex = MONTHS.findIndex(m => m.key === monthKey);
+    date = new Date(year, monthIndex, day).toISOString();
+    if (!quantity || quantity <= 0) { alert("مقدار معتبر نیست."); return; }
+    if (!totalPrice || totalPrice <= 0) { alert("مبلغ معتبر نیست."); return; }
+    if (!bank) { alert("لطفاً حساب بانکی را انتخاب کنید."); return; }
+  }
+  const note = document.getElementById("assetTransactionNote").value.trim();
+  const unitPrice = totalPrice / quantity;
+  const data = { asset_id: assetId, type: type, quantity: quantity, total_price: totalPrice, unit_price: unitPrice, date: date, bank: bank, note: note || null };
+  const btn = document.getElementById("saveAssetTransactionBtn");
+  btn.disabled = true;
+  btn.textContent = "در حال ذخیره...";
+  try {
+    await supabaseRequest("capital_transactions", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify(data)
+    });
+    const assetName = allAssets.find(a => a.id === assetId)?.name || "دارایی";
+    await addTransaction({
+      expense_id: null,
+      title: `${type === "buy" ? "خرید" : "فروش"} ${assetName}`,
+      amount: totalPrice,
+      type: type === "buy" ? "payment" : "income",
+      account: bank,
+      from_account: type === "buy" ? bank : null,
+      to_account: type === "sell" ? bank : null,
+      transaction_date: date,
+      note: note || null
+    });
+    closeAssetTransactionModal();
+    showToast(`✅ ${type === "buy" ? "خرید" : "فروش"} با موفقیت ثبت شد`, "success");
+    await loadCapitalTransactions();
+    await loadData();
+  } catch (err) {
+    alert("خطا: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = type === "buy" ? "ثبت خرید" : "ثبت فروش";
+  }
+});
+function updateModalGoldPrice() {
+  const priceEl = document.getElementById("modalGoldPrice");
+  const dateEl = document.getElementById("modalGoldPriceDate");
+  if (priceEl) {
+    priceEl.textContent = formatMoney(currentGoldPrice);
+  }
+  if (dateEl && goldPriceLastUpdate) {
+    try {
+      const date = new Date(goldPriceLastUpdate);
+      dateEl.textContent = `آخرین بروزرسانی: ${date.toLocaleDateString('fa-IR')}`;
+    } catch {
+      dateEl.textContent = '-';
+    }
+  }
+}
+function updateDashboardAssets() {
+  // محاسبه وزن کل و ارزش از تراکنش‌های خرید
+  const buyTransactions = allCapitalTransactions.filter(t => t.type === 'buy');
+  let totalWeight = 0;
+  let totalInvest = 0;
+  
+  buyTransactions.forEach(t => {
+    totalWeight += t.quantity;
+    totalInvest += t.total_price;
+  });
+  
+  const todayValue = totalWeight * currentGoldPrice;
+  const profit = todayValue - totalInvest;
+  
+  document.getElementById("dashGoldWeight").textContent = totalWeight.toLocaleString('fa-IR') + ' گرم';
+  document.getElementById("dashGoldValue").textContent = formatMoney(todayValue);
+  
+  const profitEl = document.getElementById("dashGoldProfit");
+  profitEl.textContent = (profit >= 0 ? '+' : '') + formatMoney(profit);
+  profitEl.style.color = profit >= 0 ? 'var(--success)' : 'var(--danger)';
+}
+async function updateGoldPrice() {
+  const newPrice = prompt("قیمت روز طلا (هر گرم) را وارد کنید:", currentGoldPrice);
+  if (newPrice === null) return;
+  
+  const price = parseInt(newPrice.replace(/[^\d]/g, ''));
+  if (!price || price <= 0) {
+    showToast("❌ قیمت معتبر نیست", "error");
+    return;
+  }
+  
+  const btn = document.getElementById("updateGoldPriceBtn");
+  btn.textContent = "⏳";
+  btn.disabled = true;
+  
+  try {
+    await supabaseRequest("gold_prices", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        price_per_gram: price,
+        date: new Date().toISOString().split('T')[0],
+        source: "manual"
+      })
+    });
+    
+    currentGoldPrice = price;
+    goldPriceLastUpdate = new Date().toISOString().split('T')[0];
+    updateGoldPriceDisplay();
+    showToast("✅ قیمت روز طلا بروزرسانی شد", "success");
+    
+  } catch(err) {
+    alert("خطا در بروزرسانی قیمت: " + err.message);
+  } finally {
+    btn.textContent = "🔄";
+    btn.disabled = false;
+  }
+}
 setTimeout(debugDateSelects, 2000);
