@@ -5654,8 +5654,535 @@ if (document.readyState === "loading") {
 } else {
   initGoldSystem();
 }
+//-------------------
+// =========================================================
+// ================= نمایش سرمایه‌ها در صفحه بانک‌ها =================
+// =========================================================
 
+/**
+ * رندر کارت‌های سرمایه در صفحه بانک‌ها
+ * این تابع جایگزین بخش سرمایه در صفحه بانک‌ها می‌شود
+ */
+function renderCapitalCards() {
+    const container = document.getElementById("capitalCardsContainer");
+    if (!container) return;
 
+    // اگر داده‌ای نیست
+    if (!allCapitalTransactions || allCapitalTransactions.length === 0) {
+        container.innerHTML = `
+            <div class="empty-capital-state" style="text-align:center;padding:30px 20px;color:var(--muted);">
+                <div style="font-size:48px;margin-bottom:12px;">💰</div>
+                <p style="font-size:14px;">هیچ سرمایه‌ای ثبت نشده است</p>
+                <button onclick="openAssetTransactionModal()" class="primary-button" style="margin-top:16px;max-width:200px;margin-left:auto;margin-right:auto;">
+                    ➕ ثبت سرمایه جدید
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    // گروه‌بندی تراکنش‌ها بر اساس asset_id
+    const grouped = {};
+    allCapitalTransactions.forEach(t => {
+        const key = t.asset_id;
+        if (!grouped[key]) {
+            grouped[key] = [];
+        }
+        grouped[key].push(t);
+    });
+
+    let html = '<div class="capital-grid" style="display:grid;gap:12px;">';
+
+    // برای هر دارایی، یک کارت بساز
+    Object.keys(grouped).forEach(assetId => {
+        const transactions = grouped[assetId];
+        const asset = getAssetById(assetId);
+        if (!asset) return;
+
+        // محاسبه موجودی فعلی
+        let quantity = 0;
+        let totalInvested = 0;
+        let lastBuyPrice = 0;
+        let buyDate = null;
+
+        transactions.forEach(t => {
+            const q = getNumeric(t.quantity);
+            const total = getNumeric(t.total_price);
+            if (t.type === "buy") {
+                quantity += q;
+                totalInvested += total;
+                lastBuyPrice = getNumeric(t.unit_price);
+                if (!buyDate) buyDate = t.date;
+            } else if (t.type === "sell") {
+                quantity -= q;
+                totalInvested -= total;
+            }
+        });
+
+        // ارزش فعلی
+        let currentValue = 0;
+        let currentUnitPrice = 0;
+
+        // اگر طلاست
+        if (isGoldAsset(asset)) {
+            currentUnitPrice = currentGoldPrice || 0;
+            currentValue = quantity * currentUnitPrice;
+        } else {
+            // برای سایر دارایی‌ها از آخرین قیمت خرید استفاده می‌کنیم
+            currentUnitPrice = lastBuyPrice;
+            currentValue = quantity * currentUnitPrice;
+        }
+
+        const profit = currentValue - totalInvested;
+        const profitPercent = totalInvested > 0 ? (profit / totalInvested) * 100 : 0;
+
+        // نام دارایی با ایموجی
+        const assetEmoji = asset.type === 'gold' ? '🏅' : '💎';
+
+        html += `
+            <div class="capital-card" data-asset-id="${assetId}" style="
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 18px;
+                padding: 14px 16px;
+                transition: all 0.25s ease;
+                position: relative;
+                cursor: pointer;
+            ">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+                    <div style="flex:1;min-width:0;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                            <span style="font-size:20px;">${assetEmoji}</span>
+                            <span style="font-weight:700;font-size:15px;color:var(--text);">${escapeHtml(asset.name)}</span>
+                            <span style="font-size:11px;color:var(--muted);background:var(--surface-2);padding:2px 8px;border-radius:6px;">
+                                ${asset.type === 'gold' ? 'طلا' : 'سرمایه'}
+                            </span>
+                        </div>
+                        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;">
+                            <span style="font-size:12px;color:var(--muted);">
+                                وزن/تعداد: <strong style="color:var(--text);">${formatWeight(quantity)} ${escapeHtml(asset.unit || '')}</strong>
+                            </span>
+                            <span style="font-size:12px;color:var(--muted);">
+                                ارزش فعلی: <strong style="color:var(--text);">${formatMoney(currentValue)}</strong>
+                            </span>
+                            ${profit !== 0 ? `
+                                <span style="font-size:12px;color:${profit >= 0 ? 'var(--success)' : 'var(--danger)'};">
+                                    ${profit >= 0 ? '📈+' : '📉'} ${formatMoney(profit)} (${profitPercent >= 0 ? '+' : ''}${profitPercent.toFixed(2)}%)
+                                </span>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <button class="capital-eye-btn" data-asset-id="${assetId}" style="
+                        background:var(--surface-2);
+                        border:1px solid var(--border);
+                        border-radius:50%;
+                        width:40px;
+                        height:40px;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        color:#fff;
+                        cursor:pointer;
+                        transition:all 0.2s ease;
+                        flex-shrink:0;
+                        font-size:18px;
+                    ">
+                        👁
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+
+    // رویداد کلیک روی دکمه چشم
+    container.querySelectorAll('.capital-eye-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const assetId = this.dataset.assetId;
+            openCapitalDetailsModal(assetId);
+        });
+    });
+
+    // رویداد کلیک روی کل کارت
+    container.querySelectorAll('.capital-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const assetId = this.dataset.assetId;
+            openCapitalDetailsModal(assetId);
+        });
+    });
+}
+
+// =========================================================
+// ================= پاپ‌آپ جزئیات سرمایه =================
+// =========================================================
+
+/**
+ * باز کردن مودال جزئیات سرمایه
+ */
+function openCapitalDetailsModal(assetId) {
+    const asset = getAssetById(assetId);
+    if (!asset) {
+        showToast("دارایی پیدا نشد!", "error");
+        return;
+    }
+
+    // دریافت تراکنش‌های این دارایی
+    const transactions = allCapitalTransactions.filter(t => Number(t.asset_id) === Number(assetId));
+    if (transactions.length === 0) {
+        showToast("هیچ تراکنشی برای این دارایی ثبت نشده!", "error");
+        return;
+    }
+
+    // محاسبات
+    let quantity = 0;
+    let totalInvested = 0;
+    let totalQuantityBought = 0;
+    let totalInvestedBought = 0;
+    let lastBuyPrice = 0;
+    let buyDate = null;
+    let buyDatePersian = '';
+    let firstTransaction = null;
+
+    transactions.forEach(t => {
+        const q = getNumeric(t.quantity);
+        const total = getNumeric(t.total_price);
+        if (t.type === "buy") {
+            quantity += q;
+            totalInvested += total;
+            totalQuantityBought += q;
+            totalInvestedBought += total;
+            lastBuyPrice = getNumeric(t.unit_price);
+            if (!firstTransaction) firstTransaction = t;
+        } else if (t.type === "sell") {
+            quantity -= q;
+            totalInvested -= total;
+        }
+    });
+
+    // تاریخ خرید
+    if (firstTransaction && firstTransaction.date) {
+        buyDate = firstTransaction.date;
+        buyDatePersian = convertToPersian(buyDate);
+    }
+
+    // قیمت میانگین خرید
+    const avgBuyPrice = totalQuantityBought > 0 ? totalInvestedBought / totalQuantityBought : 0;
+
+    // قیمت روز جاری
+    let currentUnitPrice = 0;
+    let currentValue = 0;
+
+    if (isGoldAsset(asset)) {
+        currentUnitPrice = currentGoldPrice || lastBuyPrice;
+        currentValue = quantity * currentUnitPrice;
+    } else {
+        currentUnitPrice = lastBuyPrice;
+        currentValue = quantity * currentUnitPrice;
+    }
+
+    // قیمت خرید کل
+    const totalBuyPrice = quantity * avgBuyPrice;
+
+    // اختلاف قیمت
+    const priceDiff = currentValue - totalBuyPrice;
+    const priceDiffPercent = totalBuyPrice > 0 ? (priceDiff / totalBuyPrice) * 100 : 0;
+
+    // سود/زیان
+    const profit = currentValue - totalInvested;
+    const profitPercent = totalInvested > 0 ? (profit / totalInvested) * 100 : 0;
+
+    // ایموجی
+    const assetEmoji = asset.type === 'gold' ? '🏅' : '💎';
+    const typeLabel = asset.type === 'gold' ? 'طلا' : 'سرمایه';
+
+    // مودال
+    const modal = document.getElementById("capitalDetailsModal");
+    if (!modal) {
+        // اگر مودال وجود نداشت، بساز
+        createCapitalDetailsModal();
+        // بعد از ساخته شدن، دوباره فراخوانی
+        setTimeout(() => openCapitalDetailsModal(assetId), 100);
+        return;
+    }
+
+    const body = document.getElementById("capitalDetailsBody");
+    const title = document.getElementById("capitalDetailsTitle");
+
+    if (title) {
+        title.textContent = `${assetEmoji} ${escapeHtml(asset.name)}`;
+    }
+
+    if (body) {
+        body.innerHTML = `
+            <div class="capital-detail-grid" style="display:grid;gap:10px;padding:4px 0;">
+                <div class="capital-detail-item" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+                    <span style="color:var(--muted);font-size:13px;">نوع دارایی</span>
+                    <span style="font-weight:600;font-size:14px;">${typeLabel}</span>
+                </div>
+                <div class="capital-detail-item" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+                    <span style="color:var(--muted);font-size:13px;">وزن / تعداد</span>
+                    <span style="font-weight:600;font-size:14px;">${formatWeight(quantity)} ${escapeHtml(asset.unit || '')}</span>
+                </div>
+                <div class="capital-detail-item" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+                    <span style="color:var(--muted);font-size:13px;">تاریخ خرید</span>
+                    <span style="font-weight:600;font-size:14px;">${buyDatePersian || 'نامشخص'}</span>
+                </div>
+                <div class="capital-detail-item" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+                    <span style="color:var(--muted);font-size:13px;">قیمت روز خرید (هر واحد)</span>
+                    <span style="font-weight:600;font-size:14px;color:var(--text);">${formatMoney(avgBuyPrice)}</span>
+                </div>
+                <div class="capital-detail-item" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+                    <span style="color:var(--muted);font-size:13px;">قیمت خرید کل</span>
+                    <span style="font-weight:600;font-size:14px;color:var(--text);">${formatMoney(totalBuyPrice)}</span>
+                </div>
+                <div class="capital-detail-item" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+                    <span style="color:var(--muted);font-size:13px;">قیمت روز جاری (هر واحد)</span>
+                    <span style="font-weight:600;font-size:14px;color:${currentUnitPrice > 0 ? 'var(--primary-light)' : 'var(--muted)'};">${currentUnitPrice > 0 ? formatMoney(currentUnitPrice) : 'نامشخص'}</span>
+                </div>
+                <div class="capital-detail-item" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+                    <span style="color:var(--muted);font-size:13px;">قیمت روز کل</span>
+                    <span style="font-weight:600;font-size:14px;color:var(--text);">${formatMoney(currentValue)}</span>
+                </div>
+                <div class="capital-detail-item" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+                    <span style="color:var(--muted);font-size:13px;">اختلاف قیمت</span>
+                    <span style="font-weight:700;font-size:15px;color:${priceDiff >= 0 ? 'var(--success)' : 'var(--danger)'};">
+                        ${priceDiff >= 0 ? '+' : ''}${formatMoney(priceDiff)} (${priceDiffPercent >= 0 ? '+' : ''}${priceDiffPercent.toFixed(2)}%)
+                    </span>
+                </div>
+                <div class="capital-detail-item" style="display:flex;justify-content:space-between;padding:10px 0;background:rgba(255,255,255,0.03);border-radius:12px;margin-top:4px;padding:12px 14px;">
+                    <span style="color:var(--muted);font-size:14px;font-weight:600;">سود / زیان</span>
+                    <span style="font-weight:800;font-size:18px;color:${profit >= 0 ? 'var(--success)' : 'var(--danger)'};">
+                        ${profit >= 0 ? '📈 +' : '📉 '}${formatMoney(Math.abs(profit))} (${profitPercent >= 0 ? '+' : ''}${profitPercent.toFixed(2)}%)
+                    </span>
+                </div>
+            </div>
+        `;
+    }
+
+    // دکمه‌های پاپ‌آپ
+    const editBtn = document.getElementById("capitalDetailsEditBtn");
+    const closeBtn = document.getElementById("capitalDetailsCloseBtn");
+
+    if (editBtn) {
+        editBtn.onclick = function() {
+            closeCapitalDetailsModal();
+            // باز کردن مودال ویرایش
+            setTimeout(() => {
+                // اگر تابع ویرایش دارید، اینجا صدا بزنید
+                if (typeof openEditAssetModal === 'function') {
+                    openEditAssetModal(assetId);
+                } else {
+                    // یا اینکه مودال خرید/فروش رو با داده‌های موجود باز کنید
+                    showToast("ویرایش از طریق مودال خرید/فروش انجام می‌شود", "info");
+                    openAssetTransactionModal();
+                }
+            }, 200);
+        };
+    }
+
+    if (closeBtn) {
+        closeBtn.onclick = closeCapitalDetailsModal;
+    }
+
+    // بستن با کلیک روی پس‌زمینه
+    const backdrop = modal.querySelector(".modal-backdrop");
+    if (backdrop) {
+        backdrop.onclick = closeCapitalDetailsModal;
+    }
+
+    modal.classList.add("open");
+    document.body.style.overflow = "hidden";
+}
+
+/**
+ * بستن مودال جزئیات سرمایه
+ */
+function closeCapitalDetailsModal() {
+    const modal = document.getElementById("capitalDetailsModal");
+    if (!modal) return;
+    modal.classList.remove("open");
+    document.body.style.overflow = "";
+}
+
+/**
+ * ساختن مودال جزئیات سرمایه (اگر وجود نداشت)
+ */
+function createCapitalDetailsModal() {
+    if (document.getElementById("capitalDetailsModal")) return;
+
+    const modal = document.createElement("div");
+    modal.id = "capitalDetailsModal";
+    modal.className = "modal";
+    modal.innerHTML = `
+        <div class="modal-backdrop"></div>
+        <div class="modal-sheet" style="padding-bottom:120px;">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <h2 id="capitalDetailsTitle">جزئیات سرمایه</h2>
+                <button class="close-modal" id="capitalDetailsCloseBtn">✕</button>
+            </div>
+            <div id="capitalDetailsBody" style="padding:4px 0;">
+                <div style="text-align:center;padding:30px 0;color:var(--muted);">در حال بارگذاری...</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+                <button id="capitalDetailsEditBtn" style="
+                    padding:12px;
+                    border:1px solid var(--primary-light);
+                    border-radius:12px;
+                    background:transparent;
+                    color:var(--primary-light);
+                    font-weight:600;
+                    font-size:14px;
+                    cursor:pointer;
+                    transition:all 0.2s;
+                ">✎ ویرایش</button>
+                <button id="capitalDetailsCloseBtn2" style="
+                    padding:12px;
+                    border:1px solid var(--border);
+                    border-radius:12px;
+                    background:var(--surface-2);
+                    color:var(--text);
+                    font-weight:600;
+                    font-size:14px;
+                    cursor:pointer;
+                    transition:all 0.2s;
+                " onclick="closeCapitalDetailsModal()">✕ بستن</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // دکمه بستن دوم
+    const closeBtn2 = modal.querySelector("#capitalDetailsCloseBtn2");
+    if (closeBtn2) {
+        closeBtn2.addEventListener("click", closeCapitalDetailsModal);
+    }
+
+    // دکمه بستن اول
+    const closeBtn = modal.querySelector("#capitalDetailsCloseBtn");
+    if (closeBtn) {
+        closeBtn.addEventListener("click", closeCapitalDetailsModal);
+    }
+
+    // کلیک روی پس‌زمینه
+    const backdrop = modal.querySelector(".modal-backdrop");
+    if (backdrop) {
+        backdrop.addEventListener("click", closeCapitalDetailsModal);
+    }
+}
+
+// =========================================================
+// ================= اتصال به صفحه بانک‌ها =================
+// =========================================================
+
+/**
+ * تابع جایگزین برای رندر کردن کارت‌های سرمایه در صفحه بانک‌ها
+ * این تابع باید در renderBankCards یا هر جای دیگه‌ای که صفحه بانک‌ها رندر می‌شه، صدا زده بشه
+ */
+function renderCapitalSection() {
+    // صبر می‌کنیم تا داده‌ها بارگذاری بشن
+    if (!allCapitalTransactions || allCapitalTransactions.length === 0) {
+        // اگر داده‌ها هنوز بارگذاری نشده، دوباره تلاش می‌کنیم
+        setTimeout(() => {
+            loadCapitalTransactions().then(() => {
+                renderCapitalCards();
+            });
+        }, 500);
+        return;
+    }
+    renderCapitalCards();
+}
+
+// =========================================================
+// ================= پچ کردن renderBankCards =================
+// =========================================================
+
+// تابع اصلی renderBankCards رو نگه می‌داریم و بعد از اجراش، بخش سرمایه رو اضافه می‌کنیم
+const originalRenderBankCards = window.renderBankCards;
+
+if (originalRenderBankCards) {
+    window.renderBankCards = function() {
+        // اجرای تابع اصلی
+        originalRenderBankCards.call(this);
+
+        // اضافه کردن بخش سرمایه
+        setTimeout(() => {
+            // اطمینان از وجود container
+            let container = document.getElementById("capitalCardsContainer");
+            if (!container) {
+                // اگر container وجود نداشت، بساز
+                const banksPage = document.getElementById("banksPage");
+                if (banksPage) {
+                    // پیدا کردن جایی برای قرار دادن
+                    const existingSection = banksPage.querySelector(".capital-section");
+                    if (!existingSection) {
+                        const section = document.createElement("div");
+                        section.className = "capital-section";
+                        section.style.cssText = "margin-top:16px;padding:0 4px;";
+                        section.innerHTML = `
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:0 4px;">
+                                <span style="font-size:16px;font-weight:700;color:var(--text);">💰 سرمایه‌ها</span>
+                                <button onclick="openAssetTransactionModal()" style="
+                                    background:var(--primary);
+                                    border:none;
+                                    border-radius:10px;
+                                    color:#fff;
+                                    padding:6px 14px;
+                                    font-size:12px;
+                                    font-weight:600;
+                                    cursor:pointer;
+                                    transition:all 0.2s;
+                                ">➕ جدید</button>
+                            </div>
+                            <div id="capitalCardsContainer"></div>
+                        `;
+                        banksPage.appendChild(section);
+                        container = document.getElementById("capitalCardsContainer");
+                    } else {
+                        container = document.getElementById("capitalCardsContainer");
+                    }
+                }
+            }
+
+            if (container) {
+                renderCapitalCards();
+            }
+        }, 200);
+    };
+}
+
+// =========================================================
+// ================= مقداردهی اولیه =================
+// =========================================================
+
+// وقتی صفحه بانک‌ها باز می‌شه، سرمایه‌ها رو نمایش بده
+document.addEventListener("DOMContentLoaded", function() {
+    // بعد از بارگذاری کامل
+    setTimeout(() => {
+        // اگر در صفحه بانک‌ها هستیم
+        const banksPage = document.getElementById("banksPage");
+        if (banksPage && banksPage.classList.contains("active")) {
+            renderCapitalSection();
+        }
+    }, 1000);
+});
+
+// وقتی صفحه بانک‌ها با نویگیشن باز می‌شه
+const originalOpenPage = window.openPage;
+if (originalOpenPage) {
+    window.openPage = function(id, title) {
+        originalOpenPage.call(this, id, title);
+        if (id === "banksPage") {
+            setTimeout(renderCapitalSection, 300);
+        }
+    };
+}
+
+console.log("✅ بخش سرمایه در صفحه بانک‌ها فعال شد");
 
 // =========================================================
 // پایان مدیریت سرمایه
