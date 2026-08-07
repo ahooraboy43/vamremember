@@ -103,17 +103,35 @@ saveBankCards(cards) {
     return false;
   }
 },
-  addBankCard(card) {
+ addBankCard(card) {
+  try {
+    console.log('➕ افزودن کارت جدید:', card);
+    
     const cards = this.getBankCards();
+    console.log('📋 کارت‌های موجود قبل از افزودن:', cards.length);
+    
     const index = cards.findIndex(c => c.bankName === card.bankName);
     if (index !== -1) {
       cards[index] = { ...cards[index], ...card };
+      console.log('✏️ ویرایش کارت موجود:', card.bankName);
     } else {
       cards.push(card);
+      console.log('➕ کارت جدید اضافه شد:', card.bankName);
     }
-    this.saveBankCards(cards);
+    
+    const result = this.saveBankCards(cards);
+    console.log('💾 نتیجه ذخیره:', result);
+    
+    // بررسی مجدد
+    const check = localStorage.getItem(this.KEYS.BANK_CARDS);
+    console.log('🔍 بررسی نهایی:', check);
+    
     return cards;
-  },
+  } catch (e) {
+    console.error('❌ خطا در addBankCard:', e);
+    return [];
+  }
+},
   removeBankCard(id) {
     let cards = this.getBankCards();
     cards = cards.filter(c => c.id !== id);
@@ -2391,12 +2409,31 @@ function loadBankCards() {
 
 function saveBankCards() {
   try {
-    // فیلتر کردن کارت‌های خالی و نامعتبر
-    const validCards = bankCards.filter(c => c && c.bankName && c.bankName.trim() !== '');
-    bankCards = validCards;
+    console.log('💾 در حال ذخیره کارت‌ها:', bankCards);
     
+    // اطمینان از اینکه bankCards آرایه است
+    if (!Array.isArray(bankCards)) {
+      console.warn('⚠️ bankCards آرایه نیست، بازنشانی می‌شود');
+      bankCards = [];
+    }
+    
+    // فیلتر کردن کارت‌های معتبر
+    const validCards = bankCards.filter(c => c && c.bankName && c.bankName.trim() !== '');
+    console.log('💾 کارت‌های معتبر برای ذخیره:', validCards.length);
+    
+    // ذخیره در localStorage از طریق DataManager
     const result = DataManager.saveBankCards(validCards);
-    console.log('💾 کارت‌ها ذخیره شدند:', validCards.length);
+    console.log('💾 نتیجه ذخیره:', result);
+    
+    // بررسی اینکه ذخیره شده یا نه
+    const check = localStorage.getItem('bankCardsV1');
+    console.log('💾 بررسی localStorage بعد از ذخیره:', check);
+    
+    if (check) {
+      const parsed = JSON.parse(check);
+      console.log('💾 تعداد کارت‌های ذخیره شده:', parsed.length);
+    }
+    
     renderBankCards();
     return result;
   } catch (e) {
@@ -2820,13 +2857,16 @@ function renderAdminBanks(body) {
           `).join('')}
         </div>
         <div style="margin-top:10px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;font-size:11px;color:var(--muted);">
-          <div>🔍 اطلاعات دیباگ:</div>
-          <div>📦 تعداد کارت‌ها در حافظه: ${bankCards.length}</div>
-          <div>💾 تعداد کارت‌ها در localStorage: ${cards.length}</div>
-          <button onclick="forceReloadCards()" style="margin-top:6px;padding:4px 12px;background:var(--primary);border:none;border-radius:6px;color:#fff;cursor:pointer;">🔄 بارگذاری مجدد</button>
-          <button onclick="showRawStorage()" style="margin-top:6px;padding:4px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;">📋 نمایش داده‌های خام</button>
-        </div>
-      </div>
+  <div>🔍 اطلاعات دیباگ:</div>
+  <div>📦 تعداد کارت‌ها در حافظه (bankCards): ${bankCards.length}</div>
+  <div>💾 تعداد کارت‌ها در localStorage: ${cards.length}</div>
+  <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+    <button onclick="forceReloadCards()" style="padding:4px 12px;background:var(--primary);border:none;border-radius:6px;color:#fff;cursor:pointer;">🔄 Refresh</button>
+    <button onclick="debugStorage()" style="padding:4px 12px;background:#f59e0b;border:none;border-radius:6px;color:#000;cursor:pointer;">🐛 دیباگ</button>
+    <button onclick="showRawStorage()" style="padding:4px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;">📋 خام</button>
+    <button onclick="syncBankCardsFromMemory()" style="padding:4px 12px;background:#22c55e;border:none;border-radius:6px;color:#fff;cursor:pointer;">💾 ذخیره از حافظه</button>
+  </div>
+</div>
     `;
   } catch (e) {
     console.error('❌ خطا در renderAdminBanks:', e);
@@ -3053,11 +3093,9 @@ function addCardToBank(bankName) {
 }
 
 let currentCardImageData = null;
-
-function openBankCardModal(card = null, prefillBank = null) {
-  const modal = document.getElementById("bankCardModal");
-  const form = document.getElementById("bankCardForm");
-  const title = document.getElementById("bankCardModalTitle");
+document.getElementById("bankCardForm")?.addEventListener("submit", function(e) {
+  e.preventDefault();
+  
   const idField = document.getElementById("editBankCardId");
   const nameField = document.getElementById("bankCardName");
   const numberField = document.getElementById("bankCardNumber");
@@ -3065,36 +3103,74 @@ function openBankCardModal(card = null, prefillBank = null) {
   const expiryField = document.getElementById("bankCardExpiry");
   const cvvField = document.getElementById("bankCardCvv");
   const colorField = document.getElementById("bankCardColor");
-  const imagePreview = document.getElementById("bankCardImagePreview");
-  const imageInput = document.getElementById("bankCardImage");
-  if (!modal) return;
-  form.reset();
-  idField.value = "";
-  currentCardImageData = null;
-  if (imageInput) imageInput.value = "";
-  if (imagePreview) { imagePreview.style.display = "none";
-    imagePreview.src = ""; }
-  if (prefillBank) { nameField.value = prefillBank; }
-  if (card) {
-    title.textContent = "ویرایش کارت بانکی";
-    idField.value = card.id || "";
-    nameField.value = card.bankName || "";
-    numberField.value = formatCardNumber(card.cardNumber);
-    ibanField.value = card.iban || "";
-    expiryField.value = card.expiry || "";
-    cvvField.value = card.cvv || "";
-    colorField.value = card.color || "#1a2332";
-    if (card.image) {
-      currentCardImageData = card.image;
-      if (imagePreview) { imagePreview.src = card.image;
-        imagePreview.style.display = "block"; }
-    }
-  } else {
-    title.textContent = "ثبت کارت بانکی جدید";
+  
+  const isEditing = !!idField.value;
+  const bankName = nameField.value.trim();
+  
+  console.log('📝 فرم کارت بانکی:', { isEditing, bankName });
+  
+  if (!bankName) { 
+    showToast("نام بانک را وارد کنید", "error"); 
+    return; 
   }
-  modal.classList.add("open");
-  document.body.style.overflow = "hidden";
-}
+  
+  const duplicate = bankCards.find(c => c.bankName === bankName && (!isEditing || c.id !== idField.value));
+  if (duplicate) { 
+    showToast("برای این بانک قبلاً یک کارت ثبت شده است", "error"); 
+    return; 
+  }
+  
+  const rawNumber = numberField.value.replace(/\D/g, '');
+  const cardData = {
+    id: idField.value || Date.now().toString(),
+    bankName: bankName,
+    cardNumber: rawNumber,
+    iban: ibanField.value.trim(),
+    expiry: expiryField.value.trim(),
+    cvv: cvvField.value.trim(),
+    color: colorField.value || "#1a2332",
+    image: currentCardImageData,
+    createdAt: new Date().toISOString()
+  };
+  
+  console.log('💳 داده کارت برای ذخیره:', cardData);
+  
+  if (cardData.cardNumber && cardData.cardNumber.length < 16) {
+    showToast("شماره کارت باید ۱۶ رقم باشد", "error");
+    return;
+  }
+  
+  const existingIndex = bankCards.findIndex(c => c.id === cardData.id);
+  if (existingIndex >= 0) {
+    bankCards[existingIndex] = cardData;
+    console.log('✏️ کارت ویرایش شد:', cardData.bankName);
+  } else {
+    bankCards.push(cardData);
+    console.log('➕ کارت جدید اضافه شد:', cardData.bankName);
+  }
+  
+  console.log('📋 لیست کارت‌ها قبل از ذخیره:', bankCards);
+  
+  // ===== ذخیره با لاگ =====
+  const saveResult = DataManager.saveBankCards(bankCards);
+  console.log('💾 نتیجه ذخیره در DataManager:', saveResult);
+  
+  // بررسی مستقیم localStorage
+  const check = localStorage.getItem('bankCardsV1');
+  console.log('🔍 بررسی localStorage بعد از ذخیره:', check);
+  
+  if (check) {
+    const parsed = JSON.parse(check);
+    console.log('📊 تعداد کارت‌های ذخیره شده در localStorage:', parsed.length);
+  }
+  
+  closeBankCardModal();
+  showToast("کارت بانکی ذخیره شد", "success");
+  
+  // بارگذاری مجدد کارت‌ها
+  loadBankCards();
+  renderBankCards();
+});
 
 function closeBankCardModal() {
   const modal = document.getElementById("bankCardModal");
@@ -6320,4 +6396,72 @@ setInterval(() => {
     }
   } catch (e) {}
 }, 3000);
+// =========================================================
+// تابع دیباگ برای بررسی localStorage
+// =========================================================
+
+function debugStorage() {
+  console.log('===== دیباگ localStorage =====');
+  
+  // بررسی bankCardsV1
+  const bankCardsRaw = localStorage.getItem('bankCardsV1');
+  console.log('bankCardsV1 (خام):', bankCardsRaw);
+  
+  if (bankCardsRaw) {
+    try {
+      const parsed = JSON.parse(bankCardsRaw);
+      console.log('bankCardsV1 (پارس شده):', parsed);
+      console.log('تعداد کارت‌ها:', parsed.length);
+      
+      // نمایش هر کارت
+      parsed.forEach((c, i) => {
+        console.log(`کارت ${i+1}:`, c.bankName, c.id);
+      });
+    } catch (e) {
+      console.error('خطا در parse:', e);
+    }
+  } else {
+    console.log('bankCardsV1 در localStorage وجود ندارد!');
+  }
+  
+  // بررسی banks
+  const banksRaw = localStorage.getItem('banks');
+  console.log('banks:', banksRaw);
+  
+  // بررسی متغیر bankCards
+  console.log('bankCards (حافظه):', bankCards);
+  console.log('تعداد کارت‌ها در حافظه:', bankCards.length);
+  
+  console.log('===== پایان دیباگ =====');
+}
+
+// اجرای دیباگ هر 5 ثانیه
+setInterval(debugStorage, 5000);
+function syncBankCardsFromMemory() {
+  try {
+    console.log('🔄 همگام‌سازی از حافظه به localStorage...');
+    console.log('📋 کارت‌ها در حافظه:', bankCards);
+    
+    if (!bankCards || bankCards.length === 0) {
+      showToast('❌ هیچ کارتی در حافظه نیست', 'error');
+      return;
+    }
+    
+    // ذخیره مستقیم
+    localStorage.setItem('bankCardsV1', JSON.stringify(bankCards));
+    
+    // بررسی
+    const check = localStorage.getItem('bankCardsV1');
+    const parsed = JSON.parse(check);
+    
+    console.log('✅ همگام‌سازی انجام شد:', parsed.length, 'کارت');
+    showToast(`✅ ${parsed.length} کارت همگام‌سازی شد`, 'success');
+    
+    // رفرش صفحه دیباگ
+    renderAdminTab('banks');
+  } catch (e) {
+    console.error('❌ خطا:', e);
+    showToast('❌ خطا: ' + e.message, 'error');
+  }
+}
 setTimeout(debugDateSelects, 2000);
