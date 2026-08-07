@@ -2860,12 +2860,6 @@ function renderAdminBanks(body) {
   <div>🔍 اطلاعات دیباگ:</div>
   <div>📦 تعداد کارت‌ها در حافظه (bankCards): ${bankCards.length}</div>
   <div>💾 تعداد کارت‌ها در localStorage: ${cards.length}</div>
-  <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
-    <button onclick="forceReloadCards()" style="padding:4px 12px;background:var(--primary);border:none;border-radius:6px;color:#fff;cursor:pointer;">🔄 Refresh</button>
-    <button onclick="debugStorage()" style="padding:4px 12px;background:#f59e0b;border:none;border-radius:6px;color:#000;cursor:pointer;">🐛 دیباگ</button>
-    <button onclick="showRawStorage()" style="padding:4px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;">📋 خام</button>
-    <button onclick="syncBankCardsFromMemory()" style="padding:4px 12px;background:#22c55e;border:none;border-radius:6px;color:#fff;cursor:pointer;">💾 ذخیره از حافظه</button>
-  </div>
 </div>
     `;
   } catch (e) {
@@ -6397,151 +6391,14 @@ setInterval(() => {
 // =========================================================
 // پایان مدیریت سرمایه
 // =========================================================
-// =========================================================
-// توابع دیباگ برای PWA
-// =========================================================
 
-function refreshAdminCards() {
-  // بارگذاری مجدد کارت‌ها از localStorage
-  const saved = localStorage.getItem("bankCardsV1");
-  console.log('📦 داده‌های خام localStorage:', saved);
-  
-  try {
-    const cards = saved ? JSON.parse(saved) : [];
-    console.log('📊 کارت‌های parse شده:', cards);
-    
-    // به‌روزرسانی متغیر global
-    bankCards = cards;
-    renderAdminTab('banks');
-    showToast(`✅ ${cards.length} کارت بارگذاری شد`, 'success');
-  } catch (e) {
-    console.error('❌ خطا:', e);
-    showToast('❌ خطا در بارگذاری', 'error');
-  }
-}
 
-function forceReloadCards() {
-  // پاک کردن کش و بارگذاری مجدد
-  try {
-    const raw = localStorage.getItem('bankCardsV1');
-    console.log('📦 داده‌های خام:', raw);
-    
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      console.log('📊 پس از parse:', parsed);
-      bankCards = parsed;
-      renderBankCards();
-      renderAdminTab('banks');
-      showToast(`✅ ${parsed.length} کارت بارگذاری شد`, 'success');
-    } else {
-      showToast('❌ هیچ داده‌ای در localStorage نیست', 'error');
-    }
-  } catch (e) {
-    console.error('❌ خطا:', e);
-    showToast('❌ خطا: ' + e.message, 'error');
-  }
-}
 
-function showRawStorage() {
-  try {
-    const raw = localStorage.getItem('bankCardsV1');
-    const banks = localStorage.getItem('banks');
-    
-    alert(
-      '📦 داده‌های localStorage:\n\n' +
-      'bankCardsV1:\n' + (raw || 'خالی') + '\n\n' +
-      'banks:\n' + (banks || 'خالی') + '\n\n' +
-      'تعداد کارت‌ها در حافظه: ' + bankCards.length
-    );
-  } catch (e) {
-    alert('خطا: ' + e.message);
-  }
-}
 
-// تابع برای چک کردن مداوم localStorage
-setInterval(() => {
-  try {
-    const saved = localStorage.getItem('bankCardsV1');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed.length !== bankCards.length && parsed.length > 0) {
-        console.warn('⚠️ تفاوت در تعداد کارت‌ها! حافظه:', bankCards.length, 'localStorage:', parsed.length);
-        // اگر localStorage بیشتر بود، همگام‌سازی کن
-        if (parsed.length > bankCards.length) {
-          bankCards = parsed;
-          renderBankCards();
-          console.log('🔄 همگام‌سازی خودکار انجام شد');
-        }
-      }
-    }
-  } catch (e) {}
-}, 3000);
-// =========================================================
-// تابع دیباگ برای بررسی localStorage
-// =========================================================
 
-function debugStorage() {
-  console.log('===== دیباگ localStorage =====');
-  
-  // بررسی bankCardsV1
-  const bankCardsRaw = localStorage.getItem('bankCardsV1');
-  console.log('bankCardsV1 (خام):', bankCardsRaw);
-  
-  if (bankCardsRaw) {
-    try {
-      const parsed = JSON.parse(bankCardsRaw);
-      console.log('bankCardsV1 (پارس شده):', parsed);
-      console.log('تعداد کارت‌ها:', parsed.length);
-      
-      // نمایش هر کارت
-      parsed.forEach((c, i) => {
-        console.log(`کارت ${i+1}:`, c.bankName, c.id);
-      });
-    } catch (e) {
-      console.error('خطا در parse:', e);
-    }
-  } else {
-    console.log('bankCardsV1 در localStorage وجود ندارد!');
-  }
-  
-  // بررسی banks
-  const banksRaw = localStorage.getItem('banks');
-  console.log('banks:', banksRaw);
-  
-  // بررسی متغیر bankCards
-  console.log('bankCards (حافظه):', bankCards);
-  console.log('تعداد کارت‌ها در حافظه:', bankCards.length);
-  
-  console.log('===== پایان دیباگ =====');
-}
 
-// اجرای دیباگ هر 5 ثانیه
-setInterval(debugStorage, 5000);
-function syncBankCardsFromMemory() {
-  try {
-    console.log('🔄 همگام‌سازی از حافظه به localStorage...');
-    console.log('📋 کارت‌ها در حافظه:', bankCards);
-    
-    if (!bankCards || bankCards.length === 0) {
-      showToast('❌ هیچ کارتی در حافظه نیست', 'error');
-      return;
-    }
-    
-    // ذخیره مستقیم
-    localStorage.setItem('bankCardsV1', JSON.stringify(bankCards));
-    
-    // بررسی
-    const check = localStorage.getItem('bankCardsV1');
-    const parsed = JSON.parse(check);
-    
-    console.log('✅ همگام‌سازی انجام شد:', parsed.length, 'کارت');
-    showToast(`✅ ${parsed.length} کارت همگام‌سازی شد`, 'success');
-    
-    // رفرش صفحه دیباگ
-    renderAdminTab('banks');
-  } catch (e) {
-    console.error('❌ خطا:', e);
-    showToast('❌ خطا: ' + e.message, 'error');
-  }
-}
+
+
+
+
 setTimeout(debugDateSelects, 2000);
