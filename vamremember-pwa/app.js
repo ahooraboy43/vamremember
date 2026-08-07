@@ -3081,7 +3081,87 @@ function deleteBankName(index) {
   renderBankCards();
   showToast("بانک و کارت آن حذف شد", "info");
 }
+// =========================================================
+// ================= مودال کارت بانکی =================
+// =========================================================
 
+function openBankCardModal(card = null, prefillBank = null) {
+  console.log('📂 باز کردن مودال کارت بانکی:', { card, prefillBank });
+  
+  const modal = document.getElementById("bankCardModal");
+  if (!modal) {
+    console.error('❌ مودال bankCardModal پیدا نشد!');
+    showToast('❌ خطا: مودال کارت بانکی پیدا نشد', 'error');
+    return;
+  }
+  
+  const form = document.getElementById("bankCardForm");
+  const title = document.getElementById("bankCardModalTitle");
+  const idField = document.getElementById("editBankCardId");
+  const nameField = document.getElementById("bankCardName");
+  const numberField = document.getElementById("bankCardNumber");
+  const ibanField = document.getElementById("bankCardIban");
+  const expiryField = document.getElementById("bankCardExpiry");
+  const cvvField = document.getElementById("bankCardCvv");
+  const colorField = document.getElementById("bankCardColor");
+  const imagePreview = document.getElementById("bankCardImagePreview");
+  const imageInput = document.getElementById("bankCardImage");
+  
+  if (!form) {
+    console.error('❌ فرم bankCardForm پیدا نشد!');
+    showToast('❌ خطا: فرم کارت بانکی پیدا نشد', 'error');
+    return;
+  }
+  
+  // Reset فرم
+  form.reset();
+  idField.value = "";
+  currentCardImageData = null;
+  if (imageInput) imageInput.value = "";
+  if (imagePreview) {
+    imagePreview.style.display = "none";
+    imagePreview.src = "";
+  }
+  
+  // اگر نام بانک از قبل داده شده
+  if (prefillBank) {
+    nameField.value = prefillBank;
+  }
+  
+  // اگر کارت برای ویرایش داده شده
+  if (card) {
+    title.textContent = "✏️ ویرایش کارت بانکی";
+    idField.value = card.id || "";
+    nameField.value = card.bankName || "";
+    numberField.value = formatCardNumber(card.cardNumber);
+    ibanField.value = card.iban || "";
+    expiryField.value = card.expiry || "";
+    cvvField.value = card.cvv || "";
+    colorField.value = card.color || "#1a2332";
+    if (card.image) {
+      currentCardImageData = card.image;
+      if (imagePreview) {
+        imagePreview.src = card.image;
+        imagePreview.style.display = "block";
+      }
+    }
+  } else {
+    title.textContent = "➕ ثبت کارت بانکی جدید";
+  }
+  
+  // نمایش مودال
+  modal.classList.add("open");
+  document.body.style.overflow = "hidden";
+  console.log('✅ مودال کارت بانکی باز شد');
+}
+
+function closeBankCardModal() {
+  console.log('📂 بستن مودال کارت بانکی');
+  const modal = document.getElementById("bankCardModal");
+  if (!modal) return;
+  modal.classList.remove("open");
+  document.body.style.overflow = "";
+}
 function addCardToBank(bankName) {
   const existing = bankCards.find(c => c.bankName === bankName);
   if (existing) {
