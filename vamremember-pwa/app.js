@@ -2685,7 +2685,10 @@ function openAdminPanel() {
       <div class="admin-glass">
         <div class="admin-header">
           <h3>🛠 پنل دیباگ</h3>
-          <button onclick="closeAdminPanel()" class="admin-close-btn">✕</button>
+          <div style="display:flex;gap:8px;">
+            <button onclick="forceReloadCards()" class="admin-close-btn" style="background:#f59e0b;color:#000;width:auto;padding:0 12px;font-size:12px;">🔄 Refresh</button>
+            <button onclick="closeAdminPanel()" class="admin-close-btn">✕</button>
+          </div>
         </div>
         <div class="admin-tabs">
           <button class="admin-tab active" data-tab="banks">🏦 بانک‌ها</button>
@@ -2753,20 +2756,30 @@ function renderAdminTab(tab) {
 
 function renderAdminBanks(body) {
   try {
+    // ===== مستقیم از localStorage بخوان =====
     let banks = [];
+    let cards = [];
+    
     try {
-      const saved = localStorage.getItem("banks");
-      banks = saved ? JSON.parse(saved) : ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
+      const savedBanks = localStorage.getItem("banks");
+      banks = savedBanks ? JSON.parse(savedBanks) : ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
     } catch (e) {
       banks = ["بانک ملی", "بانک رفاه", "ویپاد", "بلو بانک"];
     }
-    let cards = [];
+    
     try {
-      const saved = localStorage.getItem("bankCardsV1");
-      cards = saved ? JSON.parse(saved) : [];
+      const savedCards = localStorage.getItem("bankCardsV1");
+      cards = savedCards ? JSON.parse(savedCards) : [];
     } catch (e) {
       cards = [];
     }
+    
+    // ===== لاگ برای دیباگ =====
+    console.log('📊 رندر بانک‌ها در دیباگ:');
+    console.log('  - بانک‌ها:', banks);
+    console.log('  - کارت‌ها:', cards);
+    console.log('  - تعداد کارت‌ها:', cards.length);
+    
     body.innerHTML = `
       <div class="admin-section">
         <div class="admin-section-header">
@@ -2789,13 +2802,15 @@ function renderAdminBanks(body) {
         <div class="admin-section-header">
           <span>💳 کارت‌های بانکی (${cards.length})</span>
           <button onclick="closeAdminPanel(); setTimeout(()=>openBankCardModal(),200);" class="admin-add-btn">➕ افزودن</button>
+          <button onclick="refreshAdminCards()" class="admin-add-btn" style="background:#f59e0b;">🔄 Refresh</button>
         </div>
         <div class="admin-list">
           ${cards.length === 0 ? '<div class="admin-empty">هیچ کارتی ثبت نشده</div>' : cards.map(c => `
             <div class="admin-item admin-card-item">
               <div class="admin-item-info">
-                <span class="admin-item-title">${c.bankName}</span>
+                <span class="admin-item-title">${c.bankName || 'بدون نام'}</span>
                 <span class="admin-item-sub" dir="ltr">${maskCardNumber(c.cardNumber)}</span>
+                <span style="font-size:10px;color:var(--muted);">ID: ${c.id || 'ندارد'}</span>
               </div>
               <div class="admin-item-actions">
                 <button onclick="closeAdminPanel(); setTimeout(()=>openBankCardModal(bankCards.find(card=>card.id=='${c.id}')),200);" class="admin-edit-btn">✎</button>
@@ -2804,10 +2819,18 @@ function renderAdminBanks(body) {
             </div>
           `).join('')}
         </div>
+        <div style="margin-top:10px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;font-size:11px;color:var(--muted);">
+          <div>🔍 اطلاعات دیباگ:</div>
+          <div>📦 تعداد کارت‌ها در حافظه: ${bankCards.length}</div>
+          <div>💾 تعداد کارت‌ها در localStorage: ${cards.length}</div>
+          <button onclick="forceReloadCards()" style="margin-top:6px;padding:4px 12px;background:var(--primary);border:none;border-radius:6px;color:#fff;cursor:pointer;">🔄 بارگذاری مجدد</button>
+          <button onclick="showRawStorage()" style="margin-top:6px;padding:4px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;">📋 نمایش داده‌های خام</button>
+        </div>
       </div>
     `;
   } catch (e) {
-    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا در بارگذاری بانک‌ها: ${e.message}</div>`;
+    console.error('❌ خطا در renderAdminBanks:', e);
+    body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">خطا: ${e.message}</div>`;
   }
 }
 
@@ -6218,4 +6241,83 @@ setInterval(() => {
 // =========================================================
 // پایان مدیریت سرمایه
 // =========================================================
+// =========================================================
+// توابع دیباگ برای PWA
+// =========================================================
+
+function refreshAdminCards() {
+  // بارگذاری مجدد کارت‌ها از localStorage
+  const saved = localStorage.getItem("bankCardsV1");
+  console.log('📦 داده‌های خام localStorage:', saved);
+  
+  try {
+    const cards = saved ? JSON.parse(saved) : [];
+    console.log('📊 کارت‌های parse شده:', cards);
+    
+    // به‌روزرسانی متغیر global
+    bankCards = cards;
+    renderAdminTab('banks');
+    showToast(`✅ ${cards.length} کارت بارگذاری شد`, 'success');
+  } catch (e) {
+    console.error('❌ خطا:', e);
+    showToast('❌ خطا در بارگذاری', 'error');
+  }
+}
+
+function forceReloadCards() {
+  // پاک کردن کش و بارگذاری مجدد
+  try {
+    const raw = localStorage.getItem('bankCardsV1');
+    console.log('📦 داده‌های خام:', raw);
+    
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      console.log('📊 پس از parse:', parsed);
+      bankCards = parsed;
+      renderBankCards();
+      renderAdminTab('banks');
+      showToast(`✅ ${parsed.length} کارت بارگذاری شد`, 'success');
+    } else {
+      showToast('❌ هیچ داده‌ای در localStorage نیست', 'error');
+    }
+  } catch (e) {
+    console.error('❌ خطا:', e);
+    showToast('❌ خطا: ' + e.message, 'error');
+  }
+}
+
+function showRawStorage() {
+  try {
+    const raw = localStorage.getItem('bankCardsV1');
+    const banks = localStorage.getItem('banks');
+    
+    alert(
+      '📦 داده‌های localStorage:\n\n' +
+      'bankCardsV1:\n' + (raw || 'خالی') + '\n\n' +
+      'banks:\n' + (banks || 'خالی') + '\n\n' +
+      'تعداد کارت‌ها در حافظه: ' + bankCards.length
+    );
+  } catch (e) {
+    alert('خطا: ' + e.message);
+  }
+}
+
+// تابع برای چک کردن مداوم localStorage
+setInterval(() => {
+  try {
+    const saved = localStorage.getItem('bankCardsV1');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.length !== bankCards.length && parsed.length > 0) {
+        console.warn('⚠️ تفاوت در تعداد کارت‌ها! حافظه:', bankCards.length, 'localStorage:', parsed.length);
+        // اگر localStorage بیشتر بود، همگام‌سازی کن
+        if (parsed.length > bankCards.length) {
+          bankCards = parsed;
+          renderBankCards();
+          console.log('🔄 همگام‌سازی خودکار انجام شد');
+        }
+      }
+    }
+  } catch (e) {}
+}, 3000);
 setTimeout(debugDateSelects, 2000);
